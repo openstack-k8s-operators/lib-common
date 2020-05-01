@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Run all ci scripts locally before pushing. To enable this hook, run:
+# $ git config core.hooksPath .githooks
+
+BASE_DIR="$(dirname $0)"
+tests="${BASE_DIR}"/../ci_scripts/travis.*.sh
+for t in $tests; do
+    $t
+done
