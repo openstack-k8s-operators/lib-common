@@ -22,11 +22,12 @@ func CreateOspHostsEntries(commonConfigMap *corev1.ConfigMap) ([]corev1.HostAlia
 
 		if len(hostsEntries) >= 1 {
 			for _, hostRecord := range strings.Split(hostsEntries[1], "\n") {
-				if len(hostRecord) > 0 {
+				fields := strings.Fields(hostRecord)
+				if len(fields) > 0 {
 					var ip string
 					var names []string
 
-					for i, r := range strings.Fields(hostRecord) {
+					for i, r := range fields {
 						if i == 0 {
 							ip = r
 						} else {
