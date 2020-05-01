@@ -47,7 +47,7 @@ func TestCreateOSPHostsEntries(t *testing.T) {
 	}{
 		{&hosts[0], false, []corev1.HostAlias{{IP: "192.168.0.1", Hostnames: []string{"one1", "one2"}},
 			{IP: "192.168.0.2", Hostnames: []string{"two1", "two2"}},
-			{IP: "192.168.0.3"}}},
+			{IP: "192.168.0.3", Hostnames: []string{}}}},
 		{&hosts[1], false, []corev1.HostAlias{{IP: "192.168.0.1", Hostnames: []string{"one"}}}},
 		{&hosts[2], true, nil},
 	}
