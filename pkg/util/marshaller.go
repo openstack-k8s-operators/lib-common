@@ -14,6 +14,7 @@
  * Copyright 2020 Red Hat, Inc.
  *
  */
+
 package util
 
 import (
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// MarshallObject func
 func MarshallObject(obj interface{}, writer io.Writer) error {
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
