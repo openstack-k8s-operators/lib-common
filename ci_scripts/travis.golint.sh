@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -ex
 
 # Get golint
 go get -u golang.org/x/lint/golint
@@ -9,25 +9,6 @@ go get -u golang.org/x/lint/golint
 LINT_EXIT_STATUS="-set_exit_status"
 
 BASE_DIR="$(dirname $0)"
+cd "${BASE_DIR}/.."
 
-pushd "${BASE_DIR}/.."
-
-# Do not fail instantly when the error is found.
-# This is useful as commit may have multiple lint errors.
-ERR_CODE=0
-
-for testdir in $(find . -type f -name "*.go" | rev | cut -d '/' -f2- | rev | sort | uniq | sed -e 's,^\./,,'); do
-  pushd ${testdir}
-
-    golint ${LINT_EXIT_STATUS}
-
-    if [ $? -ne 0 ]; then
-      ERR_CODE=1
-    fi
-
-  popd
-done
-
-popd
-
-exit $ERR_CODE
+golint ${LINT_EXIT_STATUS} ./...
