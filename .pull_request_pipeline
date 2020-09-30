@@ -1,0 +1,85 @@
+pipeline {
+    agent none
+    stages {
+        stage('Pull request proposed jobs') {
+        when {
+            branch 'PR-*'
+        }
+            parallel {
+                stage('DFG-converged-openstack-k8s-compute-node-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-compute-node-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID)),
+
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-keystone-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-keystone-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-neutron-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-neutron-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-nova-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-nova-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-openstack-cluster-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-openstack-cluster-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-glance-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-glance-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-placement-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-placement-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-mariadb-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-mariadb-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+                stage('DFG-converged-openstack-k8s-heat-operator-buildah') {
+                    steps {
+                        build job: 'DFG-converged-openstack-k8s-heat-operator-buildah',
+                                  parameters: [
+                                      string(name: 'LIB_COMMON_PULL_REQUEST_ID', value: String.valueOf(CHANGE_ID))
+                                  ]
+                    }
+                }
+            }
+        }
+    }
+}
