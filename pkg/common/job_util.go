@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021 Red Hat
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package common
 
 import (
 	"context"
@@ -33,14 +33,19 @@ import (
 
 // DeleteJob func
 // kclient required to properly cleanup the job depending pods with DeleteOptions
-func DeleteJob(job *batchv1.Job, kclient kubernetes.Interface, log logr.Logger) (bool, error) {
+func DeleteJob(
+	ctx context.Context,
+	job *batchv1.Job,
+	kclient kubernetes.Interface,
+	log logr.Logger,
+) (bool, error) {
 
 	// Check if this Job already exists
-	foundJob, err := kclient.BatchV1().Jobs(job.Namespace).Get(context.TODO(), job.Name, metav1.GetOptions{})
+	foundJob, err := kclient.BatchV1().Jobs(job.Namespace).Get(ctx, job.Name, metav1.GetOptions{})
 	if err == nil {
 		log.Info("Deleting Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 		background := metav1.DeletePropagationBackground
-		err = kclient.BatchV1().Jobs(foundJob.Namespace).Delete(context.TODO(), foundJob.Name, metav1.DeleteOptions{PropagationPolicy: &background})
+		err = kclient.BatchV1().Jobs(foundJob.Namespace).Delete(ctx, foundJob.Name, metav1.DeleteOptions{PropagationPolicy: &background})
 		if err != nil {
 			return false, err
 		}
@@ -49,23 +54,20 @@ func DeleteJob(job *batchv1.Job, kclient kubernetes.Interface, log logr.Logger) 
 	return false, nil
 }
 
-// EnsureJob func
-func EnsureJob(job *batchv1.Job, client client.Client, log logr.Logger) (bool, error) {
+// WaitOnJob func
+func WaitOnJob(
+	ctx context.Context,
+	job *batchv1.Job,
+	client client.Client,
+	log logr.Logger,
+) (bool, error) {
 	// Check if this Job already exists
 	foundJob := &batchv1.Job{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, foundJob)
-	if err != nil && k8s_errors.IsNotFound(err) {
-		log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-		err = client.Create(context.TODO(), job)
-		if err != nil {
-			return false, err
-		}
-		return true, err
-	} else if err != nil {
-		log.Info("EnsureJob err")
+	err := client.Get(ctx, types.NamespacedName{Name: job.Name, Namespace: job.Namespace}, foundJob)
+	if err != nil {
+		log.Info("WaitOnJob err")
 		return true, err
 	} else if foundJob != nil {
-		log.Info("EnsureJob foundJob")
 		if foundJob.Status.Active > 0 {
 			log.Info("Job Status Active... requeuing")
 			return true, err

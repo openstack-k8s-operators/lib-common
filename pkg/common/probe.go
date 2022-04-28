@@ -1,4 +1,4 @@
-package util
+package common
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -99,7 +99,7 @@ func (p *Probe) GetProbe() *corev1.Probe {
 	}
 
 	return &corev1.Probe{
-		Handler: corev1.Handler{
+		ProbeHandler: corev1.ProbeHandler{
 			Exec: &corev1.ExecAction{
 				Command: []string{
 					p.Command,
