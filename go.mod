@@ -5,10 +5,30 @@ go 1.17
 require (
 	github.com/go-logr/logr v1.2.0
 	github.com/onsi/gomega v1.17.0
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	github.com/openstack-k8s-operators/keystone-operator v0.0.0-20220516151700-a6967a7f8a1b
+	github.com/openstack-k8s-operators/mariadb-operator v0.0.0-20220516121356-119f8d825a71
+	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
 	sigs.k8s.io/controller-runtime v0.11.0
+)
+
+require (
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/google/uuid v1.1.2 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/prometheus/client_golang v1.11.0 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.28.0 // indirect
+	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	k8s.io/apiextensions-apiserver v0.23.0 // indirect
+	k8s.io/component-base v0.23.0 // indirect
 )
 
 require (
