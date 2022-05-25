@@ -28,12 +28,17 @@ func InitMap(m *map[string]string) {
 // MergeStringMaps - merge two or more string->map maps
 // NOTE: In case a key exists, the value in the first map is preserved.
 func MergeStringMaps(baseMap map[string]string, extraMaps ...map[string]string) map[string]string {
-	InitMap(&baseMap)
+	mergedMap := make(map[string]string)
+
+	// Copy from the original map to the target map
+	for key, value := range baseMap {
+		mergedMap[key] = value
+	}
 
 	for _, extraMap := range extraMaps {
 		for key, value := range extraMap {
-			if _, ok := baseMap[key]; !ok {
-				baseMap[key] = value
+			if _, ok := mergedMap[key]; !ok {
+				mergedMap[key] = value
 			}
 		}
 	}
@@ -41,10 +46,10 @@ func MergeStringMaps(baseMap map[string]string, extraMaps ...map[string]string) 
 	// Nil the result if the map is empty, thus avoiding triggering infinite reconcile
 	// given that at json level label: {} or annotation: {} is different from no field, which is the
 	// corresponding value stored in etcd given that those fields are defined as omitempty.
-	if len(baseMap) == 0 {
+	if len(mergedMap) == 0 {
 		return nil
 	}
-	return baseMap
+	return mergedMap
 }
 
 // Pair -
