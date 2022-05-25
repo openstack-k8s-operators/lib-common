@@ -22,6 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +33,7 @@ import (
 func createOrUpdateConfigMap(
 	ctx context.Context,
 	r ReconcilerCommon,
-	obj metav1.Object,
+	obj client.Object,
 	cm Template,
 ) (string, controllerutil.OperationResult, error) {
 	data := make(map[string]string)
@@ -89,7 +90,7 @@ func createOrUpdateConfigMap(
 func createOrGetCustomConfigMap(
 	ctx context.Context,
 	r ReconcilerCommon,
-	obj metav1.Object,
+	obj client.Object,
 	cm Template,
 ) (string, error) {
 	// Check if this configMap already exists
@@ -132,7 +133,7 @@ func createOrGetCustomConfigMap(
 func EnsureConfigMaps(
 	ctx context.Context,
 	r ReconcilerCommon,
-	obj metav1.Object,
+	obj client.Object,
 	cms []Template,
 	envVars *map[string]EnvSetter,
 ) error {
