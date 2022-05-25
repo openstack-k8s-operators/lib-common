@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/go-logr/logr v1.2.0
+	github.com/onsi/gomega v1.17.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
