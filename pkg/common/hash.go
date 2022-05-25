@@ -24,6 +24,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
+// Hash - struct to add hashes to status
+type Hash struct {
+	// Name of hash referencing the parameter
+	Name string `json:"name,omitempty"`
+	// Hash
+	Hash string `json:"hash,omitempty"`
+}
+
 // ObjectHash creates a deep object hash and return it as a safe encoded string
 func ObjectHash(i interface{}) (string, error) {
 	// Convert the hashSource to a byte slice so that it can be hashed
