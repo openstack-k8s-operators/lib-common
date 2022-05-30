@@ -31,8 +31,8 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-// createOrUpdateConfigMap -
-func createOrUpdateConfigMap(
+// createOrPatchConfigMap -
+func createOrPatchConfigMap(
 	ctx context.Context,
 	r ReconcilerCommon,
 	obj client.Object,
@@ -50,7 +50,7 @@ func createOrUpdateConfigMap(
 	}
 
 	// create or update the CM
-	op, err := controllerutil.CreateOrUpdate(ctx, r.GetClient(), configMap, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, r.GetClient(), configMap, func() error {
 
 		configMap.Labels = cm.Labels
 		// add data from templates
@@ -146,7 +146,7 @@ func EnsureConfigMaps(
 		var op controllerutil.OperationResult
 
 		if cm.Type != TemplateTypeCustom {
-			hash, op, err = createOrUpdateConfigMap(ctx, r, obj, cm)
+			hash, op, err = createOrPatchConfigMap(ctx, r, obj, cm)
 		} else {
 			hash, err = createOrGetCustomConfigMap(ctx, r, obj, cm)
 			// set op to OperationResultNone because createOrGetCustomConfigMap does not return an op
