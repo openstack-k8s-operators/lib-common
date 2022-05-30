@@ -19,9 +19,11 @@ package common
 import (
 	"context"
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -165,6 +167,29 @@ func EnsureConfigMaps(
 	return nil
 }
 
+// GetConfigMaps - get all configmaps required, verify they exist and add the hash to env and status
+func GetConfigMaps(
+	ctx context.Context,
+	r ReconcilerCommon,
+	obj client.Object,
+	configMaps []string,
+	namespace string,
+	envVars *map[string]EnvSetter,
+) ([]Hash, error) {
+	hashes := []Hash{}
+
+	for _, cm := range configMaps {
+		_, hash, err := GetConfigMapAndHashWithName(ctx, r, cm, namespace)
+		if err != nil {
+			return nil, err
+		}
+		(*envVars)[cm] = EnvValue(hash)
+		hashes = append(hashes, Hash{Name: cm, Hash: hash})
+	}
+
+	return hashes, nil
+}
+
 // CreateOrGetCustomConfigMap -
 func CreateOrGetCustomConfigMap(
 	ctx context.Context,
@@ -212,4 +237,34 @@ func GetConfigMapAndHashWithName(
 		return configMap, "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
 	return configMap, configMapHash, nil
+}
+
+//
+// GetConfigMap - Get config map
+//
+// if the config map is not found, requeue after requeueTimeout in seconds
+func GetConfigMap(
+	ctx context.Context,
+	r ReconcilerCommon,
+	object client.Object,
+	configMapName string,
+	requeueTimeout int,
+) (*corev1.ConfigMap, ctrl.Result, error) {
+
+	configMap := &corev1.ConfigMap{}
+	err := r.GetClient().Get(ctx, types.NamespacedName{Name: configMapName, Namespace: object.GetNamespace()}, configMap)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			msg := fmt.Sprintf("%s config map does not exist: %v", configMapName, err)
+			LogForObject(r, msg, object)
+
+			return configMap, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
+		}
+		msg := fmt.Sprintf("Error getting %s config map: %v", configMapName, err)
+		err = WrapErrorForObject(msg, object, err)
+
+		return configMap, ctrl.Result{}, err
+	}
+
+	return configMap, ctrl.Result{}, nil
 }
