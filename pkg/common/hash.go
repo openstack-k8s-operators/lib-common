@@ -42,3 +42,22 @@ func ObjectHash(i interface{}) (string, error) {
 	hash := sha256.Sum256(hashBytes)
 	return rand.SafeEncodeString(fmt.Sprint(hash)), nil
 }
+
+// SetHash - set hashStr of type hashType on hashMap if it does not exist or
+// hashStr is different from current stored value. Returns hashMap and bool
+// which indicates if hashMap changed.
+func SetHash(
+	hashMap map[string]string,
+	hashType string,
+	hashStr string,
+) (map[string]string, bool) {
+	if hashMap == nil {
+		hashMap = map[string]string{}
+	}
+	if hash, ok := hashMap[hashType]; !ok || hash != hashStr {
+		hashMap[hashType] = hashStr
+		return hashMap, true
+	}
+
+	return hashMap, false
+}
