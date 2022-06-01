@@ -17,6 +17,8 @@ limitations under the License.
 package common
 
 import (
+	"sort"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -30,19 +32,25 @@ type EnvSetterMap map[string]EnvSetter
 
 // MergeEnvs - merge envs
 func MergeEnvs(envs []corev1.EnvVar, newEnvs EnvSetterMap) []corev1.EnvVar {
-	for name, f := range newEnvs {
+
+	// as there is no sorted order when look over hashmap,
+	// the resulting env list can have different order and therefore
+	// different hash sum, to provent this we create a sorted setter map
+	sortedNewEnvSetterMap := SortSetterMapByKey(newEnvs)
+
+	for _, newEnv := range sortedNewEnvSetterMap {
 		updated := false
 		for i := 0; i < len(envs); i++ {
-			if envs[i].Name == name {
-				f(&envs[i])
+			if envs[i].Name == newEnv.Key {
+				newEnv.Value(&envs[i])
 				updated = true
 				break
 			}
 		}
 
 		if !updated {
-			envs = append(envs, corev1.EnvVar{Name: name})
-			f(&envs[len(envs)-1])
+			envs = append(envs, corev1.EnvVar{Name: newEnv.Key})
+			newEnv.Value(&envs[len(envs)-1])
 		}
 	}
 
@@ -71,4 +79,33 @@ func EnvValue(value string) EnvSetter {
 		env.Value = value
 		env.ValueFrom = nil
 	}
+}
+
+// SetterPair -
+type SetterPair struct {
+	Key   string
+	Value EnvSetter
+}
+
+// SetterList -
+type SetterList []SetterPair
+
+func (p SetterList) Len() int           { return len(p) }
+func (p SetterList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p SetterList) Less(i, j int) bool { return p[i].Key < p[j].Key }
+
+// SortSetterMapByKey - Creates a sorted List contain key/value of a map[string]string sorted by key
+func SortSetterMapByKey(in map[string]EnvSetter) SetterList {
+
+	sorted := make(SetterList, len(in))
+
+	i := 0
+	for k, v := range in {
+		sorted[i] = SetterPair{k, v}
+		i++
+	}
+
+	sort.Sort(sorted)
+
+	return sorted
 }
