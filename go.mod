@@ -62,3 +62,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/openstack-k8s-operators/lib-common => github.com/stuggi/lib-common v0.0.0-20220602065342-44eea2b5beca
