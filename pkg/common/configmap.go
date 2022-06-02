@@ -108,9 +108,11 @@ func createOrGetCustomConfigMap(
 	foundConfigMap := &corev1.ConfigMap{}
 	err := r.GetClient().Get(ctx, types.NamespacedName{Name: cm.Name, Namespace: cm.Namespace}, foundConfigMap)
 	if err != nil && k8s_errors.IsNotFound(err) {
-		err := controllerutil.SetControllerReference(obj, configMap, r.GetScheme())
-		if err != nil {
-			return "", err
+		if !cm.SkipSetOwner {
+			err := controllerutil.SetControllerReference(obj, configMap, r.GetScheme())
+			if err != nil {
+				return "", err
+			}
 		}
 
 		r.GetLogger().Info(fmt.Sprintf("Creating a new ConfigMap %s in namespace %s", cm.Namespace, cm.Name))
