@@ -22,6 +22,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// +kubebuilder:object:generate:=false
+
 // Update a list of corev1.EnvVar in place
 
 // EnvSetter -
