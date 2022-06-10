@@ -50,14 +50,13 @@ func NewDatabase(
 }
 
 //
-// getDatabaseServiceName - get the service name of the DB
+// setDatabaseHostname - set the service name of the DB as the databaseHostname
 //
-func getDatabaseServiceName(
+func (d *Database) setDatabaseHostname(
 	ctx context.Context,
 	h *helper.Helper,
-) (string, condition.Condition, error) {
+) (condition.Condition, error) {
 
-	var databaseHostname string
 	selector := map[string]string{
 		"app": "mariadb",
 	}
@@ -75,7 +74,7 @@ func getDatabaseServiceName(
 			ReasonDBServiceNameError,
 			msg)
 
-		return databaseHostname, cond, err
+		return cond, err
 	}
 
 	// can we expect there is only one DB instance per namespace?
@@ -87,11 +86,11 @@ func getDatabaseServiceName(
 			ReasonDBServiceNameError,
 			msg)
 
-		return databaseHostname, cond, err
+		return cond, err
 	}
-	databaseHostname = serviceList.Items[0].GetName()
+	d.databaseHostname = serviceList.Items[0].GetName()
 
-	return databaseHostname, condition.Condition{}, nil
+	return condition.Condition{}, nil
 }
 
 //
@@ -99,6 +98,13 @@ func getDatabaseServiceName(
 //
 func (d *Database) GetDatabaseHostname() string {
 	return d.databaseHostname
+}
+
+//
+// GetDatabase - returns the DB
+//
+func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
+	return d.database
 }
 
 //
@@ -121,14 +127,12 @@ func (d *Database) CreateOrPatchDB(
 	}
 
 	// set the database hostname on the db instance
-	databaseServiceName, cond, err := getDatabaseServiceName(ctx, h)
+	cond, err := d.setDatabaseHostname(ctx, h)
 	if err != nil {
 		return cond, ctrl.Result{}, err
 	}
-	d.databaseHostname = databaseServiceName
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), db, func() error {
-		// TODO Labels
 		db.Labels = common.MergeStringMaps(
 			db.GetLabels(),
 			d.labels,
@@ -166,6 +170,14 @@ func (d *Database) CreateOrPatchDB(
 		return c, ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
+	cond, err = d.getDBWithName(
+		ctx,
+		h,
+	)
+	if err != nil {
+		return cond, ctrl.Result{}, err
+	}
+
 	return condition.Condition{}, ctrl.Result{}, nil
 }
 
@@ -177,7 +189,7 @@ func (d *Database) WaitForDBCreated(
 	h *helper.Helper,
 ) (condition.Condition, ctrl.Result, error) {
 
-	db, cond, err := d.GetDBWithName(
+	cond, err := d.getDBWithName(
 		ctx,
 		h,
 	)
@@ -185,8 +197,8 @@ func (d *Database) WaitForDBCreated(
 		return cond, ctrl.Result{}, err
 	}
 
-	if !db.Status.Completed || k8s_errors.IsNotFound(err) {
-		msg := fmt.Sprintf("Waiting for service DB %s to be created", db.Name)
+	if !d.database.Status.Completed || k8s_errors.IsNotFound(err) {
+		msg := fmt.Sprintf("Waiting for service DB %s to be created", d.database.Name)
 		cond := condition.NewCondition(
 			condition.TypeWaiting,
 			corev1.ConditionTrue,
@@ -199,12 +211,12 @@ func (d *Database) WaitForDBCreated(
 }
 
 //
-// GetDBWithName - get DB object with name in namespace
+// getDBWithName - get DB object with name in namespace
 //
-func (d *Database) GetDBWithName(
+func (d *Database) getDBWithName(
 	ctx context.Context,
 	h *helper.Helper,
-) (*mariadbv1.MariaDBDatabase, condition.Condition, error) {
+) (condition.Condition, error) {
 	db := &mariadbv1.MariaDBDatabase{}
 	err := h.GetClient().Get(
 		ctx,
@@ -222,7 +234,7 @@ func (d *Database) GetDBWithName(
 				ReasonDBNotFound,
 				msg)
 
-			return db, cond, common.WrapErrorForObject(msg, h.GetBeforeObject(), err)
+			return cond, common.WrapErrorForObject(msg, h.GetBeforeObject(), err)
 		}
 
 		msg := fmt.Sprintf("DB error %s %s ", d.databaseName, h.GetBeforeObject().GetNamespace())
@@ -232,8 +244,10 @@ func (d *Database) GetDBWithName(
 			ReasonDBError,
 			msg)
 
-		return db, cond, common.WrapErrorForObject(msg, h.GetBeforeObject(), err)
+		return cond, common.WrapErrorForObject(msg, h.GetBeforeObject(), err)
 	}
 
-	return db, condition.Condition{}, nil
+	d.database = db
+
+	return condition.Condition{}, nil
 }

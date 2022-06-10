@@ -16,6 +16,8 @@ limitations under the License.
 
 package database
 
+import mariadbv1 "github.com/openstack-k8s-operators/mariadb-operator/api/v1beta1"
+
 const (
 	// DatabaseUserPasswordKey - key in secret which holds the service user DB password
 	DatabaseUserPasswordKey = "DatabasePassword"
@@ -25,6 +27,7 @@ const (
 
 // Database -
 type Database struct {
+	database         *mariadbv1.MariaDBDatabase
 	databaseHostname string
 	databaseName     string
 	databaseUser     string
