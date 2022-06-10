@@ -59,7 +59,7 @@ func (s *StatefulSet) CreateOrPatch(
 			statefulset.Spec.Selector = s.statefulset.Spec.Selector
 		}
 
-		statefulset.Annotations = s.statefulset.Annotations
+		statefulset.Annotations = MergeStringMaps(statefulset.Annotations, s.statefulset.Annotations)
 		statefulset.Labels = MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
 		statefulset.Spec.Template = s.statefulset.Spec.Template
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas

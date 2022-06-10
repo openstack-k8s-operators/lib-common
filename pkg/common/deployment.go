@@ -58,7 +58,7 @@ func (d *Deployment) CreateOrPatch(
 		if deployment.ObjectMeta.CreationTimestamp.IsZero() {
 			deployment.Spec.Selector = d.deployment.Spec.Selector
 		}
-		deployment.Annotations = d.deployment.Annotations
+		deployment.Annotations = MergeStringMaps(deployment.Annotations, d.deployment.Annotations)
 		deployment.Labels = MergeStringMaps(deployment.Labels, d.deployment.Labels)
 		deployment.Spec.Template = d.deployment.Spec.Template
 		deployment.Spec.Replicas = d.deployment.Spec.Replicas
