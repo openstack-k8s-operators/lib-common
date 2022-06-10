@@ -23,30 +23,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	keystonev1 "github.com/openstack-k8s-operators/keystone-operator/api/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
 func TestToUnstructured(t *testing.T) {
 	t.Run("with a typed object", func(t *testing.T) {
 		g := NewWithT(t)
 		// Test with a typed object.
-		obj := &keystonev1.KeystoneAPI{
+		obj := &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "keystone",
 				Namespace: "openstack",
 			},
-			Spec: keystonev1.KeystoneAPISpec{
-				DatabaseHostname: "dbhost",
+			Spec: appsv1.DeploymentSpec{
+				Paused: true,
 			},
 		}
+
 		newObj, err := ToUnstructured(obj)
 		g.Expect(err).ToNot(HaveOccurred())
 		g.Expect(newObj.GetName()).To(Equal(obj.Name))
 		g.Expect(newObj.GetNamespace()).To(Equal(obj.Namespace))
 
 		// Change a spec field and validate that it stays the same in the incoming object.
-		g.Expect(unstructured.SetNestedField(newObj.Object, "dbhost1", "spec", "databaseHostname")).To(Succeed())
-		g.Expect(obj.Spec.DatabaseHostname).To(Equal("dbhost"))
+		g.Expect(unstructured.SetNestedField(newObj.Object, "false", "spec", "paused")).To(Succeed())
+		g.Expect(obj.Spec.Paused).To(Equal(true))
 	})
 
 	t.Run("with an unstructured object", func(t *testing.T) {

@@ -239,7 +239,6 @@ github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5m
 github.com/googleapis/gnostic v0.5.1/go.mod h1:6U4PtQXGIEt/Z3h5MAT7FNofLnw9vXk2cUuW7uA/OeU=
 github.com/googleapis/gnostic v0.5.5 h1:9fHAtK0uDfpveeqqo1hkEZJcFvYXAiCN3UutL8F9xHw=
 github.com/googleapis/gnostic v0.5.5/go.mod h1:7+EbHbldMins07ALC74bsA81Ovc97DwqyJO1AENw9kA=
-github.com/gophercloud/gophercloud v0.24.0/go.mod h1:Q8fZtyi5zZxPS/j9aj3sSxtvj41AdQMDwyo1myduD5c=
 github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
@@ -359,8 +358,6 @@ github.com/onsi/gomega v1.17.0 h1:9Luw4uT5HTjHTN8+aNcSThgH1vdXnmdJ8xIfZ4wyTRE=
 github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAlGdZY=
 github.com/openshift/api v3.9.0+incompatible h1:fJ/KsefYuZAjmrr3+5U9yZIZbTOpVkDDLDLFresAeYs=
 github.com/openshift/api v3.9.0+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
-github.com/openstack-k8s-operators/keystone-operator v0.0.0-20220516151700-a6967a7f8a1b h1:/IE0ww/Gn2o+Y030X4rNoTgjEMLMDBdzq4TWZWJx0L8=
-github.com/openstack-k8s-operators/keystone-operator v0.0.0-20220516151700-a6967a7f8a1b/go.mod h1:RqmkNnMEFaSPwEMHN4xVb9mPfVdIxYxZOf92Db0q7Kg=
 github.com/openstack-k8s-operators/lib-common v0.0.0-20220429114812-00cd552b97fa/go.mod h1:rdWrX7gVQF2bFvMDUu2iiy32p0e8jYDCMsu7fV2rBDk=
 github.com/openstack-k8s-operators/mariadb-operator v0.0.0-20220516121356-119f8d825a71 h1:YdN/MEulSWdzc5KxBRkJ29gN0xTYqLri9FGvhkU5xk4=
 github.com/openstack-k8s-operators/mariadb-operator v0.0.0-20220516121356-119f8d825a71/go.mod h1:zdBCvR4p2D8PfyzVuUaXk1zIyo3kO6BPO8zTwSCWKBI=
