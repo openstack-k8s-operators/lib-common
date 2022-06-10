@@ -16,6 +16,7 @@ limitations under the License.
 
 package database
 
+/*
 import (
 	"context"
 	"testing"
@@ -117,7 +118,8 @@ func TestCreateOrPatchDB(t *testing.T) {
 		g.Expect(db).To(Equal(dbObj))
 	})
 }
-
+*/
+/*
 func TestGetDBWithName(t *testing.T) {
 	t.Run("Get database with name", func(t *testing.T) {
 		g := NewWithT(t)
@@ -161,3 +163,4 @@ func TestGetDBWithName(t *testing.T) {
 		g.Expect(db.Spec.Secret).To(Equal("dbsecret"))
 	})
 }
+*/
