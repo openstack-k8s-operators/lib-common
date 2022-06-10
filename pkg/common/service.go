@@ -19,18 +19,111 @@ package common
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/openstack-k8s-operators/lib-common/pkg/helper"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
+
+// NewService returns an initialized Service.
+func NewService(
+	service *corev1.Service,
+	labels map[string]string,
+	timeout int,
+) *Service {
+	return &Service{
+		service: service,
+		timeout: timeout,
+	}
+}
+
+// GenericService func
+func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      svcInfo.Name,
+			Namespace: svcInfo.Namespace,
+			Labels:    svcInfo.Labels,
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: svcInfo.Selector,
+			Ports: []corev1.ServicePort{
+				{
+					Name: svcInfo.Port.Name,
+					Port: svcInfo.Port.Port,
+					// corev1.ProtocolTCP/ corev1.ProtocolUDP/ corev1.ProtocolSCTP
+					// - https://pkg.go.dev/k8s.io/api@v0.23.6/core/v1#Protocol
+					Protocol: svcInfo.Port.Protocol,
+				},
+			},
+		},
+	}
+}
+
+// CreateOrPatch - creates or patches a service, reconciles after Xs if object won't exist.
+func (s *Service) CreateOrPatch(
+	ctx context.Context,
+	h *helper.Helper,
+) (ctrl.Result, error) {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      s.service.Name,
+			Namespace: s.service.Namespace,
+		},
+	}
+
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
+		service.Labels = MergeStringMaps(service.Labels, s.service.Labels)
+		service.Annotations = s.service.Annotations
+		service.Spec = s.service.Spec
+
+		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			h.GetLogger().Info(fmt.Sprintf("Service %s not found, reconcile in %ds", service.Name, s.timeout))
+			return ctrl.Result{RequeueAfter: time.Duration(s.timeout) * time.Second}, nil
+		}
+		return ctrl.Result{}, err
+	}
+	if op != controllerutil.OperationResultNone {
+		h.GetLogger().Info(fmt.Sprintf("Service %s - %s", service.Name, op))
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// Delete - delete a service.
+func (s *Service) Delete(
+	ctx context.Context,
+	h *helper.Helper,
+) error {
+
+	err := h.GetClient().Delete(ctx, s.service)
+	if err != nil && !k8s_errors.IsNotFound(err) {
+		err = fmt.Errorf("Error deleting service %s: %v", s.service.Name, err)
+		return err
+	}
+
+	return nil
+}
 
 // DeleteServicesWithLabel - Delete all services in namespace of the obj matching label selector
 func DeleteServicesWithLabel(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj metav1.Object,
 	labelSelectorMap map[string]string,
 ) error {
@@ -44,14 +137,14 @@ func DeleteServicesWithLabel(
 		client.MatchingLabels(labelSelectorMap),
 	}
 
-	if err := r.GetClient().List(ctx, serviceList, listOpts...); err != nil {
+	if err := h.GetClient().List(ctx, serviceList, listOpts...); err != nil {
 		err = fmt.Errorf("Error listing services for %s: %v", obj.GetName(), err)
 		return err
 	}
 
 	// delete all pods
 	for _, pod := range serviceList.Items {
-		err := r.GetClient().Delete(ctx, &pod)
+		err := h.GetClient().Delete(ctx, &pod)
 		if err != nil && !k8s_errors.IsNotFound(err) {
 			err = fmt.Errorf("Error deleting service %s: %v", pod.Name, err)
 			return err
@@ -64,7 +157,7 @@ func DeleteServicesWithLabel(
 // GetServicesListWithLabel - Get all services in namespace of the obj matching label selector
 func GetServicesListWithLabel(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	namespace string,
 	labelSelectorMap map[string]string,
 ) (*corev1.ServiceList, error) {
@@ -73,7 +166,7 @@ func GetServicesListWithLabel(
 
 	// use kclient to not use a cached client to be able to list services in namespace which are not cached
 	// otherwise we hit "Error listing services for labels: map[ ... ] - unable to get: default because of unknown namespace for the cache"
-	serviceList, err := r.GetKClient().CoreV1().Services(namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelectorString})
+	serviceList, err := h.GetKClient().CoreV1().Services(namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelectorString})
 	if err != nil {
 		err = fmt.Errorf("Error listing services for labels: %v - %v", labelSelectorMap, err)
 		return nil, err
