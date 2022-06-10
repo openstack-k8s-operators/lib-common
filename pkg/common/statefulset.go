@@ -53,9 +53,16 @@ func (s *StatefulSet) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), statefulset, func() error {
+		// selector is immutable so we set this value only if
+		// a new object is going to be created
+		if statefulset.ObjectMeta.CreationTimestamp.IsZero() {
+			statefulset.Spec.Selector = s.statefulset.Spec.Selector
+		}
+
 		statefulset.Annotations = s.statefulset.Annotations
 		statefulset.Labels = MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
-		statefulset.Spec = s.statefulset.Spec
+		statefulset.Spec.Template = s.statefulset.Spec.Template
+		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
 		if err != nil {

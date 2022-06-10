@@ -53,9 +53,15 @@ func (d *Deployment) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), deployment, func() error {
+		// Deployment selector is immutable so we set this value only if
+		// a new object is going to be created
+		if deployment.ObjectMeta.CreationTimestamp.IsZero() {
+			deployment.Spec.Selector = d.deployment.Spec.Selector
+		}
 		deployment.Annotations = d.deployment.Annotations
 		deployment.Labels = MergeStringMaps(deployment.Labels, d.deployment.Labels)
-		deployment.Spec = d.deployment.Spec
+		deployment.Spec.Template = d.deployment.Spec.Template
+		deployment.Spec.Replicas = d.deployment.Spec.Replicas
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), deployment, h.GetScheme())
 		if err != nil {
