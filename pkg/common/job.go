@@ -81,8 +81,9 @@ func (j *Job) createJob(
 }
 
 //
-// DoJob - run a job if the hashBefore and hash is different. If there is an existing job, the job gets deleted
-// and re-created. If the job finished successful and preserve flag is not set it gets deleted.
+// DoJob - run a job if the hashBefore and hash is different. If there is an existing job, wait for the job
+// to finish. Right now we do not expect the job to change while running. If the job finished successful
+// and preserve flag is not set it gets deleted.
 //
 func (j *Job) DoJob(
 	ctx context.Context,
