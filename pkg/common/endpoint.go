@@ -27,6 +27,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+// Endpoint - typedef to enumerate Endpoint verbs
+type Endpoint string
+
+const (
+	// EndpointAdmin - admin endpoint
+	EndpointAdmin Endpoint = "admin"
+	// EndpointInternal - internal endpoint
+	EndpointInternal Endpoint = "internal"
+	// EndpointPublic - public endpoint
+	EndpointPublic Endpoint = "public"
+)
+
 //
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
 //
@@ -35,17 +47,17 @@ func ExposeEndpoints(
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
-	endpoints map[string]int32,
+	endpoints map[Endpoint]int32,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
 
 	for endpointType, port := range endpoints {
 
-		endpointName := serviceName + "-" + endpointType
+		endpointName := serviceName + "-" + string(endpointType)
 		exportLabels := MergeStringMaps(
 			endpointSelector,
 			map[string]string{
-				endpointType: "true",
+				string(endpointType): "true",
 			},
 		)
 		//
@@ -110,7 +122,7 @@ func ExposeEndpoints(
 			return endpointMap, ctrlResult, err
 		}
 
-		endpointMap[endpointType] = u.String()
+		endpointMap[string(endpointType)] = u.String()
 	}
 
 	return endpointMap, ctrl.Result{}, nil
