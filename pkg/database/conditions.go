@@ -24,7 +24,7 @@ import condition "github.com/openstack-k8s-operators/lib-common/pkg/condition"
 const (
 
 	//
-	// condition reasones
+	// condition reasons
 	//
 
 	// ReasonDBError - DB error
@@ -39,4 +39,8 @@ const (
 	ReasonDBWaitingInitialized condition.Reason = "DatabaseWaitingInitialized"
 	// ReasonDBServiceNameError - error getting the DB service hostname
 	ReasonDBServiceNameError condition.Reason = "DatabaseServiceNameError"
+
+	// ReasonDBSync - Database sync in progress
+	ReasonDBSync condition.Reason = "DBSync"
+
 )

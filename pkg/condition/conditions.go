@@ -38,6 +38,8 @@ const (
 	TypeError Type = "Error"
 	// TypeCreated - general resource created
 	TypeCreated Type = "Created"
+	// TypeDBSync - database sync in progress
+	TypeDBSync Type = "DBSync"
 
 	//
 	// condition reasones
@@ -67,4 +69,6 @@ const (
 	ReasonAddRefLabelError Reason = "AddRefLabelError"
 	// ReasonServiceNotFound - service not found
 	ReasonServiceNotFound Reason = "ServiceNotFound"
+	// ReasonComplete - service initialization complete
+	ReasonComplete Reason = "Complete"
 )
