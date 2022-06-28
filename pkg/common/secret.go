@@ -20,14 +20,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/pkg/condition"
+	"github.com/openstack-k8s-operators/lib-common/pkg/helper"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -43,13 +46,13 @@ const (
 // GetSecret -
 func GetSecret(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	secretName string,
 	secretNamespace string,
 ) (*corev1.Secret, string, error) {
 	secret := &corev1.Secret{}
 
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, secret)
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: secretName, Namespace: secretNamespace}, secret)
 	if err != nil {
 		return nil, "", err
 	}
@@ -64,13 +67,13 @@ func GetSecret(
 // GetSecrets -
 func GetSecrets(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	secretNamespace string,
 	labelSelectorMap map[string]string,
 ) (*corev1.SecretList, error) {
 	var secrets *corev1.SecretList
 
-	secrets, err := r.GetKClient().CoreV1().Secrets(secretNamespace).List(ctx, metav1.ListOptions{
+	secrets, err := h.GetKClient().CoreV1().Secrets(secretNamespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labels.FormatLabels(labelSelectorMap),
 	})
 
@@ -364,57 +367,58 @@ func DeleteSecretsWithName(
 	return condition.Condition{}, nil
 }
 
-/*
 //
 // GetDataFromSecret - Get data from Secret
 //
 // if the secret or data is not found, requeue after requeueTimeout in seconds
 func GetDataFromSecret(
 	ctx context.Context,
-	r ReconcilerCommon,
-	object client.Object,
-	cond *condition.Condition,
-	conditionDetails condition.ConditionDetails,
+	h *helper.Helper,
 	secretName string,
 	requeueTimeout int,
 	key string,
-) (string, ctrl.Result, error) {
+) (string, condition.Condition, ctrl.Result, error) {
 
 	data := ""
 
-	secret, _, err := GetSecret(ctx, r, secretName, object.GetNamespace())
+	secret, _, err := GetSecret(ctx, h, secretName, h.GetBeforeObject().GetNamespace())
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			cond.Message = fmt.Sprintf("%s secret does not exist: %v", secretName, err)
-			cond.Reason = conditionDetails.ConditionNotFoundReason
-			cond.Type = conditionDetails.ConditionNotFoundType
+			msg := fmt.Sprintf("%s secret does not exist", secretName)
+			cond := condition.NewCondition(
+				condition.TypeError,
+				corev1.ConditionTrue,
+				ReasonSecretMissing,
+				msg)
 
-			LogForObject(r, cond.Message, object)
-
-			return data, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
+			return data, cond, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
 		}
-		cond.Message = fmt.Sprintf("Error getting %s Secret: %v", secretName, err)
-		cond.Reason = conditionDetails.ConditionErrordReason
-		cond.Type = conditionDetails.ConditionErrorType
-		err = WrapErrorForObject(cond.Message, object, err)
+		msg := fmt.Sprintf("Error getting %s secret", secretName)
+		cond := condition.NewCondition(
+			condition.TypeError,
+			corev1.ConditionTrue,
+			ReasonSecretDeleteError,
+			msg)
 
-		return data, ctrl.Result{}, err
+		return data, cond, ctrl.Result{}, err
 	}
 
 	if key != "" {
 		val, ok := secret.Data[key]
 		if !ok {
-			cond.Message = fmt.Sprintf("%s not found in secret %s",
+			msg := fmt.Sprintf("%s not found in secret %s",
 				key,
 				secretName)
-			cond.Reason = conditionDetails.ConditionNotFoundReason
-			cond.Type = conditionDetails.ConditionErrorType
+			cond := condition.NewCondition(
+				condition.TypeError,
+				corev1.ConditionTrue,
+				ReasonSecretError,
+				msg)
 
-			return data, ctrl.Result{}, fmt.Errorf(cond.Message)
+			return data, cond, ctrl.Result{}, fmt.Errorf(cond.Message)
 		}
 		data = strings.TrimSuffix(string(val), "\n")
 	}
 
-	return data, ctrl.Result{}, nil
+	return data, condition.Condition{}, ctrl.Result{}, nil
 }
-*/

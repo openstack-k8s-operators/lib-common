@@ -25,6 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -81,10 +82,16 @@ func (d *Deployment) CreateOrPatch(
 		h.GetLogger().Info(fmt.Sprintf("Deployment %s - %s", deployment.Name, op))
 	}
 
+	// update the deployment object of the deployment type
+	d.deployment, err = GetDeploymentWithName(ctx, h, deployment.GetName(), deployment.GetNamespace())
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
-// Delete - delete a seployment.
+// Delete - delete a deployment.
 func (d *Deployment) Delete(
 	ctx context.Context,
 	h *helper.Helper,
@@ -96,4 +103,26 @@ func (d *Deployment) Delete(
 	}
 
 	return nil
+}
+
+// GetDeployment - get the deployment object.
+func (d *Deployment) GetDeployment() appsv1.Deployment {
+	return *d.deployment
+}
+
+// GetDeploymentWithName func
+func GetDeploymentWithName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) (*appsv1.Deployment, error) {
+
+	depl := &appsv1.Deployment{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, depl)
+	if err != nil {
+		return depl, err
+	}
+
+	return depl, nil
 }
