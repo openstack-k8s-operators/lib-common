@@ -40,8 +40,8 @@ type Helper struct {
 	before       *unstructured.Unstructured
 	after        *unstructured.Unstructured
 	changes      map[string]bool
+	finalizer    string
 
-	//isConditionsSetter bool
 	logger logr.Logger
 }
 
@@ -68,6 +68,7 @@ func NewHelper(obj client.Object, crClient client.Client, kclient kubernetes.Int
 		before:       unstructuredObj,
 		beforeObject: obj.DeepCopyObject().(client.Object),
 		logger:       log,
+		finalizer:    gvk.Kind,
 	}, nil
 }
 
@@ -114,6 +115,11 @@ func (h *Helper) GetBeforeObject() client.Object {
 // GetLogger - returns the logger
 func (h *Helper) GetLogger() logr.Logger {
 	return h.logger
+}
+
+// GetFinalizer - returns the finalizer
+func (h *Helper) GetFinalizer() string {
+	return h.finalizer
 }
 
 // SetAfter - returns the logger
