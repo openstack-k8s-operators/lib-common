@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v1.2.0
 	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v3.9.0+incompatible
-	github.com/openstack-k8s-operators/mariadb-operator v0.0.0-20220516121356-119f8d825a71
+	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20220707171728-88a190b24296
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	k8s.io/api v0.23.6
 	k8s.io/apimachinery v0.23.6
