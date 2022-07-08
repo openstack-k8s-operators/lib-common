@@ -192,34 +192,6 @@ func GetConfigMaps(
 	return hashes, nil
 }
 
-// CreateOrGetCustomConfigMap -
-func CreateOrGetCustomConfigMap(
-	ctx context.Context,
-	r ReconcilerCommon,
-	configMap *corev1.ConfigMap,
-) (string, error) {
-	// Check if this configMap already exists
-	foundConfigMap := &corev1.ConfigMap{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: configMap.Name, Namespace: configMap.Namespace}, foundConfigMap)
-	if err != nil && k8s_errors.IsNotFound(err) {
-		r.GetLogger().Info("Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
-		err = r.GetClient().Create(ctx, configMap)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		// use data from already existing custom configmap
-		configMap.Data = foundConfigMap.Data
-	}
-
-	configMapHash, err := ObjectHash(configMap)
-	if err != nil {
-		return "", fmt.Errorf("error calculating configuration hash: %v", err)
-	}
-
-	return configMapHash, nil
-}
-
 // GetConfigMapAndHashWithName -
 func GetConfigMapAndHashWithName(
 	ctx context.Context,

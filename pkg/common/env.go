@@ -59,22 +59,6 @@ func MergeEnvs(envs []corev1.EnvVar, newEnvs EnvSetterMap) []corev1.EnvVar {
 	return envs
 }
 
-// EnvDownwardAPI - set env from FieldRef->FieldPath, e.g. status.podIP
-func EnvDownwardAPI(field string) EnvSetter {
-	return func(env *corev1.EnvVar) {
-		if env.ValueFrom == nil {
-			env.ValueFrom = &corev1.EnvVarSource{}
-		}
-		env.Value = ""
-
-		if env.ValueFrom.FieldRef == nil {
-			env.ValueFrom.FieldRef = &corev1.ObjectFieldSelector{}
-		}
-
-		env.ValueFrom.FieldRef.FieldPath = field
-	}
-}
-
 // EnvValue -
 func EnvValue(value string) EnvSetter {
 	return func(env *corev1.EnvVar) {

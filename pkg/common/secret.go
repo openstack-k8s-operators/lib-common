@@ -35,14 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	// BITSIZE -
-	BITSIZE   int    = 4096
-	sshConfig string = `Host *
-    User cloud-admin
-    StrictHostKeyChecking no`
-)
-
 // GetSecret -
 func GetSecret(
 	ctx context.Context,
@@ -111,37 +103,6 @@ func CreateOrPatchSecret(
 	}
 
 	return secretHash, op, err
-}
-
-// SSHKeySecret - func
-func SSHKeySecret(name string, namespace string, labels map[string]string) (*corev1.Secret, error) {
-
-	privateKey, err := GeneratePrivateKey(BITSIZE)
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := GeneratePublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKeyPem := EncodePrivateKeyToPEM(privateKey)
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Type: "Opaque",
-		StringData: map[string]string{
-			"identity":        privateKeyPem,
-			"authorized_keys": publicKey,
-			"config":          sshConfig,
-		},
-	}
-	return secret, nil
 }
 
 // createOrUpdateSecret -

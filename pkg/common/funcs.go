@@ -16,11 +16,7 @@ limitations under the License.
 
 package common
 
-import (
-	"encoding/json"
-)
-
-// Functions available for all templates
+import "encoding/json"
 
 // GetOr returns the value of m[key] if it exists, fallback otherwise.
 // As a special case, it also returns fallback if the value of m[key] is
