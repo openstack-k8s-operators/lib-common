@@ -31,13 +31,3 @@ type ReconcilerCommon interface {
 	GetLogger() logr.Logger
 	GetScheme() *runtime.Scheme
 }
-
-// InstanceCommon - common OSP-D resource instance interface
-type InstanceCommon interface {
-	// Place anything we want from "inherited" (metav1 types, etc) funcs here
-	GetName() string
-	GetNamespace() string
-
-	// Place our types' custom funcs here
-	IsReady() bool
-}
