@@ -19,50 +19,103 @@ package common
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/pkg/helper"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// Pvc - pvc details
-type Pvc struct {
-	Name         string
-	Namespace    string
-	Size         string
-	Labels       map[string]string
-	StorageClass string
-	AccessMode   []corev1.PersistentVolumeAccessMode
+// NewPvc returns an initialized Pvc.
+func NewPvc(
+	pvc *corev1.PersistentVolumeClaim,
+	timeout int,
+) *Pvc {
+	return &Pvc{
+		pvc:     pvc,
+		timeout: timeout,
+	}
 }
 
-// CreateOrUpdatePvc -
-func CreateOrUpdatePvc(ctx context.Context, r ReconcilerCommon, obj metav1.Object, pv *Pvc) (*corev1.PersistentVolumeClaim, controllerutil.OperationResult, error) {
-
-	pvc := &corev1.PersistentVolumeClaim{}
-	pvc.Name = pv.Name
-	pvc.Namespace = pv.Namespace
-
-	op, err := controllerutil.CreateOrPatch(ctx, r.GetClient(), pvc, func() error {
-
-		pvc.Labels = pv.Labels
-
-		pvc.Spec.Resources.Requests = corev1.ResourceList{
-			corev1.ResourceStorage: resource.MustParse(pv.Size),
-		}
-
-		pvc.Spec.StorageClassName = &pv.StorageClass
-		pvc.Spec.AccessModes = pv.AccessMode
-
-		err := controllerutil.SetOwnerReference(obj, pvc, r.GetScheme())
-		if err != nil {
-			return fmt.Errorf("error set controller reverence for PVC: %v", err)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, op, fmt.Errorf("error create/updating pvc: %v", err)
+// CreateOrPatch - creates or patches a pvc, reconciles after Xs if object won't exist.
+func (p *Pvc) CreateOrPatch(
+	ctx context.Context,
+	h *helper.Helper,
+) (ctrl.Result, error) {
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      p.pvc.Name,
+			Namespace: p.pvc.Namespace,
+		},
 	}
 
-	return pvc, op, nil
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), pvc, func() error {
+		pvc.Annotations = MergeStringMaps(pvc.Annotations, p.pvc.Annotations)
+		pvc.Labels = MergeStringMaps(pvc.Labels, p.pvc.Labels)
+
+		// For now, we don't support changes to existing PVC specs for the
+		// following fields.  Technically it is possible to change the size
+		// request, but this requires dynamic provisioning and a storage
+		// class that supports such a thing.
+		if pvc.ObjectMeta.CreationTimestamp.IsZero() {
+			pvc.Spec.Resources.Requests = p.pvc.Spec.Resources.Requests
+			pvc.Spec.StorageClassName = p.pvc.Spec.StorageClassName
+			pvc.Spec.AccessModes = p.pvc.Spec.AccessModes
+		}
+
+		err := controllerutil.SetControllerReference(h.GetBeforeObject(), pvc, h.GetScheme())
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			h.GetLogger().Info(fmt.Sprintf("Pvc %s not found, reconcile in %ds", pvc.Name, p.timeout))
+			return ctrl.Result{RequeueAfter: time.Duration(p.timeout) * time.Second}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	if op != controllerutil.OperationResultNone {
+		h.GetLogger().Info(fmt.Sprintf("Pvc %s - %s", pvc.Name, op))
+	}
+
+	// update the pvc object of the pvc type
+	p.pvc, err = GetPvcWithName(ctx, h, pvc.GetName(), pvc.GetNamespace())
+
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// GetPvc - get the pvc object.
+func (p *Pvc) GetPvc() corev1.PersistentVolumeClaim {
+	return *p.pvc
+}
+
+// GetPvcWithName func
+func GetPvcWithName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) (*corev1.PersistentVolumeClaim, error) {
+
+	pvc := &corev1.PersistentVolumeClaim{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, pvc)
+	if err != nil {
+		return pvc, err
+	}
+
+	return pvc, nil
 }
