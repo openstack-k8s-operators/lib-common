@@ -19,6 +19,7 @@ package common
 import (
 	"fmt"
 
+	"github.com/openstack-k8s-operators/lib-common/pkg/helper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -31,12 +32,16 @@ func logObjectParams(object metav1.Object) []interface{} {
 }
 
 // LogForObject -
-func LogForObject(r ReconcilerCommon,
-	msg string, object metav1.Object, params ...interface{}) {
+func LogForObject(
+	h *helper.Helper,
+	msg string,
+	object metav1.Object,
+	params ...interface{},
+) {
 
 	params = append(params, logObjectParams(object)...)
 
-	r.GetLogger().Info(msg, params...)
+	h.GetLogger().Info(msg, params...)
 }
 
 // WrapErrorForObject -
@@ -48,9 +53,14 @@ func WrapErrorForObject(msg string, object client.Object, err error) error {
 }
 
 // LogErrorForObject -
-func LogErrorForObject(r ReconcilerCommon,
-	err error, msg string, object metav1.Object, params ...interface{}) {
+func LogErrorForObject(
+	h *helper.Helper,
+	err error,
+	msg string,
+	object metav1.Object,
+	params ...interface{},
+) {
 
 	params = append(params, logObjectParams(object)...)
-	r.GetLogger().Error(err, msg, params...)
+	h.GetLogger().Error(err, msg, params...)
 }
