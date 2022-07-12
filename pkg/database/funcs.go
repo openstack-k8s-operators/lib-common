@@ -66,7 +66,7 @@ func (d *Database) setDatabaseHostname(
 		h.GetBeforeObject().GetNamespace(),
 		selector,
 	)
-	if err != nil {
+	if err != nil || len(serviceList.Items) == 0 {
 		msg := fmt.Sprintf("Error getting the DB service using label %v", selector)
 		cond := condition.NewCondition(
 			condition.TypeError,
