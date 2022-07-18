@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/pkg/helper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,7 +35,7 @@ import (
 // createOrPatchConfigMap -
 func createOrPatchConfigMap(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	cm Template,
 ) (string, controllerutil.OperationResult, error) {
@@ -50,7 +51,7 @@ func createOrPatchConfigMap(
 	}
 
 	// create or update the CM
-	op, err := controllerutil.CreateOrPatch(ctx, r.GetClient(), configMap, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), configMap, func() error {
 
 		configMap.Labels = cm.Labels
 		// add data from templates
@@ -68,7 +69,7 @@ func createOrPatchConfigMap(
 		}
 
 		if !cm.SkipSetOwner {
-			err := controllerutil.SetControllerReference(obj, configMap, r.GetScheme())
+			err := controllerutil.SetControllerReference(obj, configMap, h.GetScheme())
 			if err != nil {
 				return err
 			}
@@ -91,7 +92,7 @@ func createOrPatchConfigMap(
 // createOrGetCustomConfigMap -
 func createOrGetCustomConfigMap(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	cm Template,
 ) (string, error) {
@@ -106,17 +107,17 @@ func createOrGetCustomConfigMap(
 		Data: map[string]string{},
 	}
 	foundConfigMap := &corev1.ConfigMap{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: cm.Name, Namespace: cm.Namespace}, foundConfigMap)
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: cm.Name, Namespace: cm.Namespace}, foundConfigMap)
 	if err != nil && k8s_errors.IsNotFound(err) {
 		if !cm.SkipSetOwner {
-			err := controllerutil.SetControllerReference(obj, configMap, r.GetScheme())
+			err := controllerutil.SetControllerReference(obj, configMap, h.GetScheme())
 			if err != nil {
 				return "", err
 			}
 		}
 
-		r.GetLogger().Info(fmt.Sprintf("Creating a new ConfigMap %s in namespace %s", cm.Namespace, cm.Name))
-		err = r.GetClient().Create(ctx, configMap)
+		h.GetLogger().Info(fmt.Sprintf("Creating a new ConfigMap %s in namespace %s", cm.Namespace, cm.Name))
+		err = h.GetClient().Create(ctx, configMap)
 		if err != nil {
 			return "", err
 		}
@@ -136,7 +137,7 @@ func createOrGetCustomConfigMap(
 // EnsureConfigMaps - get all configmaps required, verify they exist and add the hash to env and status
 func EnsureConfigMaps(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	cms []Template,
 	envVars *map[string]EnvSetter,
@@ -148,9 +149,9 @@ func EnsureConfigMaps(
 		var op controllerutil.OperationResult
 
 		if cm.Type != TemplateTypeCustom {
-			hash, op, err = createOrPatchConfigMap(ctx, r, obj, cm)
+			hash, op, err = createOrPatchConfigMap(ctx, h, obj, cm)
 		} else {
-			hash, err = createOrGetCustomConfigMap(ctx, r, obj, cm)
+			hash, err = createOrGetCustomConfigMap(ctx, h, obj, cm)
 			// set op to OperationResultNone because createOrGetCustomConfigMap does not return an op
 			// and it will add log entries bellow with none operation
 			op = controllerutil.OperationResult(controllerutil.OperationResultNone)
@@ -159,7 +160,7 @@ func EnsureConfigMaps(
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			r.GetLogger().Info(fmt.Sprintf("ConfigMap %s successfully reconciled - operation: %s", cm.Name, string(op)))
+			h.GetLogger().Info(fmt.Sprintf("ConfigMap %s successfully reconciled - operation: %s", cm.Name, string(op)))
 		}
 		if envVars != nil {
 			(*envVars)[cm.Name] = EnvValue(hash)
@@ -172,7 +173,7 @@ func EnsureConfigMaps(
 // GetConfigMaps - get all configmaps required, verify they exist and add the hash to env and status
 func GetConfigMaps(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	configMaps []string,
 	namespace string,
@@ -181,7 +182,7 @@ func GetConfigMaps(
 	hashes := []Hash{}
 
 	for _, cm := range configMaps {
-		_, hash, err := GetConfigMapAndHashWithName(ctx, r, cm, namespace)
+		_, hash, err := GetConfigMapAndHashWithName(ctx, h, cm, namespace)
 		if err != nil {
 			return nil, err
 		}
@@ -192,46 +193,18 @@ func GetConfigMaps(
 	return hashes, nil
 }
 
-// CreateOrGetCustomConfigMap -
-func CreateOrGetCustomConfigMap(
-	ctx context.Context,
-	r ReconcilerCommon,
-	configMap *corev1.ConfigMap,
-) (string, error) {
-	// Check if this configMap already exists
-	foundConfigMap := &corev1.ConfigMap{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: configMap.Name, Namespace: configMap.Namespace}, foundConfigMap)
-	if err != nil && k8s_errors.IsNotFound(err) {
-		r.GetLogger().Info("Creating a new ConfigMap", "ConfigMap.Namespace", configMap.Namespace, "ConfigMap.Name", configMap.Name)
-		err = r.GetClient().Create(ctx, configMap)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		// use data from already existing custom configmap
-		configMap.Data = foundConfigMap.Data
-	}
-
-	configMapHash, err := ObjectHash(configMap)
-	if err != nil {
-		return "", fmt.Errorf("error calculating configuration hash: %v", err)
-	}
-
-	return configMapHash, nil
-}
-
 // GetConfigMapAndHashWithName -
 func GetConfigMapAndHashWithName(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	configMapName string,
 	namespace string,
 ) (*corev1.ConfigMap, string, error) {
 
 	configMap := &corev1.ConfigMap{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: configMapName, Namespace: namespace}, configMap)
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: configMapName, Namespace: namespace}, configMap)
 	if err != nil && k8s_errors.IsNotFound(err) {
-		r.GetLogger().Error(err, configMapName+" ConfigMap not found!", "Instance.Namespace", namespace, "ConfigMap.Name", configMapName)
+		h.GetLogger().Error(err, configMapName+" ConfigMap not found!", "Instance.Namespace", namespace, "ConfigMap.Name", configMapName)
 		return configMap, "", err
 	}
 	configMapHash, err := ObjectHash(configMap)
@@ -247,18 +220,18 @@ func GetConfigMapAndHashWithName(
 // if the config map is not found, requeue after requeueTimeout in seconds
 func GetConfigMap(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	object client.Object,
 	configMapName string,
 	requeueTimeout int,
 ) (*corev1.ConfigMap, ctrl.Result, error) {
 
 	configMap := &corev1.ConfigMap{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: configMapName, Namespace: object.GetNamespace()}, configMap)
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: configMapName, Namespace: object.GetNamespace()}, configMap)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			msg := fmt.Sprintf("%s config map does not exist: %v", configMapName, err)
-			LogForObject(r, msg, object)
+			LogForObject(h, msg, object)
 
 			return configMap, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
 		}

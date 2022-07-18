@@ -35,14 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const (
-	// BITSIZE -
-	BITSIZE   int    = 4096
-	sshConfig string = `Host *
-    User cloud-admin
-    StrictHostKeyChecking no`
-)
-
 // GetSecret -
 func GetSecret(
 	ctx context.Context,
@@ -87,14 +79,14 @@ func GetSecrets(
 // CreateOrPatchSecret -
 func CreateOrPatchSecret(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	secret *corev1.Secret,
 ) (string, controllerutil.OperationResult, error) {
 
-	op, err := controllerutil.CreateOrPatch(ctx, r.GetClient(), secret, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
 
-		err := controllerutil.SetControllerReference(obj, secret, r.GetScheme())
+		err := controllerutil.SetControllerReference(obj, secret, h.GetScheme())
 		if err != nil {
 			return err
 		}
@@ -113,41 +105,10 @@ func CreateOrPatchSecret(
 	return secretHash, op, err
 }
 
-// SSHKeySecret - func
-func SSHKeySecret(name string, namespace string, labels map[string]string) (*corev1.Secret, error) {
-
-	privateKey, err := GeneratePrivateKey(BITSIZE)
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := GeneratePublicKey(&privateKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKeyPem := EncodePrivateKeyToPEM(privateKey)
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Type: "Opaque",
-		StringData: map[string]string{
-			"identity":        privateKeyPem,
-			"authorized_keys": publicKey,
-			"config":          sshConfig,
-		},
-	}
-	return secret, nil
-}
-
 // createOrUpdateSecret -
 func createOrUpdateSecret(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	st Template,
 ) (string, controllerutil.OperationResult, error) {
@@ -167,7 +128,7 @@ func createOrUpdateSecret(
 	}
 
 	// create or update the CM
-	op, err := controllerutil.CreateOrPatch(ctx, r.GetClient(), secret, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
 		secret.Labels = st.Labels
 		// add data from templates
 		renderedTemplateData, err := GetTemplateData(st)
@@ -192,7 +153,7 @@ func createOrUpdateSecret(
 		// Only set controller ref if namespaces are equal, else we hit an error
 		if obj.GetNamespace() == secret.Namespace {
 			if !st.SkipSetOwner {
-				err := controllerutil.SetControllerReference(obj, secret, r.GetScheme())
+				err := controllerutil.SetControllerReference(obj, secret, h.GetScheme())
 				if err != nil {
 					return err
 				}
@@ -227,7 +188,7 @@ func createOrUpdateSecret(
 // createOrGetCustomSecret -
 func createOrGetCustomSecret(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	st Template,
 ) (string, error) {
@@ -247,15 +208,15 @@ func createOrGetCustomSecret(
 	}
 
 	foundSecret := &corev1.Secret{}
-	err := r.GetClient().Get(ctx, types.NamespacedName{Name: st.Name, Namespace: st.Namespace}, foundSecret)
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: st.Name, Namespace: st.Namespace}, foundSecret)
 	if err != nil && k8s_errors.IsNotFound(err) {
-		err := controllerutil.SetControllerReference(obj, secret, r.GetScheme())
+		err := controllerutil.SetControllerReference(obj, secret, h.GetScheme())
 		if err != nil {
 			return "", err
 		}
 
-		r.GetLogger().Info(fmt.Sprintf("Creating a new Secret %s in namespace %s", st.Namespace, st.Name))
-		err = r.GetClient().Create(ctx, secret)
+		h.GetLogger().Info(fmt.Sprintf("Creating a new Secret %s in namespace %s", st.Namespace, st.Name))
+		err = h.GetClient().Create(ctx, secret)
 		if err != nil {
 			return "", err
 		}
@@ -275,7 +236,7 @@ func createOrGetCustomSecret(
 // EnsureSecrets - get all secrets required, verify they exist and add the hash to env and status
 func EnsureSecrets(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	sts []Template,
 	envVars *map[string]EnvSetter,
@@ -287,9 +248,9 @@ func EnsureSecrets(
 		var op controllerutil.OperationResult
 
 		if s.Type != TemplateTypeCustom {
-			hash, op, err = createOrUpdateSecret(ctx, r, obj, s)
+			hash, op, err = createOrUpdateSecret(ctx, h, obj, s)
 		} else {
-			hash, err = createOrGetCustomSecret(ctx, r, obj, s)
+			hash, err = createOrGetCustomSecret(ctx, h, obj, s)
 			// set op to OperationResultNone because createOrGetCustomSecret does not return an op
 			// and it will add log entries bellow with none operation
 			op = controllerutil.OperationResult(controllerutil.OperationResultNone)
@@ -298,7 +259,7 @@ func EnsureSecrets(
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			r.GetLogger().Info(fmt.Sprintf("Secret %s successfully reconciled - operation: %s", s.Name, string(op)))
+			h.GetLogger().Info(fmt.Sprintf("Secret %s successfully reconciled - operation: %s", s.Name, string(op)))
 		}
 		if envVars != nil {
 			(*envVars)[s.Name] = EnvValue(hash)
@@ -311,11 +272,11 @@ func EnsureSecrets(
 // DeleteSecretsWithLabel - Delete all secrets in namespace of the obj matching label selector
 func DeleteSecretsWithLabel(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	obj client.Object,
 	labelSelectorMap map[string]string,
 ) error {
-	err := r.GetClient().DeleteAllOf(
+	err := h.GetClient().DeleteAllOf(
 		ctx,
 		&corev1.Secret{},
 		client.InNamespace(obj.GetNamespace()),
@@ -334,7 +295,7 @@ func DeleteSecretsWithLabel(
 //
 func DeleteSecretsWithName(
 	ctx context.Context,
-	r ReconcilerCommon,
+	h *helper.Helper,
 	cond *condition.Condition,
 	name string,
 	namespace string,
@@ -346,7 +307,7 @@ func DeleteSecretsWithName(
 		},
 	}
 
-	err := r.GetClient().Delete(ctx, secret, &client.DeleteOptions{})
+	err := h.GetClient().Delete(ctx, secret, &client.DeleteOptions{})
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		msg := fmt.Sprintf("Failed to delete %s %s", secret.Kind, secret.Name)
 		cond := condition.NewCondition(
@@ -359,7 +320,7 @@ func DeleteSecretsWithName(
 	}
 
 	LogForObject(
-		r,
+		h,
 		fmt.Sprintf("Secret %s in namespace %s deleted", secret.Name, secret.Namespace),
 		secret,
 	)
