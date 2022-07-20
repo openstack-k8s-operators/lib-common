@@ -76,6 +76,7 @@ generate: controller-gen get-jq ## Generate code containing DeepCopy, DeepCopyIn
 JQ_URL := https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-linux64
 .PHONY: get-jq
 get-jq:
+	mkdir -p $(LOCALBIN)
 	if [ ! -x $(JQ) ]; then \
 		curl -sLo $(JQ) $(JQ_URL) ; \
 		chmod +x $(JQ) ; \
@@ -84,29 +85,29 @@ get-jq:
 # Run go fmt against code
 gofmt: get-ci-tools get-jq
 	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		$(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh $$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh $$mod ; \
 	done
 
 # Run go vet against code
 govet: get-ci-tools get-jq
 	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath)$(MODULES); do \
-		$(CI_TOOLS_REPO_DIR)/test-runner/govet.sh $$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh $$mod ; \
 	done
 
 # Run go test against code
 gotest: get-ci-tools get-jq
 	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		$(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh $$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh $$mod ; \
 	done
 
 # Run golangci-lint test against code
 golangci: get-ci-tools get-jq
 	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		$(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh $$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh $$mod ; \
 	done
 
 # Run go lint against code
 golint: get-ci-tools get-jq
 	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		PATH=$(GOBIN):$(PATH); $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
+		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
 	done
