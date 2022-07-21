@@ -18,57 +18,145 @@ limitations under the License.
 
 package condition
 
-// Conditions for status in web console
+//
+// Common Condition Types used by API objects.
+//
+const (
+	// ReadyCondition defines the Ready condition type that summarizes the operational state of an API object.
+	ReadyCondition Type = "Ready"
+
+	// InputReadyCondition Status=True condition which indicates if all required input sources are available, like e.g. secret holding passwords, other config maps providing input for the service.
+	InputReadyCondition Type = "InputReady"
+
+	// ServiceConfigReadyCondition Status=True Condition which indicates that all service config got rendered ok from the templates and stored in the ConfigMap
+	ServiceConfigReadyCondition Type = "ServiceConfigReady"
+
+	// DBReadyCondition Status=True condition is mirrored from the Ready condition in the mariadbdatabase ref object to the service API.
+	DBReadyCondition Type = "DBReady"
+
+	// DBSyncReadyCondition Status=True condition when dbsync job completed ok
+	DBSyncReadyCondition Type = "DBSyncReady"
+
+	// ExposeServiceReadyCondition Status=True condition when service/routes to expose the service created ok
+	ExposeServiceReadyCondition Type = "ExposeServiceReady"
+
+	// BootstrapReadyCondition Status=True condition when bootstrap job completed ok
+	BootstrapReadyCondition Type = "BootstrapReady"
+
+	// DeploymentReadyCondition Status=True condition when service deployment/statefulset created ok
+	DeploymentReadyCondition Type = "DeploymentReady"
+
+	// KeystoneServiceReadyCondition This condition is mirrored from the Ready condition in the keystoneservice ref object to the service API.
+	KeystoneServiceReadyCondition Type = "KeystoneServiceReady"
+)
+
+//
+// Common Reasons used by API objects.
+//
+const (
+	// RequestedReason (Severity=Info) documents a condition not in Status=True because the underlying object is not ready.
+	RequestedReason = "Requested"
+
+	// CreationFailedReason (Severity=Error) documents a condition not in Status=True because the underlying object failed.
+	CreationFailedReason = "CreationFailed"
+
+	// ReadyReason documents a condition in `Status=True` when requested resource is ready.
+	ReadyReason = "Ready"
+
+	// ErrorReason (Severity=Warning) documents a condition not in Status=True because the underlying object failed.
+	// This is a warning because the reconciler will retry deletion.
+	ErrorReason = "Error"
+
+	// DeletingReason (Severity=Info) documents a condition not in Status=True because the underlying object it is currently being deleted.
+	DeletingReason = "Deleting"
+
+	// DeletionFailedReason (Severity=Warning) documents a condition not in Status=True because the underlying object
+	// encountered problems during deletion. This is a warning because the reconciler will retry deletion.
+	DeletionFailedReason = "DeletionFailed"
+
+	// DeletedReason (Severity=Info) documents a condition not in Status=True because the underlying object was deleted.
+	DeletedReason = "Deleted"
+)
+
+//
+// Common Messages used by API objects.
+//
 const (
 	//
-	// condition types
+	// Overall Ready Condition messages
 	//
+	// ReadyInitMessage
+	ReadyInitMessage = "Service setup started"
 
-	// TypeEmpty - special state for 0 requested resources and 0 already provisioned
-	TypeEmpty Type = "Empty"
-	// TypeWaiting - something is causing the CR to wait
-	TypeWaiting Type = "Waiting"
-	// TypeProvisioning - one or more resoources are provisioning
-	TypeProvisioning Type = "Provisioning"
-	// TypeProvisioned - the requested resource count has been satisfied
-	TypeProvisioned Type = "Provisioned"
-	// TypeDeprovisioning - one or more resources are deprovisioning
-	TypeDeprovisioning Type = "Deprovisioning"
-	// TypeError - general catch-all for actual errors
-	TypeError Type = "Error"
-	// TypeCreated - general resource created
-	TypeCreated Type = "Created"
-	// TypeDBSync - database sync in progress
-	TypeDBSync Type = "DBSync"
+	// ReadyMessage
+	ReadyMessage = "Service setup complete"
 
 	//
-	// condition reasones
+	// InputReady condition messages
 	//
+	// InputReadyMessage
+	InputReadyMessage = "Input data complete"
 
-	// ReasonInit - new resource set to reason Init
-	ReasonInit Reason = "CommonInit"
-	// ReasonSecretMissing - secret does not exist
-	ReasonSecretMissing Reason = "SecretMissing"
-	// ReasonSecretError - secret error
-	ReasonSecretError Reason = "SecretError"
-	// ReasonSecretDeleteError - secret deletion error
-	ReasonSecretDeleteError Reason = "SecretDeleteError"
-	// ReasonConfigMapMissing - config map does not exist
-	ReasonConfigMapMissing Reason = "ConfigMapMissing"
-	// ReasonConfigMapError - config map error
-	ReasonConfigMapError Reason = "ConfigMapError"
-	// ReasonCRStatusUpdateError - error updating CR status
-	ReasonCRStatusUpdateError Reason = "CRStatusUpdateError"
-	// ReasonControllerReferenceError - error set controller reference on object
-	ReasonControllerReferenceError Reason = "ControllerReferenceError"
-	// ReasonOwnerRefLabeledObjectsDeleteError - error deleting object using OwnerRef label
-	ReasonOwnerRefLabeledObjectsDeleteError Reason = "OwnerRefLabeledObjectsDeleteError"
-	// ReasonRemoveFinalizerError - error removing finalizer from object
-	ReasonRemoveFinalizerError Reason = "RemoveFinalizerError"
-	// ReasonAddRefLabelError - error adding reference label
-	ReasonAddRefLabelError Reason = "AddRefLabelError"
-	// ReasonServiceNotFound - service not found
-	ReasonServiceNotFound Reason = "ServiceNotFound"
-	// ReasonComplete - service initialization complete
-	ReasonComplete Reason = "Complete"
+	// InputReadyWaiting
+	InputReadyWaitingMessage = "Input data resources missing"
+
+	// InputReadyErrorMessage
+	InputReadyErrorMessage = "Input data error occured %s"
+
+	//
+	// ServiceConfig condition messages
+	//
+	// ServiceConfigReadyMessage
+	ServiceConfigReadyMessage = "Service config create completed"
+
+	// ServiceConfigReadyErrorMessage
+	ServiceConfigReadyErrorMessage = "Service config create error occured %s"
+
+	//
+	// DBSync condition messages
+	//
+	// DBSyncReadyMessage
+	DBSyncReadyMessage = "DBsync completed"
+
+	// DBSyncReadyRunning
+	DBSyncReadyRunningMessage = "DBsync job still running"
+
+	// DBSyncReadyErrorMessage
+	DBSyncReadyErrorMessage = "DBsync job error occured %s"
+
+	//
+	// ExposeService condition messages
+	//
+	// ExposeServiceReadyMessage
+	ExposeServiceReadyMessage = "Exposing service completed"
+
+	// ExposeServiceReadyRunningMessage
+	ExposeServiceReadyRunningMessage = "Exposing service in progress"
+
+	// ExposeServiceReadyErrorMessage
+	ExposeServiceReadyErrorMessage = "Exposing service error occured %s"
+
+	//
+	// BootstrapReady condition messages
+	//
+	// BootstrapReadyMessage
+	BootstrapReadyMessage = "Bootstrap completed"
+
+	// BootstrapReadyRunningMessage
+	BootstrapReadyRunningMessage = "Bootstrap in progress"
+
+	// BootstrapReadyErrorMessage
+	BootstrapReadyErrorMessage = "Bootstrap error occured %s"
+
+	//
+	// DeploymentReady condition messages
+	//
+	// DeploymentReadyMessage
+	DeploymentReadyMessage = "Deployment completed"
+
+	// DeploymentReadyRunningMessage
+	DeploymentReadyRunningMessage = "Deployment in progress"
+
+	// DeploymentReadyErrorMessage
+	DeploymentReadyErrorMessage = "Deployment error occured %s"
 )
