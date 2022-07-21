@@ -85,6 +85,11 @@ func (s *StatefulSet) CreateOrPatch(
 	return ctrl.Result{}, nil
 }
 
+// GetStatefulSet - get the statefulset object.
+func (s *StatefulSet) GetStatefulSet() appsv1.StatefulSet {
+	return *s.statefulset
+}
+
 // Delete - delete a statefulset.
 func (s *StatefulSet) Delete(
 	ctx context.Context,
