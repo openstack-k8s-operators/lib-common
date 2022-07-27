@@ -86,7 +86,9 @@ func (o *OpenStack) GetUser(
 	}
 
 	if len(allUsers) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s user not found in keystone", userName))
+		log.Info(fmt.Sprintf("%s user not found in keystone", userName))
+
+		return nil, nil
 	}
 
 	return &allUsers[0], nil
