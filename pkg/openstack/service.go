@@ -81,7 +81,8 @@ func (o *OpenStack) GetService(
 	}
 
 	if len(allServices) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s service not found in keystone", serviceName))
+		log.Info(fmt.Sprintf("%s service not found in keystone", serviceName))
+		return nil, nil
 	}
 
 	return &allServices[0], nil

@@ -80,7 +80,8 @@ func (o *OpenStack) GetRole(
 	}
 
 	if len(allRoles) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s role not found in keystone", roleName))
+		log.Info(fmt.Sprintf("%s role not found in keystone", roleName))
+		return nil, nil
 	}
 
 	return &allRoles[0], nil
