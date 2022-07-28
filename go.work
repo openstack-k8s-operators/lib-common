@@ -1,8 +1,0 @@
-go 1.18
-
-use (
-	./modules/archive
-	./modules/common
-	./modules/database
-	./modules/openstack
-)

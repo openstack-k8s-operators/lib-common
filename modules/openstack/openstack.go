@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	gophercloud "github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
-	common "github.com/openstack-k8s-operators/lib-common/pkg/common"
+	common "github.com/openstack-k8s-operators/lib-common/modules/common"
 )
 
 // OpenStack -

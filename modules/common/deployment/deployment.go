@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openstack-k8s-operators/lib-common/common/helper"
-	"github.com/openstack-k8s-operators/lib-common/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

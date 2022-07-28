@@ -2,11 +2,11 @@ module github.com/openstack-k8s-operators/lib-common/modules/archive
 
 go 1.18
 
-replace github.com/openstack-k8s-operators/lib-common/common => ../common
+replace github.com/openstack-k8s-operators/lib-common/modules/common => ../common
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/openstack-k8s-operators/lib-common/common v0.0.0-00010101000000-000000000000
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-00010101000000-000000000000
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	k8s.io/api v0.24.3
 	k8s.io/apimachinery v0.24.3

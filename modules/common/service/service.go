@@ -28,8 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/openstack-k8s-operators/lib-common/common/helper"
-	"github.com/openstack-k8s-operators/lib-common/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 

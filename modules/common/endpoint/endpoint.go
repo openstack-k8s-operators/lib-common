@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openstack-k8s-operators/lib-common/common/helper"
-	"github.com/openstack-k8s-operators/lib-common/common/route"
-	"github.com/openstack-k8s-operators/lib-common/common/service"
-	"github.com/openstack-k8s-operators/lib-common/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/route"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 )

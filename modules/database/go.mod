@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/database
 go 1.18
 
 require (
-	github.com/openstack-k8s-operators/lib-common/common v0.0.0-00010101000000-000000000000
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-00010101000000-000000000000
 	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20220707171728-88a190b24296
 	k8s.io/api v0.24.3
 	k8s.io/apimachinery v0.24.3
@@ -68,4 +68,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/openstack-k8s-operators/lib-common/common => ../common
+replace github.com/openstack-k8s-operators/lib-common/modules/common => ../common

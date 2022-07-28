@@ -18,7 +18,7 @@ limitations under the License.
 
 package secret
 
-import condition "github.com/openstack-k8s-operators/lib-common/common/condition"
+import condition "github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 
 // Conditions for status in web console
 const (
