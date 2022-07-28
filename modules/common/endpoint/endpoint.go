@@ -19,7 +19,6 @@ package endpoint
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/openstack-k8s-operators/lib-common/common/helper"
@@ -42,6 +41,14 @@ const (
 	EndpointPublic Endpoint = "public"
 )
 
+// EndpointData - information for generation of K8S services and Keystone endpoint URLs
+type EndpointData struct {
+	// Used in k8s service definition
+	Port int32
+	// An optional path suffix to append to route hostname when forming Keystone endpoint URLs
+	Path string
+}
+
 //
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
 //
@@ -50,11 +57,11 @@ func ExposeEndpoints(
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
-	endpoints map[Endpoint]int32,
+	endpoints map[Endpoint]EndpointData,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
 
-	for endpointType, port := range endpoints {
+	for endpointType, data := range endpoints {
 
 		endpointName := serviceName + "-" + string(endpointType)
 		exportLabels := util.MergeStringMaps(
@@ -74,7 +81,7 @@ func ExposeEndpoints(
 				Selector:  endpointSelector,
 				Port: service.GenericServicePort{
 					Name:     endpointName,
-					Port:     port,
+					Port:     data.Port,
 					Protocol: corev1.ProtocolTCP,
 				}}),
 			exportLabels,
@@ -116,16 +123,19 @@ func ExposeEndpoints(
 		// TODO: need to support https default here
 		var apiEndpoint string
 		if !strings.HasPrefix(route.GetHostname(), "http") {
-			apiEndpoint = fmt.Sprintf("http://%s", route.GetHostname())
+			apiEndpoint = fmt.Sprintf("http://%s%s", route.GetHostname(), data.Path)
 		} else {
-			apiEndpoint = route.GetHostname()
+			apiEndpoint = fmt.Sprintf("%s%s", route.GetHostname(), data.Path)
 		}
-		u, err := url.Parse(apiEndpoint)
-		if err != nil {
-			return endpointMap, ctrlResult, err
-		}
+		// TODO: This check does not allow for certain "special" OpenStack endpoint
+		//       formats.  For instance, "http://<ip>:<port>/v2/%(project_id)s" fails
+		//       to parse because "%(" is an invalid escape character
+		// u, err := url.Parse(apiEndpoint)
+		// if err != nil {
+		// 	return endpointMap, ctrlResult, err
+		// }
 
-		endpointMap[string(endpointType)] = u.String()
+		endpointMap[string(endpointType)] = apiEndpoint
 	}
 
 	return endpointMap, ctrl.Result{}, nil
