@@ -1,11 +1,11 @@
-module github.com/openstack-k8s-operators/lib-common/pkg/openstack
+module github.com/openstack-k8s-operators/lib-common/modules/openstack
 
 go 1.18
 
 require (
 	github.com/go-logr/logr v1.2.3
 	github.com/gophercloud/gophercloud v0.25.0
-	github.com/openstack-k8s-operators/lib-common v0.0.0-20220630111354-9f8383d4a2ea
+	github.com/openstack-k8s-operators/lib-common v0.0.0
 	k8s.io/apimachinery v0.24.3
 )
 

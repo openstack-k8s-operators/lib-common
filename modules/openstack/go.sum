@@ -366,6 +366,8 @@ github.com/openshift/api v3.9.0+incompatible h1:fJ/KsefYuZAjmrr3+5U9yZIZbTOpVkDD
 github.com/openshift/api v3.9.0+incompatible/go.mod h1:dh9o4Fs58gpFXGSYfnVxGR9PnV53I8TW84pQaJDdGiY=
 github.com/openstack-k8s-operators/lib-common v0.0.0-20220630111354-9f8383d4a2ea h1:VDUbAuG4E4wxfAF2ElzSvE5XnrLHlsOjx7fXvQh3gzs=
 github.com/openstack-k8s-operators/lib-common v0.0.0-20220630111354-9f8383d4a2ea/go.mod h1:sjH9zj16njdfy4PedlQGbJlwu9EXM2ugHhPA/l0zddM=
+github.com/openstack-k8s-operators/lib-common v0.0.0 h1:3s8PlQJJ+7v5Td71zN1hP59RHPSDy/iymAzXB5FIBuU=
+github.com/openstack-k8s-operators/lib-common v0.0.0/go.mod h1:agc6r4mg0bEP7UtWMWv0dintJ3Kd51ZQtjIsZIbpnoc=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
