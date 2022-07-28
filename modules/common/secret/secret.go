@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openstack-k8s-operators/lib-common/common/condition"
-	"github.com/openstack-k8s-operators/lib-common/common/env"
-	"github.com/openstack-k8s-operators/lib-common/common/helper"
-	"github.com/openstack-k8s-operators/lib-common/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/env"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"

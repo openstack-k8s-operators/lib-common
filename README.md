@@ -2,7 +2,6 @@
 
 Common library for OpenStack K8s Operators.
 
-
 The structure is as:
 ~~~
  github.com/openstack-k8s-operators/lib-common
@@ -13,5 +12,5 @@ The structure is as:
 ~~~
   
 Module path would be:
- * `github.com/openstack-k8s-operators/lib-common/module1`
- * `github.com/openstack-k8s-operators/lib-common/module2`
+ * `github.com/openstack-k8s-operators/lib-common/modules/module1`
+ * `github.com/openstack-k8s-operators/lib-common/modules/module2`
