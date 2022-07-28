@@ -1,29 +1,9 @@
-SHELL := bash
-
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= 0.0.1
-
-## Location to install dependencies to
-LOCALBIN ?= $(shell pwd)/bin
-$(LOCALBIN):
-	mkdir -p $(LOCALBIN)
-
-## Tool Binaries
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
-JQ ?= $(LOCALBIN)/jq
-
-## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.9.0
-JQ_VERSION ?= 1.6
-
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24
-
 
 .PHONY: all
 all: build
@@ -42,9 +22,6 @@ vet: ## Run go vet against code.
 build: fmt vet ## Build a test lib-common binary.
 	go build -o lib-common
 
-# CI tools repo for running tests
-CI_TOOLS_REPO := https://github.com/openstack-k8s-operators/openstack-k8s-operators-ci
-CI_TOOLS_REPO_DIR = $(shell pwd)/CI_TOOLS_REPO
 .PHONY: get-ci-tools
 get-ci-tools:
 	if [ -d  "$(CI_TOOLS_REPO_DIR)" ]; then \
@@ -56,58 +33,45 @@ get-ci-tools:
 		git clone $(CI_TOOLS_REPO) "$(CI_TOOLS_REPO_DIR)"; \
 	fi
 
+CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+controller-gen: ## Download controller-gen locally if necessary.
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
 
-.PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
-$(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+.PHONY: generate                                      
+generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-.PHONY: generate
-generate: controller-gen get-jq ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="$$mod/..." ; \
-	done
-
-# Install jq to get the module paths from go.work
-JQ_URL := https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-linux64
-.PHONY: get-jq
-get-jq:
-	mkdir -p $(LOCALBIN)
-	if [ ! -x $(JQ) ]; then \
-		curl -sLo $(JQ) $(JQ_URL) ; \
-		chmod +x $(JQ) ; \
-	fi
+# go-get-tool will 'go get' any package $2 and install it to $1.
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+define go-get-tool
+@[ -f $(1) ] || { \
+set -e ;\
+TMP_DIR=$$(mktemp -d) ;\
+cd $$TMP_DIR ;\
+go mod init tmp ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+rm -rf $$TMP_DIR ;\
+}
+endef
 
 # Run go fmt against code
-gofmt: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh $$mod ; \
-	done
+gofmt: get-ci-tools
+	$(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh
 
 # Run go vet against code
-govet: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath)$(MODULES); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh $$mod ; \
-	done
+govet: get-ci-tools
+	$(CI_TOOLS_REPO_DIR)/test-runner/govet.sh
 
 # Run go test against code
-gotest: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh $$mod ; \
-	done
+gotest: get-ci-tools
+	$(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh
 
 # Run golangci-lint test against code
-golangci: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh $$mod ; \
-	done
+golangci: get-ci-tools
+	$(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh
 
 # Run go lint against code
-golint: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
-		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
-	done
+golint: get-ci-tools
+	PATH=$(GOBIN):$(PATH); $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh
