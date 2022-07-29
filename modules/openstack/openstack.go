@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	gophercloud "github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
-	common "github.com/openstack-k8s-operators/lib-common/modules/common"
+	endpoint "github.com/openstack-k8s-operators/lib-common/modules/common/endpoint"
 )
 
 // OpenStack -
@@ -102,11 +102,11 @@ func GetAvailability(
 	endpointInterface string,
 ) (gophercloud.Availability, error) {
 	var availability gophercloud.Availability
-	if endpointInterface == string(common.EndpointAdmin) {
+	if endpointInterface == string(endpoint.EndpointAdmin) {
 		availability = gophercloud.AvailabilityAdmin
-	} else if endpointInterface == string(common.EndpointInternal) {
+	} else if endpointInterface == string(endpoint.EndpointInternal) {
 		availability = gophercloud.AvailabilityInternal
-	} else if endpointInterface == string(common.EndpointPublic) {
+	} else if endpointInterface == string(endpoint.EndpointPublic) {
 		availability = gophercloud.AvailabilityPublic
 	} else {
 		return availability, fmt.Errorf("endpoint interface %s not known", endpointInterface)
