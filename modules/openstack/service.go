@@ -18,11 +18,10 @@ package openstack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	services "github.com/gophercloud/gophercloud/openstack/identity/v3/services"
-
-	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // Service -
@@ -119,7 +118,7 @@ func (o *OpenStack) DeleteService(
 ) error {
 	log.Info(fmt.Sprintf("Delete service with id %s", serviceID))
 	err := services.Delete(o.GetOSClient(), serviceID).ExtractErr()
-	if err != nil && !k8s_errors.IsNotFound(err) {
+	if err != nil && !strings.Contains(err.Error(), "Resource not found") {
 		return err
 	}
 
