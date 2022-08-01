@@ -18,6 +18,7 @@ package openstack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	users "github.com/gophercloud/gophercloud/openstack/identity/v3/users"
@@ -43,7 +44,8 @@ func (o *OpenStack) CreateUser(
 		log,
 		u.Name,
 	)
-	if err != nil {
+	// If the user is not found, don't count that as an error here
+	if err != nil && !strings.Contains(err.Error(), "user not found in keystone") {
 		return userID, err
 	}
 
@@ -103,7 +105,8 @@ func (o *OpenStack) DeleteUser(
 		log,
 		userName,
 	)
-	if err != nil {
+	// If the user is not found, don't count that as an error here
+	if err != nil && !strings.Contains(err.Error(), "user not found in keystone") {
 		return err
 	}
 
