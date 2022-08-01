@@ -99,3 +99,7 @@ golint: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
 	done
+
+gowork:
+	test -f go.work || go work init
+	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
