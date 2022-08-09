@@ -15,11 +15,9 @@ $(LOCALBIN):
 ## Tool Binaries
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-JQ ?= $(LOCALBIN)/jq
 
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION ?= v0.9.0
-JQ_VERSION ?= 1.6
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24
@@ -67,47 +65,41 @@ $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: generate
-generate: controller-gen get-jq ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
+generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="$$mod/..." ; \
 	done
 
-# Install jq to get the module paths from go.work
-JQ_URL := https://github.com/stedolan/jq/releases/download/jq-$(JQ_VERSION)/jq-linux64
-.PHONY: get-jq
-get-jq:
-	mkdir -p $(LOCALBIN)
-	if [ ! -x $(JQ) ]; then \
-		curl -sLo $(JQ) $(JQ_URL) ; \
-		chmod +x $(JQ) ; \
-	fi
-
 # Run go fmt against code
-gofmt: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
+gofmt: get-ci-tools
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh $$mod ; \
 	done
 
 # Run go vet against code
-govet: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath)$(MODULES); do \
+govet: get-ci-tools
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh $$mod ; \
 	done
 
 # Run go test against code
-gotest: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
+gotest: get-ci-tools
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh $$mod ; \
 	done
 
 # Run golangci-lint test against code
-golangci: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
+golangci: get-ci-tools
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh $$mod ; \
 	done
 
 # Run go lint against code
-golint: get-ci-tools get-jq
-	for mod in $(shell go work edit -json | jq -r .Use[].DiskPath); do \
+golint: get-ci-tools
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
 	done
+
+gowork:
+	test -f go.work || go work init
+	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
