@@ -59,7 +59,7 @@ type Condition struct {
 	// It is meant for situations where Status=False and it should be indicated if it is just
 	// informational, warning (next reconciliation might fix it) or an error (e.g. DB create issue
 	// and no actions to automatically resolve the issue can/should be done).
-	// +optional
+	// For conditions where Status=Unknown or Status=True the Severity should be SeverityNone.
 	Severity Severity `json:"severity,omitempty"`
 
 	// Last time the condition transitioned from one status to another.
@@ -68,7 +68,6 @@ type Condition struct {
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 
 	// The reason for the condition's last transition in CamelCase.
-	// +optional
 	Reason string `json:"reason,omitempty"`
 
 	// A human readable message indicating details about the transition.
