@@ -19,24 +19,26 @@ limitations under the License.
 package condition
 
 import (
-	"time"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// List - A list of conditions
-type List []Condition
+// Severity expresses the severity of a Condition Type failing.
+type Severity string
 
-// Condition - A particular overall condition of a certain resource
-type Condition struct {
-	Type               Type                   `json:"type"`
-	Status             corev1.ConditionStatus `json:"status"`
-	Reason             Reason                 `json:"reason,omitempty"`
-	Message            string                 `json:"message,omitempty"`
-	LastHeartbeatTime  metav1.Time            `json:"lastHearbeatTime,omitempty"`
-	LastTransitionTime metav1.Time            `json:"lastTransitionTime,omitempty"`
-}
+const (
+	// SeverityError specifies that a condition with `Status=False` is an error.
+	SeverityError Severity = "Error"
+
+	// SeverityWarning specifies that a condition with `Status=False` is a warning.
+	SeverityWarning Severity = "Warning"
+
+	// SeverityInfo specifies that a condition with `Status=False` is informative.
+	SeverityInfo Severity = "Info"
+
+	// SeverityNone should apply only to conditions with `Status=True`.
+	SeverityNone Severity = ""
+)
 
 // Type - A summarizing name for a given condition
 type Type string
@@ -44,86 +46,34 @@ type Type string
 // Reason - Why a particular condition is true, false or unknown
 type Reason string
 
-// NewCondition - Create a new condition object
-func NewCondition(
-	conditionType Type,
-	status corev1.ConditionStatus,
-	reason Reason,
-	message string,
-) Condition {
-	now := metav1.NewTime(time.Now().UTC().Truncate(time.Second))
-	condition := Condition{
-		Type:               conditionType,
-		Status:             status,
-		Reason:             reason,
-		Message:            message,
-		LastHeartbeatTime:  now,
-		LastTransitionTime: now,
-	}
-	return condition
+// Condition defines an observation of a API resource operational state.
+type Condition struct {
+	// Type of condition in CamelCase.
+	Type Type `json:"type"`
+
+	// Status of the condition, one of True, False, Unknown.
+	Status corev1.ConditionStatus `json:"status"`
+
+	// Severity provides a classification of Reason code, so the current situation is immediately
+	// understandable and could act accordingly.
+	// It is meant for situations where Status=False and it should be indicated if it is just
+	// informational, warning (next reconciliation might fix it) or an error (e.g. DB create issue
+	// and no actions to automatically resolve the issue can/should be done).
+	// For conditions where Status=Unknown or Status=True the Severity should be SeverityNone.
+	Severity Severity `json:"severity,omitempty"`
+
+	// Last time the condition transitioned from one status to another.
+	// This should be when the underlying condition changed. If that is not known, then using the time when
+	// the API field changed is acceptable.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+
+	// The reason for the condition's last transition in CamelCase.
+	Reason string `json:"reason,omitempty"`
+
+	// A human readable message indicating details about the transition.
+	// +optional
+	Message string `json:"message,omitempty"`
 }
 
-// Set - Set a particular condition in a given condition list
-func (conditions *List) set(c *Condition) {
-	// Check for the existence of a particular condition type in a list of conditions
-	// and change it only if there is a status change
-	exists := false
-	for i := range *conditions {
-		existingCondition := (*conditions)[i]
-		if existingCondition.Type == c.Type {
-			exists = true
-			if !hasSameState(&existingCondition, c) {
-				(*conditions)[i] = *c
-				break
-			}
-			c.LastTransitionTime = existingCondition.LastTransitionTime
-			break
-		}
-	}
-
-	// If the condition does not exist, add it, setting the transition time only if not already set
-	if !exists {
-		*conditions = append(*conditions, *c)
-	}
-}
-
-// hasSameState returns true if a condition has the same state of another
-func hasSameState(i, j *Condition) bool {
-	return i.Type == j.Type &&
-		i.Status == j.Status &&
-		i.Reason == j.Reason &&
-		i.Message == j.Message
-}
-
-// GetCurrentCondition - Get current condition with status == corev1.ConditionTrue
-func (conditions List) getCurrentCondition() *Condition {
-	for i, cond := range conditions {
-		if cond.Status == corev1.ConditionTrue {
-			return &conditions[i]
-		}
-	}
-
-	return nil
-}
-
-// UpdateCurrentCondition - sets new condition, and sets previous condition to corev1.ConditionFalse
-func (conditions *List) UpdateCurrentCondition(c Condition) {
-	// if it is an empty condition, just return and don't set it
-	if c == (Condition{}) {
-		return
-	}
-
-	//
-	// get current condition and update to corev1.ConditionFalse
-	//
-	currentCondition := conditions.getCurrentCondition()
-	if currentCondition != nil {
-		currentCondition.Status = corev1.ConditionFalse
-		conditions.set(currentCondition)
-	}
-
-	//
-	// set new condition
-	//
-	conditions.set(&c)
-}
+// Conditions provide observations of the operational state of a API resource.
+type Conditions []Condition

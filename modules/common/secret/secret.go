@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/env"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
@@ -298,10 +297,9 @@ func DeleteSecretsWithLabel(
 func DeleteSecretsWithName(
 	ctx context.Context,
 	h *helper.Helper,
-	cond *condition.Condition,
 	name string,
 	namespace string,
-) (condition.Condition, error) {
+) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -311,14 +309,11 @@ func DeleteSecretsWithName(
 
 	err := h.GetClient().Delete(ctx, secret, &client.DeleteOptions{})
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		msg := fmt.Sprintf("Failed to delete %s %s", secret.Kind, secret.Name)
-		cond := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonSecretDeleteError,
-			msg)
-
-		return cond, err
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Failed to delete %s %s", secret.Kind, secret.Name),
+			secret,
+			err,
+		)
 	}
 
 	util.LogForObject(
@@ -327,7 +322,7 @@ func DeleteSecretsWithName(
 		secret,
 	)
 
-	return condition.Condition{}, nil
+	return nil
 }
 
 //
@@ -340,48 +335,40 @@ func GetDataFromSecret(
 	secretName string,
 	requeueTimeout int,
 	key string,
-) (string, condition.Condition, ctrl.Result, error) {
+) (string, ctrl.Result, error) {
 
 	data := ""
 
 	secret, _, err := GetSecret(ctx, h, secretName, h.GetBeforeObject().GetNamespace())
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			msg := fmt.Sprintf("%s secret does not exist", secretName)
-			cond := condition.NewCondition(
-				condition.TypeError,
-				corev1.ConditionTrue,
-				ReasonSecretMissing,
-				msg)
+			util.LogForObject(
+				h,
+				fmt.Sprintf("%s secret does not exist", secretName),
+				secret,
+			)
 
-			return data, cond, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
+			return data, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
 		}
-		msg := fmt.Sprintf("Error getting %s secret", secretName)
-		cond := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonSecretDeleteError,
-			msg)
 
-		return data, cond, ctrl.Result{}, err
+		return data, ctrl.Result{}, util.WrapErrorForObject(
+			fmt.Sprintf("Error getting %s secret", secretName),
+			secret,
+			err,
+		)
 	}
 
 	if key != "" {
 		val, ok := secret.Data[key]
 		if !ok {
-			msg := fmt.Sprintf("%s not found in secret %s",
-				key,
-				secretName)
-			cond := condition.NewCondition(
-				condition.TypeError,
-				corev1.ConditionTrue,
-				ReasonSecretError,
-				msg)
-
-			return data, cond, ctrl.Result{}, fmt.Errorf(cond.Message)
+			return data, ctrl.Result{}, util.WrapErrorForObject(
+				fmt.Sprintf("%s not found in secret %s", key, secretName),
+				secret,
+				err,
+			)
 		}
 		data = strings.TrimSuffix(string(val), "\n")
 	}
 
-	return data, condition.Condition{}, ctrl.Result{}, nil
+	return data, ctrl.Result{}, nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Red Hat
+Copyright 2022 Red Hat
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,13 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	mariadbv1 "github.com/openstack-k8s-operators/mariadb-operator/api/v1beta1"
 
-	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -56,7 +54,7 @@ func NewDatabase(
 func (d *Database) setDatabaseHostname(
 	ctx context.Context,
 	h *helper.Helper,
-) (condition.Condition, error) {
+) error {
 
 	selector := map[string]string{
 		"app": "mariadb",
@@ -68,30 +66,24 @@ func (d *Database) setDatabaseHostname(
 		selector,
 	)
 	if err != nil || len(serviceList.Items) == 0 {
-		msg := fmt.Sprintf("Error getting the DB service using label %v", selector)
-		cond := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonDBServiceNameError,
-			msg)
-
-		return cond, err
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Error getting the DB service using label %v", selector),
+			d.database,
+			err,
+		)
 	}
 
 	// can we expect there is only one DB instance per namespace?
 	if len(serviceList.Items) > 1 {
-		msg := fmt.Sprintf("more then one DB service found %d", len(serviceList.Items))
-		cond := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonDBServiceNameError,
-			msg)
-
-		return cond, err
+		return util.WrapErrorForObject(
+			fmt.Sprintf("more then one DB service found %d", len(serviceList.Items)),
+			d.database,
+			err,
+		)
 	}
 	d.databaseHostname = serviceList.Items[0].GetName()
 
-	return condition.Condition{}, nil
+	return nil
 }
 
 //
@@ -114,7 +106,7 @@ func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
 func (d *Database) CreateOrPatchDB(
 	ctx context.Context,
 	h *helper.Helper,
-) (condition.Condition, ctrl.Result, error) {
+) (ctrl.Result, error) {
 
 	db := &mariadbv1.MariaDBDatabase{
 		ObjectMeta: metav1.ObjectMeta{
@@ -128,9 +120,9 @@ func (d *Database) CreateOrPatchDB(
 	}
 
 	// set the database hostname on the db instance
-	cond, err := d.setDatabaseHostname(ctx, h)
+	err := d.setDatabaseHostname(ctx, h)
 	if err != nil {
-		return cond, ctrl.Result{}, err
+		return ctrl.Result{}, err
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), db, func() error {
@@ -150,36 +142,30 @@ func (d *Database) CreateOrPatchDB(
 	})
 
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		msg := fmt.Sprintf("Error create or update DB object %s", db.Name)
-		c := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonDBPatchError,
-			msg)
-
-		return c, ctrl.Result{}, fmt.Errorf("%s - %s", msg, err.Error())
+		return ctrl.Result{}, util.WrapErrorForObject(
+			fmt.Sprintf("Error create or update DB object %s", db.Name),
+			db,
+			err,
+		)
 	}
 
 	if op != controllerutil.OperationResultNone {
-		msg := fmt.Sprintf("DB object %s created or patched", db.Name)
-		c := condition.NewCondition(
-			condition.TypeCreated,
-			corev1.ConditionTrue,
-			ReasonDBPatchOK,
-			msg,
+		return ctrl.Result{RequeueAfter: time.Second * 5}, util.WrapErrorForObject(
+			fmt.Sprintf("DB object %s created or patched", db.Name),
+			db,
+			err,
 		)
-		return c, ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	cond, err = d.getDBWithName(
+	err = d.getDBWithName(
 		ctx,
 		h,
 	)
 	if err != nil {
-		return cond, ctrl.Result{}, err
+		return ctrl.Result{}, err
 	}
 
-	return condition.Condition{}, ctrl.Result{}, nil
+	return ctrl.Result{}, nil
 }
 
 //
@@ -188,27 +174,27 @@ func (d *Database) CreateOrPatchDB(
 func (d *Database) WaitForDBCreated(
 	ctx context.Context,
 	h *helper.Helper,
-) (condition.Condition, ctrl.Result, error) {
+) (ctrl.Result, error) {
 
-	cond, err := d.getDBWithName(
+	err := d.getDBWithName(
 		ctx,
 		h,
 	)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return cond, ctrl.Result{}, err
+		return ctrl.Result{}, err
 	}
 
 	if !d.database.Status.Completed || k8s_errors.IsNotFound(err) {
-		msg := fmt.Sprintf("Waiting for service DB %s to be created", d.database.Name)
-		cond := condition.NewCondition(
-			condition.TypeWaiting,
-			corev1.ConditionTrue,
-			ReasonDBWaitingInitialized,
-			msg)
-		return cond, ctrl.Result{RequeueAfter: time.Second * 5}, nil
+		util.LogForObject(
+			h,
+			fmt.Sprintf("Waiting for service DB %s to be created", d.database.Name),
+			d.database,
+		)
+
+		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
-	return condition.Condition{}, ctrl.Result{}, nil
+	return ctrl.Result{}, nil
 }
 
 //
@@ -217,7 +203,7 @@ func (d *Database) WaitForDBCreated(
 func (d *Database) getDBWithName(
 	ctx context.Context,
 	h *helper.Helper,
-) (condition.Condition, error) {
+) error {
 	db := &mariadbv1.MariaDBDatabase{}
 	err := h.GetClient().Get(
 		ctx,
@@ -228,27 +214,21 @@ func (d *Database) getDBWithName(
 		db)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			msg := fmt.Sprintf("Failed to get %s database %s ", d.databaseName, h.GetBeforeObject().GetNamespace())
-			cond := condition.NewCondition(
-				condition.TypeError,
-				corev1.ConditionTrue,
-				ReasonDBNotFound,
-				msg)
-
-			return cond, util.WrapErrorForObject(msg, h.GetBeforeObject(), err)
+			return util.WrapErrorForObject(
+				fmt.Sprintf("Failed to get %s database %s ", d.databaseName, h.GetBeforeObject().GetNamespace()),
+				h.GetBeforeObject(),
+				err,
+			)
 		}
 
-		msg := fmt.Sprintf("DB error %s %s ", d.databaseName, h.GetBeforeObject().GetNamespace())
-		cond := condition.NewCondition(
-			condition.TypeError,
-			corev1.ConditionTrue,
-			ReasonDBError,
-			msg)
-
-		return cond, util.WrapErrorForObject(msg, h.GetBeforeObject(), err)
+		return util.WrapErrorForObject(
+			fmt.Sprintf("DB error %s %s ", d.databaseName, h.GetBeforeObject().GetNamespace()),
+			h.GetBeforeObject(),
+			err,
+		)
 	}
 
 	d.database = db
 
-	return condition.Condition{}, nil
+	return nil
 }
