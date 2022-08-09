@@ -113,6 +113,18 @@ const (
 	ServiceConfigReadyErrorMessage = "Service config create error occured %s"
 
 	//
+	// DBReady condition messages
+	//
+	// DBReadyMessage
+	DBReadyMessage = "DB create completed"
+
+	// DBSyncReadyRunning
+	DBReadyRunningMessage = "DB create job still running"
+
+	// DBSyncReadyErrorMessage
+	DBReadyErrorMessage = "DBsync job error occured %s"
+
+	//
 	// DBSync condition messages
 	//
 	// DBSyncReadyMessage
