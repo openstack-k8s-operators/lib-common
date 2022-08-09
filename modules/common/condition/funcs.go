@@ -73,7 +73,6 @@ func (conditions *Conditions) Set(c *Condition) {
 
 				break
 			}
-			c.LastTransitionTime = existingCondition.LastTransitionTime
 			break
 		}
 	}

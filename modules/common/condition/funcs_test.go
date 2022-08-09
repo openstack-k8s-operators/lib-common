@@ -36,9 +36,10 @@ var (
 
 	unknownA   = UnknownCondition("a", "reason unknownA", "message unknownA")
 	falseA     = FalseCondition("a", "reason falseA", SeverityInfo, "message falseA")
-	trueA      = TrueCondition("aTrue", "message trueA")
+	trueA      = TrueCondition("a", "message trueA")
 	unknownB   = UnknownCondition("b", "reason unknownB", "message unknownB")
-	trueB      = TrueCondition("bTrue", "message trueB")
+	falseB     = FalseCondition("b", "reason falseB", SeverityInfo, "message falseB")
+	trueB      = TrueCondition("b", "message trueB")
 	falseInfo  = FalseCondition("falseInfo", "reason falseInfo", SeverityInfo, "message falseInfo")
 	falseError = FalseCondition("falseError", "reason falseError", SeverityError, "message falseError")
 )
@@ -91,6 +92,14 @@ func TestInit(t *testing.T) {
 func TestSet(t *testing.T) {
 	conditions := Conditions{}
 
+	time1 := metav1.NewTime(time.Date(2022, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2022, time.August, 10, 10, 0, 0, 0, time.UTC))
+	falseBTime1 := falseB.DeepCopy()
+	falseBTime1.LastTransitionTime = time1
+
+	falseBTime2 := falseB.DeepCopy()
+	falseBTime2.LastTransitionTime = time2
+
 	tests := []struct {
 		name      string
 		condition *Condition
@@ -141,6 +150,17 @@ func TestSet(t *testing.T) {
 			g.Expect(conditions).To(haveSameConditionsOf(tt.want))
 		})
 	}
+
+	// test time LastTransitionTime won't change if same status get set
+	// a) set conditions with time1
+	conditions.Set(falseBTime1)
+	c1 := conditions.Get(falseB.Type)
+	g.Expect(c1.LastTransitionTime).To(BeIdenticalTo(time1))
+
+	// b) set condition with same state, but new time. Time must be still time1
+	conditions.Set(falseBTime2)
+	c2 := conditions.Get(falseB.Type)
+	g.Expect(c2.LastTransitionTime).To(BeIdenticalTo(time1))
 }
 
 func TestHasSameState(t *testing.T) {
@@ -216,17 +236,17 @@ func TestIsMethods(t *testing.T) {
 	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady, trueA, unknownB, falseInfo)))
 
 	// test isTrue
-	g.Expect(conditions.IsTrue("aTrue")).To(BeTrue())
+	g.Expect(conditions.IsTrue("a")).To(BeTrue())
 	g.Expect(conditions.IsTrue("falseInfo")).To(BeFalse())
 	g.Expect(conditions.IsTrue("unknownB")).To(BeFalse())
 
 	// test isFalse
-	g.Expect(conditions.IsFalse("aTrue")).To(BeFalse())
+	g.Expect(conditions.IsFalse("a")).To(BeFalse())
 	g.Expect(conditions.IsFalse("falseInfo")).To(BeTrue())
 	g.Expect(conditions.IsFalse("unknownB")).To(BeFalse())
 
 	// test isUnknown
-	g.Expect(conditions.IsUnknown("aTrue")).To(BeFalse())
+	g.Expect(conditions.IsUnknown("a")).To(BeFalse())
 	g.Expect(conditions.IsUnknown("falseInfo")).To(BeFalse())
 	g.Expect(conditions.IsUnknown("unknownB")).To(BeTrue())
 }
