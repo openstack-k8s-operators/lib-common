@@ -179,10 +179,11 @@ func hasSameState(i, j *Condition) bool {
 // TrueCondition returns a condition with Status=True and the given type.
 func TrueCondition(t Type, messageFormat string, messageArgs ...interface{}) *Condition {
 	return &Condition{
-		Type:    t,
-		Status:  corev1.ConditionTrue,
-		Reason:  ReadyReason,
-		Message: fmt.Sprintf(messageFormat, messageArgs...),
+		Type:     t,
+		Status:   corev1.ConditionTrue,
+		Reason:   ReadyReason,
+		Severity: SeverityNone,
+		Message:  fmt.Sprintf(messageFormat, messageArgs...),
 	}
 }
 
@@ -200,9 +201,10 @@ func FalseCondition(t Type, reason string, severity Severity, messageFormat stri
 // UnknownCondition returns a condition with Status=Unknown and the given type.
 func UnknownCondition(t Type, reason string, messageFormat string, messageArgs ...interface{}) *Condition {
 	return &Condition{
-		Type:    t,
-		Status:  corev1.ConditionUnknown,
-		Reason:  reason,
-		Message: fmt.Sprintf(messageFormat, messageArgs...),
+		Type:     t,
+		Status:   corev1.ConditionUnknown,
+		Reason:   reason,
+		Severity: SeverityNone,
+		Message:  fmt.Sprintf(messageFormat, messageArgs...),
 	}
 }

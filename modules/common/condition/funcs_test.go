@@ -237,14 +237,20 @@ func TestMarkMethods(t *testing.T) {
 	conditions := Conditions{}
 	conditions.Init(nil)
 	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady)))
+	g.Expect(conditions.Get(ReadyCondition).Severity).To(BeEmpty())
 
 	// test MarkTrue
 	conditions.MarkTrue(ReadyCondition, ReadyMessage)
 	g.Expect(conditions.Get(ReadyCondition)).To(haveSameStateOf(trueReady))
+	g.Expect(conditions.Get(ReadyCondition).Severity).To(BeEmpty())
 
 	// test MarkFalse
 	conditions.MarkFalse("falseError", "reason falseError", SeverityError, "message falseError")
 	g.Expect(conditions.Get("falseError")).To(haveSameStateOf(falseError))
+
+	// test MarkTrue of previous false condition
+	conditions.MarkTrue("falseError", "now True")
+	g.Expect(conditions.Get("falseError").Severity).To(BeEmpty())
 
 	// test MarkUnknown
 	conditions.MarkUnknown("a", "reason unknownA", "message unknownA")
