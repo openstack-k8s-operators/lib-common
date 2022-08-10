@@ -41,8 +41,8 @@ const (
 	EndpointPublic Endpoint = "public"
 )
 
-// EndpointData - information for generation of K8S services and Keystone endpoint URLs
-type EndpointData struct {
+// Data - information for generation of K8S services and Keystone endpoint URLs
+type Data struct {
 	// Used in k8s service definition
 	Port int32
 	// An optional path suffix to append to route hostname when forming Keystone endpoint URLs
@@ -57,7 +57,7 @@ func ExposeEndpoints(
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
-	endpoints map[Endpoint]EndpointData,
+	endpoints map[Endpoint]Data,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
 

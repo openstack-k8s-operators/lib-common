@@ -9,6 +9,7 @@ testbin
 manager
 go.work
 go.work.sum
+modules/*/vendor/
 
 # Test binary, build with `go test -c`
 *.test

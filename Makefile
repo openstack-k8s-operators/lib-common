@@ -73,31 +73,31 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 # Run go fmt against code
 gofmt: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh ./$$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go vet against code
 govet: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh ./$$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go test against code
 gotest: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
 	done
 
 # Run golangci-lint test against code
 golangci: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod ; \
+		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go lint against code
 golint: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod ; \
+		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod || exit 1; \
 	done
 
 gowork:
