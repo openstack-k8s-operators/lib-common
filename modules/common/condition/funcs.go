@@ -207,3 +207,14 @@ func UnknownCondition(t Type, reason string, messageFormat string, messageArgs .
 		Message:  fmt.Sprintf(messageFormat, messageArgs...),
 	}
 }
+
+// CreateList returns a conditions from a parameter list of several conditions.
+func CreateList(conditions ...*Condition) Conditions {
+	cs := Conditions{}
+	for _, x := range conditions {
+		if x != nil {
+			cs = append(cs, *x)
+		}
+	}
+	return cs
+}
