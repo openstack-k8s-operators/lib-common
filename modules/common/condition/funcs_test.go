@@ -52,28 +52,28 @@ func TestInit(t *testing.T) {
 	}{
 		{
 			name:       "Init conditions without optional condition",
-			conditions: conditionList(nil),
-			want:       conditionList(unknownReady),
+			conditions: CreateList(nil),
+			want:       CreateList(unknownReady),
 		},
 		{
 			name:       "Init conditions with an optional condition",
-			conditions: conditionList(unknownA),
-			want:       conditionList(unknownReady, unknownA),
+			conditions: CreateList(unknownA),
+			want:       CreateList(unknownReady, unknownA),
 		},
 		{
 			name:       "Init conditions with optional conditions",
-			conditions: conditionList(unknownA, unknownB),
-			want:       conditionList(unknownReady, unknownA, unknownB),
+			conditions: CreateList(unknownA, unknownB),
+			want:       CreateList(unknownReady, unknownA, unknownB),
 		},
 		{
 			name:       "Init conditions with optional conditions",
-			conditions: conditionList(unknownB, unknownA),
-			want:       conditionList(unknownReady, unknownA, unknownB),
+			conditions: CreateList(unknownB, unknownA),
+			want:       CreateList(unknownReady, unknownA, unknownB),
 		},
 		{
 			name:       "Init conditions with duplicate optional condition",
-			conditions: conditionList(unknownA, unknownA),
-			want:       conditionList(unknownReady, unknownA),
+			conditions: CreateList(unknownA, unknownA),
+			want:       CreateList(unknownReady, unknownA),
 		},
 	}
 
@@ -108,39 +108,39 @@ func TestSet(t *testing.T) {
 		{
 			name:      "Add nil condition",
 			condition: nil,
-			want:      conditionList(unknownReady),
+			want:      CreateList(unknownReady),
 		},
 		{
 			name:      "Add unknownB condition",
 			condition: unknownB,
-			want:      conditionList(unknownReady, unknownB),
+			want:      CreateList(unknownReady, unknownB),
 		},
 		{
 			name:      "Add another condition unknownA, gets sorted",
 			condition: unknownA,
-			want:      conditionList(unknownReady, unknownA, unknownB),
+			want:      CreateList(unknownReady, unknownA, unknownB),
 		},
 		{
 			name:      "Add same condition unknownA, won't duplicate",
 			condition: unknownA,
-			want:      conditionList(unknownReady, unknownA, unknownB),
+			want:      CreateList(unknownReady, unknownA, unknownB),
 		},
 		{
 			name:      "Change condition unknownA, to be Status=False",
 			condition: falseA,
-			want:      conditionList(unknownReady, falseA, unknownB),
+			want:      CreateList(unknownReady, falseA, unknownB),
 		},
 		{
 			name:      "Change ready condition to True",
 			condition: trueReady,
-			want:      conditionList(trueReady, falseA, unknownB),
+			want:      CreateList(trueReady, falseA, unknownB),
 		},
 	}
 
 	g := NewWithT(t)
 
 	conditions.Init(nil)
-	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady)))
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestGetAndHas(t *testing.T) {
 
 	conditions := Conditions{}
 	conditions.Init(nil)
-	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady)))
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
 	g.Expect(conditions.Has(ReadyCondition)).To(BeTrue())
 	g.Expect(conditions.Get(ReadyCondition)).To(haveSameStateOf(unknownReady))
 	g.Expect(conditions.Get("notExistingCond")).To(BeNil())
@@ -231,9 +231,9 @@ func TestIsMethods(t *testing.T) {
 	g := NewWithT(t)
 
 	conditions := Conditions{}
-	cl := conditionList(trueA, falseInfo, unknownB)
+	cl := CreateList(trueA, falseInfo, unknownB)
 	conditions.Init(&cl)
-	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady, trueA, unknownB, falseInfo)))
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA, unknownB, falseInfo)))
 
 	// test isTrue
 	g.Expect(conditions.IsTrue("a")).To(BeTrue())
@@ -256,7 +256,7 @@ func TestMarkMethods(t *testing.T) {
 
 	conditions := Conditions{}
 	conditions.Init(nil)
-	g.Expect(conditions).To(haveSameConditionsOf(conditionList(unknownReady)))
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
 	g.Expect(conditions.Get(ReadyCondition).Severity).To(BeEmpty())
 
 	// test MarkTrue
@@ -275,16 +275,6 @@ func TestMarkMethods(t *testing.T) {
 	// test MarkUnknown
 	conditions.MarkUnknown("a", "reason unknownA", "message unknownA")
 	g.Expect(conditions.Get("a")).To(haveSameStateOf(unknownA))
-}
-
-func conditionList(conditions ...*Condition) Conditions {
-	cs := Conditions{}
-	for _, x := range conditions {
-		if x != nil {
-			cs = append(cs, *x)
-		}
-	}
-	return cs
 }
 
 // haveSameConditionsOf matches a conditions list to be the same as another.
@@ -319,6 +309,7 @@ func (matcher *conditionsMatcher) Match(actual interface{}) (success bool, err e
 func (matcher *conditionsMatcher) FailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "to have the same conditions of", matcher.Expected)
 }
+
 func (matcher *conditionsMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "not to have the same conditions of", matcher.Expected)
 }
@@ -346,6 +337,7 @@ func (matcher *conditionMatcher) Match(actual interface{}) (success bool, err er
 func (matcher *conditionMatcher) FailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "to have the same state of", matcher.Expected)
 }
+
 func (matcher *conditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return format.Message(actual, "not to have the same state of", matcher.Expected)
 }
