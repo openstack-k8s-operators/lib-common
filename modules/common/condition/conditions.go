@@ -171,4 +171,16 @@ const (
 
 	// DeploymentReadyErrorMessage
 	DeploymentReadyErrorMessage = "Deployment error occured %s"
+
+	//
+	// KeystoneService condition messages
+	//
+	// KeystoneServiceReadyMessage
+	KeystoneServiceReadyMessage = "KeystoneService completed"
+
+	// KeystoneServiceReadyRunningMessage
+	KeystoneServiceReadyRunningMessage = "KeystoneService in progress"
+
+	// KeystoneServiceReadyErrorMessage
+	KeystoneServiceReadyErrorMessage = "KeystoneService error occured %s"
 )
