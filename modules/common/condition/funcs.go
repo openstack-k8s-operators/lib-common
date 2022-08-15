@@ -108,12 +108,12 @@ func (conditions *Conditions) MarkTrue(t Type, messageFormat string, messageArgs
 }
 
 // MarkFalse sets Status=False for the condition with the given type.
-func (conditions *Conditions) MarkFalse(t Type, reason string, severity Severity, messageFormat string, messageArgs ...interface{}) {
+func (conditions *Conditions) MarkFalse(t Type, reason Reason, severity Severity, messageFormat string, messageArgs ...interface{}) {
 	conditions.Set(FalseCondition(t, reason, severity, messageFormat, messageArgs...))
 }
 
 // MarkUnknown sets Status=Unknown for the condition with the given type.
-func (conditions *Conditions) MarkUnknown(t Type, reason, messageFormat string, messageArgs ...interface{}) {
+func (conditions *Conditions) MarkUnknown(t Type, reason Reason, messageFormat string, messageArgs ...interface{}) {
 	conditions.Set(UnknownCondition(t, reason, messageFormat, messageArgs...))
 }
 
@@ -187,7 +187,7 @@ func TrueCondition(t Type, messageFormat string, messageArgs ...interface{}) *Co
 }
 
 // FalseCondition returns a condition with Status=False and the given type.
-func FalseCondition(t Type, reason string, severity Severity, messageFormat string, messageArgs ...interface{}) *Condition {
+func FalseCondition(t Type, reason Reason, severity Severity, messageFormat string, messageArgs ...interface{}) *Condition {
 	return &Condition{
 		Type:     t,
 		Status:   corev1.ConditionFalse,
@@ -198,7 +198,7 @@ func FalseCondition(t Type, reason string, severity Severity, messageFormat stri
 }
 
 // UnknownCondition returns a condition with Status=Unknown and the given type.
-func UnknownCondition(t Type, reason string, messageFormat string, messageArgs ...interface{}) *Condition {
+func UnknownCondition(t Type, reason Reason, messageFormat string, messageArgs ...interface{}) *Condition {
 	return &Condition{
 		Type:     t,
 		Status:   corev1.ConditionUnknown,

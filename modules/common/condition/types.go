@@ -68,7 +68,7 @@ type Condition struct {
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 
 	// The reason for the condition's last transition in CamelCase.
-	Reason string `json:"reason,omitempty"`
+	Reason Reason `json:"reason,omitempty"`
 
 	// A human readable message indicating details about the transition.
 	// +optional
