@@ -63,6 +63,9 @@ const (
 	// ReadyReason documents a condition in `Status=True` when requested resource is ready.
 	ReadyReason = "Ready"
 
+	// InitReason documents a condition in `Status=Unknown` when reconcilation started.
+	InitReason = "Init"
+
 	// ErrorReason (Severity=Warning) documents a condition not in Status=True because the underlying object failed.
 	// This is a warning because the reconciler will retry deletion.
 	ErrorReason = "Error"
@@ -94,6 +97,9 @@ const (
 	//
 	// InputReady condition messages
 	//
+	// InputReadyInitMessage
+	InputReadyInitMessage = "Input data not checked"
+
 	// InputReadyMessage
 	InputReadyMessage = "Input data complete"
 
@@ -106,6 +112,9 @@ const (
 	//
 	// ServiceConfig condition messages
 	//
+	// ServiceConfigReadyInitMessage
+	ServiceConfigReadyInitMessage = "Service config create not started"
+
 	// ServiceConfigReadyMessage
 	ServiceConfigReadyMessage = "Service config create completed"
 
@@ -115,6 +124,9 @@ const (
 	//
 	// DBReady condition messages
 	//
+	// DBReadyInitMessage
+	DBReadyInitMessage = "DB create not started"
+
 	// DBReadyMessage
 	DBReadyMessage = "DB create completed"
 
@@ -127,6 +139,9 @@ const (
 	//
 	// DBSync condition messages
 	//
+	// DBSyncReadyInitMessage
+	DBSyncReadyInitMessage = "DB sync not started"
+
 	// DBSyncReadyMessage
 	DBSyncReadyMessage = "DBsync completed"
 
@@ -139,6 +154,9 @@ const (
 	//
 	// ExposeService condition messages
 	//
+	// ExposeServiceReadyInitMessage
+	ExposeServiceReadyInitMessage = "Exposing service not started"
+
 	// ExposeServiceReadyMessage
 	ExposeServiceReadyMessage = "Exposing service completed"
 
@@ -151,6 +169,9 @@ const (
 	//
 	// BootstrapReady condition messages
 	//
+	// BootstrapReadyInitMessage
+	BootstrapReadyInitMessage = "Bootstrap not started"
+
 	// BootstrapReadyMessage
 	BootstrapReadyMessage = "Bootstrap completed"
 
@@ -163,6 +184,9 @@ const (
 	//
 	// DeploymentReady condition messages
 	//
+	// DeploymentReadyInitMessage
+	DeploymentReadyInitMessage = "Deployment not started"
+
 	// DeploymentReadyMessage
 	DeploymentReadyMessage = "Deployment completed"
 
