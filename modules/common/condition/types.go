@@ -77,3 +77,10 @@ type Condition struct {
 
 // Conditions provide observations of the operational state of a API resource.
 type Conditions []Condition
+
+// conditionGroup defines a group of conditions with the same status and severity,
+type conditionGroup struct {
+	status     corev1.ConditionStatus
+	severity   Severity
+	conditions Conditions
+}

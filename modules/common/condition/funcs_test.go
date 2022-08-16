@@ -34,14 +34,15 @@ var (
 	unknownReady = UnknownCondition(ReadyCondition, RequestedReason, ReadyInitMessage)
 	trueReady    = TrueCondition(ReadyCondition, ReadyMessage)
 
-	unknownA   = UnknownCondition("a", "reason unknownA", "message unknownA")
-	falseA     = FalseCondition("a", "reason falseA", SeverityInfo, "message falseA")
-	trueA      = TrueCondition("a", "message trueA")
-	unknownB   = UnknownCondition("b", "reason unknownB", "message unknownB")
-	falseB     = FalseCondition("b", "reason falseB", SeverityInfo, "message falseB")
-	trueB      = TrueCondition("b", "message trueB")
-	falseInfo  = FalseCondition("falseInfo", "reason falseInfo", SeverityInfo, "message falseInfo")
-	falseError = FalseCondition("falseError", "reason falseError", SeverityError, "message falseError")
+	unknownA    = UnknownCondition("a", "reason unknownA", "message unknownA")
+	falseA      = FalseCondition("a", "reason falseA", SeverityInfo, "message falseA")
+	trueA       = TrueCondition("a", "message trueA")
+	unknownB    = UnknownCondition("b", "reason unknownB", "message unknownB")
+	falseB      = FalseCondition("b", "reason falseB", SeverityInfo, "message falseB")
+	falseBError = FalseCondition("b", "reason falseBError", SeverityError, "message falseBError")
+	trueB       = TrueCondition("b", "message trueB")
+	falseInfo   = FalseCondition("falseInfo", "reason falseInfo", SeverityInfo, "message falseInfo")
+	falseError  = FalseCondition("falseError", "reason falseError", SeverityError, "message falseError")
 )
 
 func TestInit(t *testing.T) {
@@ -275,6 +276,86 @@ func TestMarkMethods(t *testing.T) {
 	// test MarkUnknown
 	conditions.MarkUnknown("a", "reason unknownA", "message unknownA")
 	g.Expect(conditions.Get("a")).To(haveSameStateOf(unknownA))
+}
+
+func TestSortByLastTransitionTime(t *testing.T) {
+	g := NewWithT(t)
+
+	time1 := metav1.NewTime(time.Date(2020, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2020, time.August, 10, 10, 0, 0, 0, time.UTC))
+	time3 := metav1.NewTime(time.Date(2020, time.August, 11, 10, 0, 0, 0, time.UTC))
+
+	falseA.LastTransitionTime = time1
+	falseB.LastTransitionTime = time2
+	falseError.LastTransitionTime = time3
+
+	g.Expect(lessLastTransitionTime(falseA, falseB)).To(BeFalse())
+	g.Expect(lessLastTransitionTime(falseB, falseA)).To(BeTrue())
+
+	conditions := Conditions{}
+	cl := CreateList(falseB, falseError, falseA)
+	conditions.Init(&cl)
+	conditions.SortByLastTransitionTime()
+
+	// unknownReady has the current time stamp, so is first
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, falseError, falseB, falseA)))
+}
+
+func TestMirror(t *testing.T) {
+	g := NewWithT(t)
+
+	time1 := metav1.NewTime(time.Date(2020, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2020, time.August, 10, 10, 0, 0, 0, time.UTC))
+
+	trueA.LastTransitionTime = time1
+	falseB.LastTransitionTime = time2
+
+	conditions := Conditions{}
+	conditions.Init(nil)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
+	targetCondition := conditions.Mirror("targetConditon")
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(unknownReady.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(unknownReady.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(unknownReady.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(unknownReady.Message))
+
+	conditions.Set(trueA)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA)))
+	targetCondition = conditions.Mirror("targetConditon")
+	// expect to be mirrored trueA
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(trueA.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(trueA.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(trueA.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(trueA.Message))
+
+	conditions.Set(falseB)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA, falseB)))
+	targetCondition = conditions.Mirror("targetConditon")
+	// expect to be mirrored falseB
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(falseB.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(falseB.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(falseB.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(falseB.Message))
+
+	conditions.Set(falseBError)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA, falseBError)))
+	targetCondition = conditions.Mirror("targetConditon")
+	// expect to be mirrored falseBError
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(falseBError.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(falseBError.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(falseBError.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(falseBError.Message))
+
+	// mark all non true conditions to be true
+	conditions.MarkTrue(ReadyCondition, ReadyMessage)
+	conditions.MarkTrue(trueB.Type, trueB.Message)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(trueReady, trueA, trueB)))
+	targetCondition = conditions.Mirror("targetConditon")
+	// expect to be mirrored trueReady
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(trueReady.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(trueReady.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(trueReady.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(trueReady.Message))
 }
 
 // haveSameConditionsOf matches a conditions list to be the same as another.

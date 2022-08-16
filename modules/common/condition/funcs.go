@@ -157,6 +157,13 @@ func (conditions *Conditions) Sort() {
 	})
 }
 
+// SortByLastTransitionTime - Sorts a list of conditions by the LastTransitionTime
+func (conditions *Conditions) SortByLastTransitionTime() {
+	sort.Slice(*conditions, func(i, j int) bool {
+		return lessLastTransitionTime(&(*conditions)[i], &(*conditions)[j])
+	})
+}
+
 // less returns true if a condition is less than another with regards to the
 // order of conditions designed for better consumption i.e. cli client.
 // According to this the Ready condition always goes first, followed by all the other
@@ -164,6 +171,12 @@ func (conditions *Conditions) Sort() {
 // the service
 func less(i, j *Condition) bool {
 	return (i.Type == ReadyCondition || i.Type < j.Type) && j.Type != ReadyCondition
+}
+
+// lessLastTransitionTime returns true if a conditions LastTransitionTime is not before
+// another ones
+func lessLastTransitionTime(i, j *Condition) bool {
+	return !i.LastTransitionTime.Before(&j.LastTransitionTime)
 }
 
 // hasSameState returns true if a condition has the same state of another
@@ -217,4 +230,112 @@ func CreateList(conditions ...*Condition) Conditions {
 		}
 	}
 	return cs
+}
+
+// Mirror - mirrors Status, Message, Reason and Severity from the latest condition
+// of a sorted conditionGroup list into a target condition of type t.
+// The conditionGroup entries are split by Status with the order False, True, Unknown.
+// If Status=False its again split into Severity with the order Error, Warning, Info.
+func (conditions *Conditions) Mirror(t Type) *Condition {
+
+	if conditions == nil || len(*conditions) == 0 {
+		return nil
+	}
+
+	g := conditions.getConditionGroups()
+	if len(g) == 0 {
+		return nil
+	}
+
+	// Get the ConditionTrue group and validate if the overall ReadyCondition is true.
+	// If the overall ReadyConditon is true, it is expected that this
+	// is the actual state and no other groups need to be checked
+	cg := g[groupOrder(*TrueCondition(ReadyCondition, "foo"))]
+	if len(cg.conditions) > 0 && cg.conditions.IsTrue(ReadyCondition) {
+		c := cg.conditions.Get(ReadyCondition)
+		mirrorCondition := TrueCondition(t, c.Message)
+		mirrorCondition.LastTransitionTime = c.LastTransitionTime
+
+		return mirrorCondition
+	}
+
+	mirrorCondition := &Condition{}
+	for _, cg := range g {
+		if len(cg.conditions) == 0 {
+			continue
+		}
+
+		cl := &cg.conditions
+		// get the first conditon of the group which is the one with the latest LastTransitionTime
+		cl.SortByLastTransitionTime()
+		c := (*cl)[0]
+
+		if c.Status == corev1.ConditionTrue {
+			mirrorCondition = TrueCondition(t, c.Message)
+			mirrorCondition.LastTransitionTime = c.LastTransitionTime
+			break
+		}
+
+		if c.Status == corev1.ConditionFalse {
+			mirrorCondition = FalseCondition(t, c.Reason, c.Severity, c.Message)
+			mirrorCondition.LastTransitionTime = c.LastTransitionTime
+			break
+		}
+
+		mirrorCondition = UnknownCondition(t, c.Reason, c.Message)
+		mirrorCondition.LastTransitionTime = c.LastTransitionTime
+	}
+
+	return mirrorCondition
+}
+
+// getConditionGroups groups a list of conditions according to status, severity values.
+// The groups are sorted by Status and Severity.
+func (conditions *Conditions) getConditionGroups() []conditionGroup {
+	// 6 make possible number of groups 3xConditionFalse, 1xConditionTrue
+	// 1xConditionUnknown and a catch all one which should never happen
+	groups := make([]conditionGroup, 6)
+
+	for _, condition := range *conditions {
+		added := false
+		for i := range groups {
+			if groups[i].status == condition.Status && groups[i].severity == condition.Severity {
+				groups[i].conditions = append(groups[i].conditions, condition)
+				added = true
+				break
+			}
+		}
+		if !added {
+			index := groupOrder(condition)
+
+			groups[index] = conditionGroup{
+				conditions: []Condition{condition},
+				status:     condition.Status,
+				severity:   condition.Severity,
+			}
+		}
+	}
+
+	return groups
+}
+
+func groupOrder(c Condition) int {
+	switch c.Status {
+	case corev1.ConditionFalse:
+		switch c.Severity {
+		case SeverityError:
+			return 0
+		case SeverityWarning:
+			return 1
+		case SeverityInfo:
+			return 2
+		}
+	case corev1.ConditionTrue:
+		return 3
+	case corev1.ConditionUnknown:
+		return 4
+	}
+
+	// this hopefully never happens
+	return 5
 }
