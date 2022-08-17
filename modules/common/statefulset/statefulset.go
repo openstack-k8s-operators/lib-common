@@ -26,6 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -83,12 +84,35 @@ func (s *StatefulSet) CreateOrPatch(
 		h.GetLogger().Info(fmt.Sprintf("StatefulSet %s - %s", statefulset.Name, op))
 	}
 
+	// update the statefulset object of the statefulset type
+	s.statefulset, err = GetStatefulSetWithName(ctx, h, statefulset.GetName(), statefulset.GetNamespace())
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
 }
 
 // GetStatefulSet - get the statefulset object.
 func (s *StatefulSet) GetStatefulSet() appsv1.StatefulSet {
 	return *s.statefulset
+}
+
+// GetStatefulSetWithName func
+func GetStatefulSetWithName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) (*appsv1.StatefulSet, error) {
+
+	depl := &appsv1.StatefulSet{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, depl)
+	if err != nil {
+		return depl, err
+	}
+
+	return depl, nil
 }
 
 // Delete - delete a statefulset.
