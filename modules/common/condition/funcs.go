@@ -232,6 +232,17 @@ func CreateList(conditions ...*Condition) Conditions {
 	return cs
 }
 
+// IsError is True if the condition is a) not nil, b) status=False and
+// c) condition.Reason == condition.ErrorReason, otherwise it returns False
+// if the condition is not True or if the condition does not exist (is nil).
+func IsError(condition *Condition) bool {
+	if condition != nil {
+		return condition.Status == corev1.ConditionFalse &&
+			condition.Reason == ErrorReason
+	}
+	return false
+}
+
 // Mirror - mirrors Status, Message, Reason and Severity from the latest condition
 // of a sorted conditionGroup list into a target condition of type t.
 // The conditionGroup entries are split by Status with the order False, True, Unknown.

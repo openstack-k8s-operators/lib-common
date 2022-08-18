@@ -6,7 +6,6 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-00010101000000-000000000000
-	k8s.io/apimachinery v0.24.3
 )
 
 require (
@@ -57,6 +56,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/api v0.24.3 // indirect
 	k8s.io/apiextensions-apiserver v0.24.2 // indirect
+	k8s.io/apimachinery v0.24.3 // indirect
 	k8s.io/client-go v0.24.3 // indirect
 	k8s.io/component-base v0.24.2 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
