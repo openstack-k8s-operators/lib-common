@@ -358,6 +358,17 @@ func TestMirror(t *testing.T) {
 	g.Expect(targetCondition.Message).To(BeIdenticalTo(trueReady.Message))
 }
 
+func TestIsError(t *testing.T) {
+	g := NewWithT(t)
+
+	g.Expect(IsError(nil)).To(BeFalse())
+	// wrong reason
+	g.Expect(IsError(falseBError)).To(BeFalse())
+	g.Expect(IsError(falseB)).To(BeFalse())
+	g.Expect(IsError(trueB)).To(BeFalse())
+	g.Expect(IsError(FalseCondition("errorReason", ErrorReason, SeverityError, "message Error"))).To(BeTrue())
+}
+
 // haveSameConditionsOf matches a conditions list to be the same as another.
 func haveSameConditionsOf(expected Conditions) types.GomegaMatcher {
 	return &conditionsMatcher{
