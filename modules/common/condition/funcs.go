@@ -243,6 +243,42 @@ func IsError(condition *Condition) bool {
 	return false
 }
 
+// GetHigherPrioCondition validates the priority of two conditions based on
+// groupOrder(c) and returns the one which has precedence of the other.
+// If one of them is nil, the non nil get returned.
+// If both of them have the same priority the one with the later LastTransitionTime
+// gets returned.
+func GetHigherPrioCondition(cond1, cond2 *Condition) *Condition {
+
+	if cond1 == nil && cond2 == nil {
+		return nil
+	}
+
+	if cond1 != nil && cond2 != nil {
+		groupOrderCond1 := groupOrder(*cond1)
+		groupOrderCond2 := groupOrder(*cond2)
+		if groupOrderCond1 < groupOrderCond2 {
+			return cond1
+		} else if groupOrderCond1 == groupOrderCond2 &&
+			lessLastTransitionTime(cond1, cond2) {
+			return cond1
+		}
+
+		return cond2
+	}
+
+	if cond1 != nil {
+		return cond1
+	}
+
+	if cond2 != nil {
+		return cond2
+
+	}
+
+	return nil
+}
+
 // Mirror - mirrors Status, Message, Reason and Severity from the latest condition
 // of a sorted conditionGroup list into a target condition of type t.
 // The conditionGroup entries are split by Status with the order False, True, Unknown.

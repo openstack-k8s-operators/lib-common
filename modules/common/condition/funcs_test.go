@@ -34,15 +34,16 @@ var (
 	unknownReady = UnknownCondition(ReadyCondition, RequestedReason, ReadyInitMessage)
 	trueReady    = TrueCondition(ReadyCondition, ReadyMessage)
 
-	unknownA    = UnknownCondition("a", "reason unknownA", "message unknownA")
-	falseA      = FalseCondition("a", "reason falseA", SeverityInfo, "message falseA")
-	trueA       = TrueCondition("a", "message trueA")
-	unknownB    = UnknownCondition("b", "reason unknownB", "message unknownB")
-	falseB      = FalseCondition("b", "reason falseB", SeverityInfo, "message falseB")
-	falseBError = FalseCondition("b", "reason falseBError", SeverityError, "message falseBError")
-	trueB       = TrueCondition("b", "message trueB")
-	falseInfo   = FalseCondition("falseInfo", "reason falseInfo", SeverityInfo, "message falseInfo")
-	falseError  = FalseCondition("falseError", "reason falseError", SeverityError, "message falseError")
+	unknownA     = UnknownCondition("a", "reason unknownA", "message unknownA")
+	falseA       = FalseCondition("a", "reason falseA", SeverityInfo, "message falseA")
+	trueA        = TrueCondition("a", "message trueA")
+	unknownB     = UnknownCondition("b", "reason unknownB", "message unknownB")
+	falseB       = FalseCondition("b", "reason falseB", SeverityInfo, "message falseB")
+	falseBError  = FalseCondition("b", "reason falseBError", SeverityError, "message falseBError")
+	trueB        = TrueCondition("b", "message trueB")
+	falseInfo    = FalseCondition("falseInfo", "reason falseInfo", SeverityInfo, "message falseInfo")
+	falseWarning = FalseCondition("falseWarning", "reason falseWarning", SeverityWarning, "message falseWarning")
+	falseError   = FalseCondition("falseError", "reason falseError", SeverityError, "message falseError")
 )
 
 func TestInit(t *testing.T) {
@@ -367,6 +368,53 @@ func TestIsError(t *testing.T) {
 	g.Expect(IsError(falseB)).To(BeFalse())
 	g.Expect(IsError(trueB)).To(BeFalse())
 	g.Expect(IsError(FalseCondition("errorReason", ErrorReason, SeverityError, "message Error"))).To(BeTrue())
+}
+
+func TestGetHigherPrioCondition(t *testing.T) {
+	g := NewWithT(t)
+
+	g.Expect(GetHigherPrioCondition(nil, nil)).To(BeNil())
+
+	c := GetHigherPrioCondition(unknownA, nil)
+	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
+
+	c = GetHigherPrioCondition(nil, unknownA)
+	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
+
+	// Status True has higher prio then Status Unknown
+	c = GetHigherPrioCondition(unknownA, trueA)
+	g.Expect(hasSameState(c, trueA)).To(BeTrue())
+
+	// Status False has higher prio then Status Unknown
+	c = GetHigherPrioCondition(falseA, trueA)
+	g.Expect(hasSameState(c, falseA)).To(BeTrue())
+
+	// When both Status=False, Severity Error has higher prio then Info
+	c = GetHigherPrioCondition(falseInfo, falseError)
+	g.Expect(hasSameState(c, falseError)).To(BeTrue())
+
+	// When both Status=False, Severity Error has higher prio then Warning
+	c = GetHigherPrioCondition(falseWarning, falseError)
+	g.Expect(hasSameState(c, falseError)).To(BeTrue())
+
+	// When both Status=False, Severity Warning has higher prio then Info
+	c = GetHigherPrioCondition(falseWarning, falseInfo)
+	g.Expect(hasSameState(c, falseWarning)).To(BeTrue())
+
+	// When both Status=False, and same Severity return the one with later
+	// LastTransitionTime.
+	warning1 := falseWarning.DeepCopy()
+	warning2 := falseWarning.DeepCopy()
+
+	time1 := metav1.NewTime(time.Date(2020, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2020, time.August, 10, 10, 0, 0, 0, time.UTC))
+	warning1.LastTransitionTime = time1
+	warning1.Message = "warning1"
+	warning2.LastTransitionTime = time2
+	warning2.Message = "warning2"
+
+	c = GetHigherPrioCondition(warning1, warning2)
+	g.Expect(hasSameState(c, warning2)).To(BeTrue())
 }
 
 // haveSameConditionsOf matches a conditions list to be the same as another.
