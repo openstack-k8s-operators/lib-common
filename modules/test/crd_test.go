@@ -1,0 +1,79 @@
+/*
+Copyright 2022 Red Hat
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package test
+
+import (
+	"fmt"
+
+	. "github.com/onsi/gomega"
+
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestGetCRDDirFromModule(t *testing.T) {
+	t.Run("with an existing module in go.mod", func(t *testing.T) {
+		g := NewWithT(t)
+
+		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../database/go.mod")
+		g.Expect(err).ShouldNot(HaveOccurred())
+		g.Expect(path).Should(MatchRegexp("/.*/github.com/openstack-k8s-operators/mariadb-operator/api@v.*/config/crd/bases"))
+	})
+	t.Run("with a wrong go.mod path", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../nonexistent/go.mod")
+		g.Expect(err).Should(HaveOccurred())
+		g.Expect(err).Should(MatchError("open ../nonexistent/go.mod: no such file or directory"))
+	})
+	t.Run("with a module not in go.mod", func(t *testing.T) {
+		g := NewWithT(t)
+
+		_, err := GetCRDDirFromModule("foobar", "go.mod")
+		g.Expect(err).Should(HaveOccurred())
+		g.Expect(err).Should(MatchError("cannot find foobar in the go.mod file"))
+	})
+}
+
+func TestGetOpenShiftCRDDir(t *testing.T) {
+	t.Run("with a CRD and valid go.mod", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// We need to generate a go.mod that has lib-common dependency in it
+		dir := t.TempDir()
+		mod := []byte(`module foo
+go 1.18
+require (
+	github.com/openstack-k8s-operators/lib-common/modules/test v0.0.0-20220630111354-9f8383d4a2ea
+)
+		`)
+		modPath := filepath.Join(dir, "go.mod")
+		err := os.WriteFile(modPath, mod, 0644)
+		g.Expect(err).ShouldNot(HaveOccurred())
+
+		path, err := GetOpenShiftCRDDir("route/v1", modPath)
+		g.Expect(err).ShouldNot(HaveOccurred())
+		g.Expect(path).Should(MatchRegexp("/.*/github.com/openstack-k8s-operators/lib-common/modules/test@v.*/openshift_crds/route/v1"))
+	})
+	t.Run("with a CRD without having lib-common in go.mod", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Our own lib-common go.mod will never have lib-common in it so we can use that as test input
+		_, err := GetOpenShiftCRDDir("route/v1", "go.mod")
+		g.Expect(err).Should(HaveOccurred())
+		fmt.Printf("%s", err)
+		g.Expect(err).Should(MatchError("cannot find github.com/openstack-k8s-operators/lib-common/modules/test in the go.mod file"))
+	})
+}
