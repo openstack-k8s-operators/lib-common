@@ -54,23 +54,25 @@ func NewDatabase(
 func (d *Database) setDatabaseHostname(
 	ctx context.Context,
 	h *helper.Helper,
+	labels map[string]string,
 ) error {
 
-	selector := map[string]string{
-		"app": "mariadb",
-	}
+	labels["app"] = "mariadb"
+
 	serviceList, err := service.GetServicesListWithLabel(
 		ctx,
 		h,
 		h.GetBeforeObject().GetNamespace(),
-		selector,
+		labels,
 	)
 	if err != nil || len(serviceList.Items) == 0 {
 		return fmt.Errorf("Error getting the DB service using label %v: %w",
-			selector, err)
+			labels, err)
 	}
 
-	// can we expect there is only one DB instance per namespace?
+	// We can expect that only one DB service instance matching the labels in
+	// the current namespace. If not then the caller needs to more specific by
+	// by adding more labels
 	if len(serviceList.Items) > 1 {
 		return util.WrapErrorForObject(
 			fmt.Sprintf("more then one DB service found %d", len(serviceList.Items)),
@@ -99,10 +101,25 @@ func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
 
 //
 // CreateOrPatchDB - create or patch the service DB instance
-//
+// Deprecated. Use CreateOrPatchDBWithLabel instead. If you want to use the
+// default the DB service instance of deployment then pass label
+// "cr": "mariadb-openstack" to CreateOrPatchDBWithLabel
 func (d *Database) CreateOrPatchDB(
 	ctx context.Context,
 	h *helper.Helper,
+) (ctrl.Result, error) {
+	return d.CreateOrPatchDBWithLabel(
+		ctx, h, map[string]string{"cr": "mariadb-openstack"})
+}
+
+//
+// CreateOrPatchDBWithLabel - create or patch the service DB instance on
+// the DB service selected via labels. To get the default DB Service instance
+// pass "cr": "mariadb-openstack" via the labels parameter.
+func (d *Database) CreateOrPatchDBWithLabel(
+	ctx context.Context,
+	h *helper.Helper,
+	labels map[string]string,
 ) (ctrl.Result, error) {
 
 	db := &mariadbv1.MariaDBDatabase{
@@ -117,7 +134,7 @@ func (d *Database) CreateOrPatchDB(
 	}
 
 	// set the database hostname on the db instance
-	err := d.setDatabaseHostname(ctx, h)
+	err := d.setDatabaseHostname(ctx, h, labels)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
