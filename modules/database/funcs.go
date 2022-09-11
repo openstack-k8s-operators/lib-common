@@ -67,8 +67,11 @@ func (d *Database) setDatabaseHostname(
 		selector,
 	)
 	if err != nil || len(serviceList.Items) == 0 {
-		return fmt.Errorf("Error getting the DB service using label %v: %w",
-			selector, err)
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Error getting the DB service using label %v", selector),
+			d.database,
+			err,
+		)
 	}
 
 	// can we expect there is only one DB instance per namespace?
@@ -142,9 +145,9 @@ func (d *Database) CreateOrPatchDB(
 		controllerutil.AddFinalizer(instance, h.GetFinalizer())
 		// Register the finalizer immediately to avoid orphaning resources on delete
 		//if err := patchHelper.Patcqh(ctx, openStackCluster); err != nil {
-		if err := r.Update(ctx, instance); err != nil {
+		if err := instance.Update(ctx, instance); err != nil {
 			//TODO1 check how ctrl.Result propogates through?
-			return ctrl.zResult{}, err
+			return ctrl.Result{}, err
 		}
 
 		return nil
