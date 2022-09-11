@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	keystonev1 "github.com/openstack-k8s-operators/keystone-operator/api/v1beta1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
@@ -100,7 +101,6 @@ func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
 //
 // CreateOrPatchDB - create or patch the service DB instance
 //
-// TODO1 add to create or patch the instance of the reconcileer obj.
 func (d *Database) CreateOrPatchDB(
 	ctx context.Context,
 	instance *keystonev1.KeystoneAPI,
@@ -139,12 +139,12 @@ func (d *Database) CreateOrPatchDB(
 
 		//TODO1 add r object for reconciler
 		// If the service object doesn't have our finalizer, add it.
-		controllerutil.AddFinalizer(instance, helper.GetFinalizer())
+		controllerutil.AddFinalizer(instance, h.GetFinalizer())
 		// Register the finalizer immediately to avoid orphaning resources on delete
-		//if err := patchHelper.Patcgith(ctx, openStackCluster); err != nil {
+		//if err := patchHelper.Patcqh(ctx, openStackCluster); err != nil {
 		if err := r.Update(ctx, instance); err != nil {
 			//TODO1 check how ctrl.Result propogates through?
-			return ctrl.Result{}, err
+			return ctrl.zResult{}, err
 		}
 
 		return nil
