@@ -66,11 +66,8 @@ func (d *Database) setDatabaseHostname(
 		selector,
 	)
 	if err != nil || len(serviceList.Items) == 0 {
-		return util.WrapErrorForObject(
-			fmt.Sprintf("Error getting the DB service using label %v", selector),
-			d.database,
-			err,
-		)
+		return fmt.Errorf("Error getting the DB service using label %v: %w",
+			selector, err)
 	}
 
 	// can we expect there is only one DB instance per namespace?
