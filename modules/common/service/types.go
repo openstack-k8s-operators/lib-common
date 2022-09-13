@@ -26,11 +26,13 @@ type Service struct {
 
 // GenericServiceDetails -
 type GenericServiceDetails struct {
-	Name      string
-	Namespace string
-	Labels    map[string]string
-	Selector  map[string]string
-	Port      GenericServicePort
+	Name        string
+	Namespace   string
+	Labels      map[string]string
+	Selector    map[string]string
+	Port        GenericServicePort
+	Type        corev1.ServiceType
+	ExternalIPs []string
 }
 
 // GenericServicePort -

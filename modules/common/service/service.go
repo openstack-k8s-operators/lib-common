@@ -55,6 +55,7 @@ func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: svcInfo.Selector,
+			Type: svcInfo.Type,
 			Ports: []corev1.ServicePort{
 				{
 					Name: svcInfo.Port.Name,
@@ -64,6 +65,7 @@ func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 					Protocol: svcInfo.Port.Protocol,
 				},
 			},
+			ExternalIPs: svcInfo.ExternalIPs,
 		},
 	}
 }
