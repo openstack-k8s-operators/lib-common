@@ -47,6 +47,8 @@ type Data struct {
 	Port int32
 	// An optional path suffix to append to route hostname when forming Keystone endpoint URLs
 	Path string
+    // An optional protocol, will use TCP if unspecified
+	Protocol corev1.Protocol
 }
 
 //
@@ -62,6 +64,11 @@ func ExposeEndpoints(
 	endpointMap := make(map[string]string)
 
 	for endpointType, data := range endpoints {
+
+		protocol := corev1.ProtocolTCP
+		if data.Protocol != "" {
+			protocol = data.Protocol
+		}
 
 		endpointName := serviceName + "-" + string(endpointType)
 		exportLabels := util.MergeStringMaps(
@@ -82,7 +89,7 @@ func ExposeEndpoints(
 				Port: service.GenericServicePort{
 					Name:     endpointName,
 					Port:     data.Port,
-					Protocol: corev1.ProtocolTCP,
+					Protocol: protocol,
 				}}),
 			exportLabels,
 			5,
