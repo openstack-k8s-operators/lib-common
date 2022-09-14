@@ -200,12 +200,12 @@ func WaitOnJob(
 	if job.Status.Active > 0 {
 		h.GetLogger().Info("Job Status Active... requeuing")
 		return ctrl.Result{RequeueAfter: time.Second * time.Duration(timeout)}, nil
-	} else if job.Status.Failed > 0 {
-		h.GetLogger().Info("Job Status Failed")
-		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New("Job Failed. Check job logs"))
 	} else if job.Status.Succeeded > 0 {
 		h.GetLogger().Info("Job Status Successful")
 		return ctrl.Result{}, nil
+	} else if job.Status.Failed > 0 {
+		h.GetLogger().Info("Job Status Failed")
+		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New("Job Failed. Check job logs"))
 	}
 	h.GetLogger().Info("Job Status incomplete... requeuing")
 	return ctrl.Result{RequeueAfter: time.Second * time.Duration(timeout)}, nil
