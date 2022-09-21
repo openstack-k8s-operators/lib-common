@@ -34,6 +34,27 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
+
+
+// Hash function creates a hash of a ConfigMap's Data and BinaryData fields and
+// returns it as a safe encoded string.
+func Hash(configMap *corev1.ConfigMap) (string, error) {
+	type ConfigMapData struct {
+		Data map[string]string `json:"data,omitempty" protobuf:"bytes,2,rep,name=data"`
+		BinaryData map[string][]byte `json:"binaryData,omitempty" protobuf:"bytes,3,rep,name=binaryData"`
+	}
+
+	if configMap == nil {
+		return "", fmt.Errorf("nil ConfigMap doesn't have data to hash")
+	}
+
+	data := ConfigMapData{
+		Data: configMap.Data,
+		BinaryData: configMap.BinaryData,
+	}
+	return util.ObjectHash(data)
+}
+
 // createOrPatchConfigMap -
 func createOrPatchConfigMap(
 	ctx context.Context,
@@ -83,7 +104,7 @@ func createOrPatchConfigMap(
 		return "", op, fmt.Errorf("error create/updating configmap: %v", err)
 	}
 
-	configMapHash, err := util.ObjectHash(configMap)
+	configMapHash, err := Hash(configMap)
 	if err != nil {
 		return "", op, fmt.Errorf("error calculating configuration hash: %v", err)
 	}
@@ -128,7 +149,7 @@ func createOrGetCustomConfigMap(
 		configMap.Data = foundConfigMap.Data
 	}
 
-	configMapHash, err := util.ObjectHash(configMap)
+	configMapHash, err := Hash(configMap)
 	if err != nil {
 		return "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
@@ -209,7 +230,7 @@ func GetConfigMapAndHashWithName(
 		h.GetLogger().Error(err, configMapName+" ConfigMap not found!", "Instance.Namespace", namespace, "ConfigMap.Name", configMapName)
 		return configMap, "", err
 	}
-	configMapHash, err := util.ObjectHash(configMap)
+	configMapHash, err := Hash(configMap)
 	if err != nil {
 		return configMap, "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
