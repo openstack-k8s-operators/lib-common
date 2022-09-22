@@ -36,6 +36,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// Hash function creates a hash of a Secret's Data and StringData fields and
+// returns it as a safe encoded string.
+func Hash(secret *corev1.Secret) (string, error) {
+	type SecretData struct {
+		Data       map[string][]byte `json:"data,omitempty" protobuf:"bytes,2,rep,name=data"`
+		StringData map[string]string `json:"stringData,omitempty" protobuf:"bytes,4,rep,name=stringData"`
+		Type       corev1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
+	}
+
+	if secret == nil {
+		return "", fmt.Errorf("nil Secret doesn't have data to hash")
+	}
+
+	data := SecretData{
+		StringData: secret.StringData,
+		Data:       secret.Data,
+		Type:       secret.Type,
+	}
+	return util.ObjectHash(data)
+}
+
 // GetSecret -
 func GetSecret(
 	ctx context.Context,
@@ -50,7 +71,7 @@ func GetSecret(
 		return nil, "", err
 	}
 
-	secretHash, err := util.ObjectHash(secret)
+	secretHash, err := Hash(secret)
 	if err != nil {
 		return nil, "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
@@ -98,7 +119,7 @@ func CreateOrPatchSecret(
 		return "", op, fmt.Errorf("error create/updating secret: %v", err)
 	}
 
-	secretHash, err := util.ObjectHash(secret)
+	secretHash, err := Hash(secret)
 	if err != nil {
 		return "", "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
@@ -178,7 +199,7 @@ func createOrUpdateSecret(
 		return "", op, err
 	}
 
-	secretHash, err := util.ObjectHash(secret)
+	secretHash, err := Hash(secret)
 	if err != nil {
 		return "", op, fmt.Errorf("error calculating configuration hash: %v", err)
 	}
@@ -226,7 +247,7 @@ func createOrGetCustomSecret(
 		secret.Data = foundSecret.Data
 	}
 
-	secretHash, err := util.ObjectHash(secret)
+	secretHash, err := Hash(secret)
 	if err != nil {
 		return "", fmt.Errorf("error calculating configuration hash: %v", err)
 	}
