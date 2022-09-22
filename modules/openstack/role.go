@@ -100,13 +100,31 @@ func (o *OpenStack) AssignUserRole(
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
-
-	err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
-		UserID:    userID,
-		ProjectID: projectID}).ExtractErr()
+	// validate if user is already assigned to role
+	listAssignmentsOpts := roles.ListAssignmentsOpts{
+		ScopeProjectID: projectID,
+		UserID:         userID,
+		RoleID:         role.ID,
+	}
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
 	if err != nil {
 		return err
+	}
+
+	assignUser, err := allPages.IsEmpty()
+	if err != nil {
+		return err
+	}
+
+	if assignUser {
+		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
+
+		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+			UserID:    userID,
+			ProjectID: projectID}).ExtractErr()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
