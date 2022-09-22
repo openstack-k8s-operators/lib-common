@@ -18,10 +18,14 @@ package openstack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	roles "github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
 )
+
+// RoleNotFound - role not found error message"
+const RoleNotFound = "role not found in keystone"
 
 // Role -
 type Role struct {
@@ -41,7 +45,7 @@ func (o *OpenStack) CreateRole(
 		log,
 		roleName,
 	)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), RoleNotFound) {
 		return roleID, err
 	}
 
@@ -80,7 +84,7 @@ func (o *OpenStack) GetRole(
 	}
 
 	if len(allRoles) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s role not found in keystone", roleName))
+		return nil, fmt.Errorf(fmt.Sprintf("%s %s", roleName, RoleNotFound))
 	}
 
 	return &allRoles[0], nil
