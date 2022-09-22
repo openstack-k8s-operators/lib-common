@@ -39,22 +39,39 @@ func (o *OpenStack) CreateService(
 	log logr.Logger,
 	s Service,
 ) (string, error) {
+	var serviceID string
 
-	createOpts := services.CreateOpts{
-		Type:    s.Type,
-		Enabled: &s.Enabled,
-		Extra: map[string]interface{}{
-			"name":        s.Name,
-			"description": s.Description,
-		},
-	}
-
-	service, err := services.Create(o.GetOSClient(), createOpts).Extract()
+	service, err := o.GetService(
+		log,
+		s.Type,
+		s.Name,
+	)
 	if err != nil {
-		return "", err
+		return serviceID, err
 	}
 
-	return service.ID, nil
+	// if there is already a service, use it
+	if service != nil {
+		serviceID = service.ID
+	} else {
+		createOpts := services.CreateOpts{
+			Type:    s.Type,
+			Enabled: &s.Enabled,
+			Extra: map[string]interface{}{
+				"name":        s.Name,
+				"description": s.Description,
+			},
+		}
+
+		service, err := services.Create(o.GetOSClient(), createOpts).Extract()
+		if err != nil {
+			return serviceID, err
+		}
+		log.Info(fmt.Sprintf("Service Created - Servicename %s, ID %s", s.Name, service.ID))
+		serviceID = service.ID
+	}
+
+	return serviceID, nil
 }
 
 //
