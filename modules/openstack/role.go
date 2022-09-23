@@ -18,10 +18,14 @@ package openstack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	roles "github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
 )
+
+// RoleNotFound - role not found error message"
+const RoleNotFound = "role not found in keystone"
 
 // Role -
 type Role struct {
@@ -41,7 +45,7 @@ func (o *OpenStack) CreateRole(
 		log,
 		roleName,
 	)
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), RoleNotFound) {
 		return roleID, err
 	}
 
@@ -80,7 +84,7 @@ func (o *OpenStack) GetRole(
 	}
 
 	if len(allRoles) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s role not found in keystone", roleName))
+		return nil, fmt.Errorf(fmt.Sprintf("%s %s", roleName, RoleNotFound))
 	}
 
 	return &allRoles[0], nil
@@ -100,13 +104,31 @@ func (o *OpenStack) AssignUserRole(
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
-
-	err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
-		UserID:    userID,
-		ProjectID: projectID}).ExtractErr()
+	// validate if user is already assigned to role
+	listAssignmentsOpts := roles.ListAssignmentsOpts{
+		ScopeProjectID: projectID,
+		UserID:         userID,
+		RoleID:         role.ID,
+	}
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
 	if err != nil {
 		return err
+	}
+
+	assignUser, err := allPages.IsEmpty()
+	if err != nil {
+		return err
+	}
+
+	if assignUser {
+		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
+
+		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+			UserID:    userID,
+			ProjectID: projectID}).ExtractErr()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

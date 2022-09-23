@@ -24,6 +24,9 @@ import (
 	services "github.com/gophercloud/gophercloud/openstack/identity/v3/services"
 )
 
+// ServiceNotFound - service not found error message"
+const ServiceNotFound = "service not found in keystone"
+
 // Service -
 type Service struct {
 	Name        string
@@ -39,22 +42,39 @@ func (o *OpenStack) CreateService(
 	log logr.Logger,
 	s Service,
 ) (string, error) {
+	var serviceID string
 
-	createOpts := services.CreateOpts{
-		Type:    s.Type,
-		Enabled: &s.Enabled,
-		Extra: map[string]interface{}{
-			"name":        s.Name,
-			"description": s.Description,
-		},
+	service, err := o.GetService(
+		log,
+		s.Type,
+		s.Name,
+	)
+	if err != nil && !strings.Contains(err.Error(), ServiceNotFound) {
+		return serviceID, err
 	}
 
-	service, err := services.Create(o.GetOSClient(), createOpts).Extract()
-	if err != nil {
-		return "", err
+	// if there is already a service, use it
+	if service != nil {
+		serviceID = service.ID
+	} else {
+		createOpts := services.CreateOpts{
+			Type:    s.Type,
+			Enabled: &s.Enabled,
+			Extra: map[string]interface{}{
+				"name":        s.Name,
+				"description": s.Description,
+			},
+		}
+
+		service, err := services.Create(o.GetOSClient(), createOpts).Extract()
+		if err != nil {
+			return serviceID, err
+		}
+		log.Info(fmt.Sprintf("Service Created - Servicename %s, ID %s", s.Name, service.ID))
+		serviceID = service.ID
 	}
 
-	return service.ID, nil
+	return serviceID, nil
 }
 
 //
@@ -80,7 +100,7 @@ func (o *OpenStack) GetService(
 	}
 
 	if len(allServices) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s service not found in keystone", serviceName))
+		return nil, fmt.Errorf(fmt.Sprintf("%s %s", serviceName, ServiceNotFound))
 	}
 
 	return &allServices[0], nil

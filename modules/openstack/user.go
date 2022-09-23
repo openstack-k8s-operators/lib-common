@@ -24,6 +24,9 @@ import (
 	users "github.com/gophercloud/gophercloud/openstack/identity/v3/users"
 )
 
+// UserNotFound - user not found error message"
+const UserNotFound = "user not found in keystone"
+
 // User -
 type User struct {
 	Name      string
@@ -45,7 +48,7 @@ func (o *OpenStack) CreateUser(
 		u.Name,
 	)
 	// If the user is not found, don't count that as an error here
-	if err != nil && !strings.Contains(err.Error(), "user not found in keystone") {
+	if err != nil && !strings.Contains(err.Error(), UserNotFound) {
 		return userID, err
 	}
 
@@ -88,7 +91,7 @@ func (o *OpenStack) GetUser(
 	}
 
 	if len(allUsers) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s user not found in keystone", userName))
+		return nil, fmt.Errorf(fmt.Sprintf("%s %s", userName, UserNotFound))
 	}
 
 	return &allUsers[0], nil

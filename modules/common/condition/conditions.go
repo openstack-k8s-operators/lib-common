@@ -48,6 +48,9 @@ const (
 
 	// KeystoneServiceReadyCondition This condition is mirrored from the Ready condition in the keystoneservice ref object to the service API.
 	KeystoneServiceReadyCondition Type = "KeystoneServiceReady"
+
+	// KeystoneEndpointReadyCondition This condition is mirrored from the Ready condition in the keystoneendpoint ref object to the service API.
+	KeystoneEndpointReadyCondition Type = "KeystoneEndpointReady"
 )
 
 //
@@ -89,10 +92,10 @@ const (
 	// Overall Ready Condition messages
 	//
 	// ReadyInitMessage
-	ReadyInitMessage = "Service setup started"
+	ReadyInitMessage = "Setup started"
 
 	// ReadyMessage
-	ReadyMessage = "Service setup complete"
+	ReadyMessage = "Setup complete"
 
 	//
 	// InputReady condition messages
