@@ -19,6 +19,7 @@ package endpoint
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
@@ -120,22 +121,29 @@ func ExposeEndpoints(
 		//
 		// Update instance status with service endpoint url from route host information
 		//
-		// TODO: need to support https default here
-		var apiEndpoint string
-		if !strings.HasPrefix(route.GetHostname(), "http") {
-			apiEndpoint = fmt.Sprintf("http://%s%s", route.GetHostname(), data.Path)
-		} else {
-			apiEndpoint = fmt.Sprintf("%s%s", route.GetHostname(), data.Path)
-		}
-		// TODO: This check does not allow for certain "special" OpenStack endpoint
-		//       formats.  For instance, "http://<ip>:<port>/v2/%(project_id)s" fails
-		//       to parse because "%(" is an invalid escape character
-		// u, err := url.Parse(apiEndpoint)
-		// if err != nil {
-		// 	return endpointMap, ctrlResult, err
-		// }
+		var protocol string
+		var port string
+		hostname := route.GetHostname()
 
-		endpointMap[string(endpointType)] = apiEndpoint
+		// TODO: need to support https default here
+		if !strings.HasPrefix(hostname, "http") {
+			protocol = "http://"
+		} else {
+			protocol = ""
+		}
+		if data.Port == 80 && protocol == "http://" {
+			port = ""
+		} else {
+			port = fmt.Sprintf(":%d", data.Port)
+		}
+
+		// Do not include data.Path in parsing check because %(project_id)s
+		// is invalid without being encoded, but they should not be encoded in the actual endpoint
+		apiEndpoint, err := url.Parse(protocol + hostname + port)
+		if err != nil {
+			return endpointMap, ctrlResult, err
+		}
+		endpointMap[string(endpointType)] = apiEndpoint.String() + data.Path
 	}
 
 	return endpointMap, ctrl.Result{}, nil
