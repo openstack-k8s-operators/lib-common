@@ -27,13 +27,28 @@ ENVTEST_K8S_VERSION = 1.24
 all: build
 
 .PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
+fmt: gowork ## Run go fmt against code.
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
+		pushd ./$$mod ; \
+		go fmt "./..." || exit 1 ; \
+		popd ; \
+	done
 
 .PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
+vet: gowork ## Run go vet against code.
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
+		pushd ./$$mod ; \
+		go vet ./... || exit 1 ; \
+		popd ; \
+	done
 
+.PHONY: test
+test: gowork generate fmt vet envtest ## Run tests.
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
+		pushd ./$$mod ; \
+		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out || exit 1; \
+		popd ; \
+	done
 ##@ Build
 
 .PHONY: build
@@ -71,35 +86,41 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 	done
 
 # Run go fmt against code
+.PHONY: gofmt
 gofmt: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go vet against code
+.PHONY: govet
 govet: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go test against code
+.PHONY: gotest
 gotest: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
 	done
 
 # Run golangci-lint test against code
+.PHONY: golangci
 golangci: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod || exit 1 ; \
 	done
 
 # Run go lint against code
+.PHONY: golint
 golint: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod || exit 1; \
 	done
 
+.PHONY: gowork
 gowork:
 	test -f go.work || go work init
 	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
