@@ -33,4 +33,6 @@ type Database struct {
 	databaseUser     string
 	secret           string
 	labels           map[string]string
+	name             string
+	namespace        string
 }
