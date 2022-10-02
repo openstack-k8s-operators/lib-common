@@ -250,28 +250,32 @@ func (d *Database) getDBWithName(
 	h *helper.Helper,
 ) error {
 	db := &mariadbv1.MariaDBDatabase{}
+	name := d.name
 	namespace := d.namespace
+	if name == "" {
+		name = h.GetBeforeObject().GetName()
+	}
 	if namespace == "" {
 		namespace = h.GetBeforeObject().GetNamespace()
 	}
 	err := h.GetClient().Get(
 		ctx,
 		types.NamespacedName{
-			Name:      d.databaseName,
+			Name:      name,
 			Namespace: namespace,
 		},
 		db)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return util.WrapErrorForObject(
-				fmt.Sprintf("Failed to get %s database %s ", d.databaseName, namespace),
+				fmt.Sprintf("Failed to get %s database %s ", name, namespace),
 				h.GetBeforeObject(),
 				err,
 			)
 		}
 
 		return util.WrapErrorForObject(
-			fmt.Sprintf("DB error %s %s ", d.databaseName, namespace),
+			fmt.Sprintf("DB error %s %s ", name, namespace),
 			h.GetBeforeObject(),
 			err,
 		)
