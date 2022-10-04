@@ -16,10 +16,14 @@ limitations under the License.
 
 package deployment
 
-import appsv1 "k8s.io/api/apps/v1"
+import (
+	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+)
 
 // Deployment -
 type Deployment struct {
 	deployment *appsv1.Deployment
-	timeout    int
+	timeout    time.Duration
 }

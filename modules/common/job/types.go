@@ -17,6 +17,8 @@ limitations under the License.
 package job
 
 import (
+	"time"
+
 	batchv1 "k8s.io/api/batch/v1"
 )
 
@@ -25,7 +27,7 @@ type Job struct {
 	job        *batchv1.Job
 	jobType    string
 	preserve   bool
-	timeout    int
+	timeout    time.Duration
 	beforeHash string
 	hash       string
 	changed    bool

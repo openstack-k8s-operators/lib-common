@@ -223,11 +223,12 @@ func (d *Database) CreateOrPatchDBByName(
 }
 
 //
-// WaitForDBCreated - wait until the MariaDBDatabase is initialized and reports Status.Completed == true
+// WaitForDBCreatedWithTimeout - wait until the MariaDBDatabase is initialized and reports Status.Completed == true
 //
-func (d *Database) WaitForDBCreated(
+func (d *Database) WaitForDBCreatedWithTimeout(
 	ctx context.Context,
 	h *helper.Helper,
+	requeueAfter time.Duration,
 ) (ctrl.Result, error) {
 
 	err := d.getDBWithName(
@@ -245,10 +246,20 @@ func (d *Database) WaitForDBCreated(
 			d.database,
 		)
 
-		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
+		return ctrl.Result{RequeueAfter: requeueAfter}, nil
 	}
 
 	return ctrl.Result{}, nil
+}
+
+//
+// WaitForDBCreated - wait until the MariaDBDatabase is initialized and reports Status.Completed == true
+// Deprecated, use WaitForDBCreatedWithTimeout instead
+func (d *Database) WaitForDBCreated(
+	ctx context.Context,
+	h *helper.Helper,
+) (ctrl.Result, error) {
+	return d.WaitForDBCreatedWithTimeout(ctx, h, time.Second*5)
 }
 
 //
