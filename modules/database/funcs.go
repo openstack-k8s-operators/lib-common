@@ -50,29 +50,37 @@ func NewDatabase(
 
 //
 // setDatabaseHostname - set the service name of the DB as the databaseHostname
+// by looking up the Service via the name of the MariaDB CR which provides it.
 //
 func (d *Database) setDatabaseHostname(
 	ctx context.Context,
 	h *helper.Helper,
-	labels map[string]string,
+	name string,
 ) error {
 
-	labels["app"] = "mariadb"
-
+	// When the MariaDB CR provides the Service it sets the "cr" label of the
+	// Service to "mariadb-<name of the MariaDB CR>". So we use this label
+	// to select the right Service. See:
+	// https://github.com/openstack-k8s-operators/mariadb-operator/blob/5781b0cf1087d7d28fa285bd5c44689acba92183/pkg/service.go#L17
+	// https://github.com/openstack-k8s-operators/mariadb-operator/blob/590ffdc5ad86fe653f9cd8a7102bb76dfe2e36d1/pkg/utils.go#L4
+	selector := map[string]string{
+		"app": "mariadb",
+		"cr":  fmt.Sprintf("mariadb-%s", name),
+	}
 	serviceList, err := service.GetServicesListWithLabel(
 		ctx,
 		h,
 		h.GetBeforeObject().GetNamespace(),
-		labels,
+		selector,
 	)
 	if err != nil || len(serviceList.Items) == 0 {
 		return fmt.Errorf("Error getting the DB service using label %v: %w",
-			labels, err)
+			selector, err)
 	}
 
-	// We can expect that only one DB service instance matching the labels in
-	// the current namespace. If not then the caller needs to more specific by
-	// by adding more labels
+	// We assume here that a MariaDB CR instance always creates a single
+	// Service. If multiple DB services are used the they are managed via
+	// separate MariaDB CRs.
 	if len(serviceList.Items) > 1 {
 		return util.WrapErrorForObject(
 			fmt.Sprintf("more then one DB service found %d", len(serviceList.Items)),
@@ -101,25 +109,26 @@ func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
 
 //
 // CreateOrPatchDB - create or patch the service DB instance
-// Deprecated. Use CreateOrPatchDBWithLabel instead. If you want to use the
-// default the DB service instance of deployment then pass label
-// "cr": "mariadb-openstack" to CreateOrPatchDBWithLabel
+// Deprecated. Use CreateOrPatchDBByName instead. If you want to use the
+// default the DB service instance of the deployment then pass "openstack" as
+// the name.
+//
 func (d *Database) CreateOrPatchDB(
 	ctx context.Context,
 	h *helper.Helper,
 ) (ctrl.Result, error) {
-	return d.CreateOrPatchDBWithLabel(
-		ctx, h, map[string]string{"cr": "mariadb-openstack"})
+	return d.CreateOrPatchDBByName(ctx, h, "openstack")
 }
 
 //
-// CreateOrPatchDBWithLabel - create or patch the service DB instance on
-// the DB service selected via labels. To get the default DB Service instance
-// pass "cr": "mariadb-openstack" via the labels parameter.
-func (d *Database) CreateOrPatchDBWithLabel(
+// CreateOrPatchDBByName - create or patch the service DB instance on
+// the DB service. The DB service is selected by the name of the MariaDB CR
+// providing the service.
+//
+func (d *Database) CreateOrPatchDBByName(
 	ctx context.Context,
 	h *helper.Helper,
-	labels map[string]string,
+	name string,
 ) (ctrl.Result, error) {
 
 	db := &mariadbv1.MariaDBDatabase{
@@ -134,7 +143,7 @@ func (d *Database) CreateOrPatchDBWithLabel(
 	}
 
 	// set the database hostname on the db instance
-	err := d.setDatabaseHostname(ctx, h, labels)
+	err := d.setDatabaseHostname(ctx, h, name)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
