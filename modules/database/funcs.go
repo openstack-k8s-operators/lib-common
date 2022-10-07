@@ -45,6 +45,27 @@ func NewDatabase(
 		databaseUser: databaseUser,
 		secret:       secret,
 		labels:       labels,
+		name:         "",
+		namespace:    "",
+	}
+}
+
+// NewDatabaseWithNamespace returns an initialized DB.
+func NewDatabaseWithNamespace(
+	databaseName string,
+	databaseUser string,
+	secret string,
+	labels map[string]string,
+	name string,
+	namespace string,
+) *Database {
+	return &Database{
+		databaseName: databaseName,
+		databaseUser: databaseUser,
+		secret:       secret,
+		labels:       labels,
+		name:         name,
+		namespace:    namespace,
 	}
 }
 
@@ -131,15 +152,25 @@ func (d *Database) CreateOrPatchDBByName(
 	name string,
 ) (ctrl.Result, error) {
 
-	db := &mariadbv1.MariaDBDatabase{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      h.GetBeforeObject().GetName(),
-			Namespace: h.GetBeforeObject().GetNamespace(),
-		},
-		Spec: mariadbv1.MariaDBDatabaseSpec{
-			// the DB name must not change, therefore specify it outside the mutuate function
-			Name: d.databaseName,
-		},
+	if d.name == "" {
+		d.name = h.GetBeforeObject().GetName()
+	}
+	if d.namespace == "" {
+		d.namespace = h.GetBeforeObject().GetNamespace()
+	}
+
+	db := d.database
+	if db == nil {
+		db = &mariadbv1.MariaDBDatabase{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      d.name,
+				Namespace: d.namespace,
+			},
+			Spec: mariadbv1.MariaDBDatabaseSpec{
+				// the DB name must not change, therefore specify it outside the mutuate function
+				Name: d.databaseName,
+			},
+		}
 	}
 
 	// set the database hostname on the db instance
@@ -228,24 +259,32 @@ func (d *Database) getDBWithName(
 	h *helper.Helper,
 ) error {
 	db := &mariadbv1.MariaDBDatabase{}
+	name := d.name
+	namespace := d.namespace
+	if name == "" {
+		name = h.GetBeforeObject().GetName()
+	}
+	if namespace == "" {
+		namespace = h.GetBeforeObject().GetNamespace()
+	}
 	err := h.GetClient().Get(
 		ctx,
 		types.NamespacedName{
-			Name:      d.databaseName,
-			Namespace: h.GetBeforeObject().GetNamespace(),
+			Name:      name,
+			Namespace: namespace,
 		},
 		db)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return util.WrapErrorForObject(
-				fmt.Sprintf("Failed to get %s database %s ", d.databaseName, h.GetBeforeObject().GetNamespace()),
+				fmt.Sprintf("Failed to get %s database %s ", name, namespace),
 				h.GetBeforeObject(),
 				err,
 			)
 		}
 
 		return util.WrapErrorForObject(
-			fmt.Sprintf("DB error %s %s ", d.databaseName, h.GetBeforeObject().GetNamespace()),
+			fmt.Sprintf("DB error %s %s ", name, namespace),
 			h.GetBeforeObject(),
 			err,
 		)
