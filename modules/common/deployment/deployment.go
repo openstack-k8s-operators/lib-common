@@ -38,7 +38,7 @@ func NewDeployment(
 ) *Deployment {
 	return &Deployment{
 		deployment: deployment,
-		timeout:    timeout,
+		timeout:    time.Duration(timeout) * time.Second,
 	}
 }
 
@@ -74,8 +74,8 @@ func (d *Deployment) CreateOrPatch(
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Deployment %s not found, reconcile in %ds", deployment.Name, d.timeout))
-			return ctrl.Result{RequeueAfter: time.Duration(d.timeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("Deployment %s not found, reconcile in %s", deployment.Name, d.timeout))
+			return ctrl.Result{RequeueAfter: d.timeout}, nil
 		}
 		return ctrl.Result{}, err
 	}
@@ -109,6 +109,12 @@ func (d *Deployment) Delete(
 // GetDeployment - get the deployment object.
 func (d *Deployment) GetDeployment() appsv1.Deployment {
 	return *d.deployment
+}
+
+// SetTimeout defines the duration used for requeueing while waiting for the deployment
+// to finish.
+func (d *Deployment) SetTimeout(timeout time.Duration) {
+	d.timeout = timeout
 }
 
 // GetDeploymentWithName func
