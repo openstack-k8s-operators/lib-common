@@ -204,11 +204,8 @@ func (d *Database) CreateOrPatchDBByName(
 	}
 
 	if op != controllerutil.OperationResultNone {
-		return ctrl.Result{RequeueAfter: time.Second * 5}, util.WrapErrorForObject(
-			fmt.Sprintf("DB object %s created or patched", db.Name),
-			db,
-			err,
-		)
+		util.LogForObject(h, fmt.Sprintf("DB object %s created or patched", db.Name), db)
+		return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 	}
 
 	err = d.getDBWithName(
