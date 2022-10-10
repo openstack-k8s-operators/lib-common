@@ -52,51 +52,61 @@ func TestObjectHash(t *testing.T) {
 // TestSetHash - create or patch the service DB instance
 //
 func TestSetHash(t *testing.T) {
-	hashMap := map[string]string{
-		"a": "a",
-		"b": "b",
+
+	tests := []struct {
+		name     string
+		hashType string
+		hashStr  string
+		changed  bool
+		want     map[string]string
+	}{
+		{
+			name:     "Add new hashtype and hash - a:a",
+			hashType: "a",
+			hashStr:  "a",
+			changed:  true,
+			want:     map[string]string{"a": "a"},
+		},
+		{
+			name:     "Add new hashtype and hash - b:b",
+			hashType: "b",
+			hashStr:  "b",
+			changed:  true,
+			want:     map[string]string{"a": "a", "b": "b"},
+		},
+		{
+			name:     "Change existing hashtype with hash - a:aa",
+			hashType: "a",
+			hashStr:  "aa",
+			changed:  true,
+			want:     map[string]string{"a": "aa", "b": "b"},
+		},
+		{
+			name:     "No change to existing hashtype with hash - b:b",
+			hashType: "b",
+			hashStr:  "b",
+			changed:  false,
+			want:     map[string]string{"a": "aa", "b": "b"},
+		},
 	}
+
+	hashMap := map[string]string{}
 	var changed bool
 
-	t.Run("Add new hashtype and hash", func(t *testing.T) {
-		g := NewWithT(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
 
-		hashMap, changed = SetHash(
-			hashMap,
-			"c",
-			"c",
-		)
-		g.Expect(changed).To(BeTrue())
-		g.Expect(hashMap).To(HaveKeyWithValue("a", "a"))
-		g.Expect(hashMap).To(HaveKeyWithValue("b", "b"))
-		g.Expect(hashMap).To(HaveKeyWithValue("c", "c"))
+			hashMap, changed = SetHash(
+				hashMap,
+				tt.hashType,
+				tt.hashStr,
+			)
 
-	})
-	t.Run("Change existing hashtype with hash", func(t *testing.T) {
-		g := NewWithT(t)
-
-		hashMap, changed = SetHash(
-			hashMap,
-			"a",
-			"aa",
-		)
-		g.Expect(changed).To(BeTrue())
-		g.Expect(hashMap).To(HaveKeyWithValue("a", "aa"))
-		g.Expect(hashMap).To(HaveKeyWithValue("b", "b"))
-		g.Expect(hashMap).To(HaveKeyWithValue("c", "c"))
-	})
-	t.Run("No change to existing hashtype with hash", func(t *testing.T) {
-		g := NewWithT(t)
-
-		hashMap, changed = SetHash(
-			hashMap,
-			"b",
-			"b",
-		)
-		g.Expect(changed).To(BeFalse())
-		g.Expect(hashMap).To(HaveKeyWithValue("a", "aa"))
-		g.Expect(hashMap).To(HaveKeyWithValue("b", "b"))
-		g.Expect(hashMap).To(HaveKeyWithValue("c", "c"))
-	})
-
+			g.Expect(changed).To(BeIdenticalTo(tt.changed))
+			for k, v := range tt.want {
+				g.Expect(hashMap).To(HaveKeyWithValue(k, v))
+			}
+		})
+	}
 }
