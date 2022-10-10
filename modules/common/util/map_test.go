@@ -7,28 +7,72 @@ import (
 )
 
 func TestMergeStringMaps(t *testing.T) {
-	t.Run("Merge maps", func(t *testing.T) {
-		g := NewWithT(t)
 
-		m := MergeStringMaps(
-			map[string]string{
+	tests := []struct {
+		name string
+		map1 map[string]string
+		map2 map[string]string
+		want map[string]string
+	}{
+		{
+			name: "Merge maps",
+			map1: map[string]string{
+				"a": "a",
+			},
+			map2: map[string]string{
+				"b": "b",
+				"c": "c",
+			},
+			want: map[string]string{
 				"a": "a",
 				"b": "b",
-			}, map[string]string{
+				"c": "c",
+			},
+		},
+		{
+			name: "Merge maps with existing key, the value in the first map is preserved",
+			map1: map[string]string{
+				"a": "a",
+				"b": "b",
+			},
+			map2: map[string]string{
 				"a": "ax",
 				"c": "c",
 			},
-		)
-		g.Expect(m).To(HaveKeyWithValue("a", "a"))
-		g.Expect(m).To(HaveKeyWithValue("b", "b"))
-		g.Expect(m).To(HaveKeyWithValue("c", "c"))
-	})
-	t.Run("Nils empty maps", func(t *testing.T) {
-		g := NewWithT(t)
+			want: map[string]string{
+				"a": "a",
+				"b": "b",
+				"c": "c",
+			},
+		},
+		{
+			name: "Merge maps with existing key, the value in the first map is preserved",
+			map1: map[string]string{},
+			map2: map[string]string{},
+			want: map[string]string{},
+		},
+	}
 
-		m := MergeStringMaps(map[string]string{}, map[string]string{})
-		g.Expect(m).To(BeNil())
-	})
+	mergedMap := map[string]string{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mergedMap = MergeStringMaps(
+				tt.map1,
+				tt.map2,
+			)
+
+			if mergedMap == nil {
+				g.Expect(mergedMap).To(BeNil())
+			}
+
+			for k, v := range tt.want {
+				g.Expect(mergedMap).To(HaveKeyWithValue(k, v))
+			}
+		})
+	}
 }
 
 func TestSortStringMapByValue(t *testing.T) {
