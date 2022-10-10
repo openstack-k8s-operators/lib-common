@@ -22,6 +22,32 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func TestObjectHash(t *testing.T) {
+
+	tests := []struct {
+		name string
+		data map[string]string
+		want string
+	}{
+		{
+			name: "Create hash",
+			data: map[string]string{"a": "a"},
+			want: "n548h65h79hffh74h59hf7h9ch8h65bh56fh665h66h98h575hdh74h58hbfh5c9h65dh655hbch55dh699hf5h689h695h5c7h5c7h5bbh5ffq",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			hash, err := ObjectHash(tt.data)
+			g.Expect(err).To(BeNil())
+
+			g.Expect(hash).To(BeIdenticalTo(tt.want))
+		})
+	}
+}
+
 //
 // TestSetHash - create or patch the service DB instance
 //
