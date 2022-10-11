@@ -46,7 +46,7 @@ func TestMergeStringMaps(t *testing.T) {
 			},
 		},
 		{
-			name: "Merge maps with existing key, the value in the first map is preserved",
+			name: "Merge empty maps",
 			map1: map[string]string{},
 			map2: map[string]string{},
 			want: map[string]string{},
