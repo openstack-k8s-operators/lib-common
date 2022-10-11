@@ -97,24 +97,24 @@ func TestIsSet(t *testing.T) {
 func TestIsJSON(t *testing.T) {
 
 	tests := []struct {
-		name string
-		data string
-		want string
+		name  string
+		data  string
+		error bool
 	}{
 		{
-			name: "Valid json string",
-			data: `{"some":"json"}`,
-			want: "",
+			name:  "Valid json string",
+			data:  `{"some":"json"}`,
+			error: false,
 		},
 		{
-			name: "Empty string",
-			data: "",
-			want: "unexpected end of JSON input",
+			name:  "Empty string",
+			data:  "",
+			error: true,
 		},
 		{
-			name: "Not valid json string",
-			data: "not valid json",
-			want: "invalid character 'o' in literal null (expecting 'u')",
+			name:  "Not valid json string",
+			data:  "not valid json",
+			error: true,
 		},
 	}
 
@@ -123,8 +123,10 @@ func TestIsJSON(t *testing.T) {
 			g := NewWithT(t)
 
 			err := IsJSON(tt.data)
-			if err != nil {
-				g.Expect(err.Error()).To(BeIdenticalTo(tt.want))
+			if tt.error {
+				g.Expect(err).ToNot(BeNil())
+			} else {
+				g.Expect(err).To(BeNil())
 			}
 		})
 	}
