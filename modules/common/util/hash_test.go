@@ -48,9 +48,6 @@ func TestObjectHash(t *testing.T) {
 	}
 }
 
-//
-// TestSetHash - create or patch the service DB instance
-//
 func TestSetHash(t *testing.T) {
 
 	tests := []struct {
