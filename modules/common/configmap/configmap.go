@@ -34,13 +34,11 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-
-
 // Hash function creates a hash of a ConfigMap's Data and BinaryData fields and
 // returns it as a safe encoded string.
 func Hash(configMap *corev1.ConfigMap) (string, error) {
 	type ConfigMapData struct {
-		Data map[string]string `json:"data,omitempty" protobuf:"bytes,2,rep,name=data"`
+		Data       map[string]string `json:"data,omitempty" protobuf:"bytes,2,rep,name=data"`
 		BinaryData map[string][]byte `json:"binaryData,omitempty" protobuf:"bytes,3,rep,name=binaryData"`
 	}
 
@@ -49,7 +47,7 @@ func Hash(configMap *corev1.ConfigMap) (string, error) {
 	}
 
 	data := ConfigMapData{
-		Data: configMap.Data,
+		Data:       configMap.Data,
 		BinaryData: configMap.BinaryData,
 	}
 	return util.ObjectHash(data)
