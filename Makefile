@@ -85,35 +85,35 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 		$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./$$mod/..." ; \
 	done
 
-# Run go fmt against code
+# Run go fmt via ci-tools script against code
 .PHONY: gofmt
 gofmt: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go vet against code
+# Run go vet via ci-tools script against code
 .PHONY: govet
 govet: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go test against code
+# Run go test via ci-tools script against code
 .PHONY: gotest
 gotest: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
 	done
 
-# Run golangci-lint test against code
+# Run golangci-lint test via ci-tools script against code
 .PHONY: golangci
 golangci: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go lint against code
+# Run go lint via ci-tools script against code
 .PHONY: golint
 golint: get-ci-tools
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
