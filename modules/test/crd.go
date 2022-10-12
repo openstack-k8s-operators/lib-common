@@ -22,50 +22,66 @@ import (
 	"golang.org/x/mod/modfile"
 )
 
-// getDependencyVersion returns the version of the given module specified in
-// the go.mod file
-func getDependencyVersion(moduleName string, goModPath string) (string, error) {
+// getDependencyVersion returns the name and version of the given module
+// specified in the go.mod file. The returned name follows the "replace"
+// directives from go.mod
+func getDependencyVersion(moduleName string, goModPath string) (string, string, error) {
 	content, err := os.ReadFile(goModPath)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	f, err := modfile.Parse("go.mod", content, nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
+
+	version := ""
+	name := moduleName
 
 	for _, r := range f.Require {
 		if r.Mod.Path == moduleName {
-			return r.Mod.Version, nil
+			version = r.Mod.Version
 		}
 	}
-	return "", fmt.Errorf("cannot find %s in the go.mod file", moduleName)
 
+	// check for replacement config in go.mod for the named module
+	for _, r := range f.Replace {
+		if r.Old.Path == moduleName {
+			version = r.New.Version
+			name = r.New.Path
+		}
+	}
+
+	if version != "" {
+		return name, version, nil
+	}
+
+	return name, "", fmt.Errorf("cannot find %s in %s file", moduleName, goModPath)
 }
 
 // GetCRDDirFromModule returns the absolute path of the directory that holds the
 // custom resource definitions for the given module name. It will use the
 // version of the module specified in the go.mod file.
-func GetCRDDirFromModule(moduleName string, goModPath string) (string, error) {
-	version, err := getDependencyVersion(moduleName, goModPath)
+func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath string) (string, error) {
+	moduleName, version, err := getDependencyVersion(moduleName, goModPath)
 	if err != nil {
 		return "", err
 	}
 	versionedModule := fmt.Sprintf("%s@%s", moduleName, version)
-	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, "config", "crd", "bases")
+	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
 	return path, nil
 }
 
 // GetOpenShiftCRDDir returns the absolute path of the directory holding the
 // OpenShift custom resource definition. It will look the CRD path up from
-// lib-common module,
+// lib-common module.
 func GetOpenShiftCRDDir(crdName string, goModPath string) (string, error) {
 	// OpenShift CRDs are stored within lib-common so get them from there. To
 	// call GetOpenShiftCRDDir the caller needs to have the test module
 	// imported so we can use that as anchor for the openshift_crds directory
 	libCommon := "github.com/openstack-k8s-operators/lib-common/modules/test"
-	version, err := getDependencyVersion(libCommon, goModPath)
+	libCommon, version, err := getDependencyVersion(libCommon, goModPath)
 	if err != nil {
 		return "", err
 	}
