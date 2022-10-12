@@ -34,11 +34,12 @@ import (
 type TType string
 
 const (
-	// TemplateTypeScripts - config type
+	// TemplateTypeScripts - scripts type
 	TemplateTypeScripts TType = "bin"
 	// TemplateTypeConfig - config type
 	TemplateTypeConfig TType = "config"
-	// TemplateTypeCustom - custom config type
+	// TemplateTypeCustom - custom config type, the secret/cm will not get upated as it is exected that the content is owned by a user
+	// if the configmap/secret does not exist on first check, it gets created
 	TemplateTypeCustom TType = "custom"
 	// TemplateTypeNone - none type, don't add configs from a directory, only files from AdditionalData
 	TemplateTypeNone TType = "none"
@@ -46,18 +47,18 @@ const (
 
 // Template - config map and secret details
 type Template struct {
-	Name               string
-	Namespace          string
-	Type               TType
-	InstanceType       string
-	SecretType         corev1.SecretType // Secrets only, defaults to "Opaque"
-	AdditionalTemplate map[string]string
-	CustomData         map[string]string
-	Labels             map[string]string
-	Annotations        map[string]string
-	ConfigOptions      map[string]interface{}
-	SkipSetOwner       bool // skip setting ownership on the associated configmap
-	Version            string
+	Name               string                 // name of the cm/secret to create based of the Template. Check secret/configmap pkg on details how it is used.
+	Namespace          string                 // name of the nanmespace to create the cm/secret. Check secret/configmap pkg on details how it is used.
+	Type               TType                  // type of the templates, see TTtypes
+	InstanceType       string                 // the CRD name in lower case, to separate the templates for each CRD in /templates
+	SecretType         corev1.SecretType      // Secrets only, defaults to "Opaque"
+	AdditionalTemplate map[string]string      // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
+	CustomData         map[string]string      // custom data which won't get rendered as a template and just added to the resulting cm/secret
+	Labels             map[string]string      // labels to be set on the cm/secret
+	Annotations        map[string]string      // Annotations set on cm/secret
+	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
+	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
+	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -77,13 +78,23 @@ func GetTemplatesPath() string {
 	return templatesPath
 }
 
-// GetAllTemplates get all files from a templates sub folder
+//
+// GetAllTemplates - get all template files
+//
+// The structur of the folder is, base path, the kind (CRD in lower case),
+// - path - base path of the templates folder
+// - kind - sub folder for the CRDs templates
+// - templateType - TType of the templates. When the templates got rendered and added to a CM
+//   this information is e.g. used for the permissions they get mounted into the pod
+// - version - if there need to be templates for different versions, they can be stored in a version subdir
+//
+// Sub directories inside the specified directory with the above parameters get ignored.
 func GetAllTemplates(path string, kind string, templateType string, version string) []string {
 
-	templatePath := fmt.Sprintf("%s/%s/%s/*", path, strings.ToLower(kind), templateType)
+	templatePath := filepath.Join(path, strings.ToLower(kind), templateType, "*")
 
 	if version != "" {
-		templatePath = fmt.Sprintf("%s/%s/%s/%s/*", path, strings.ToLower(kind), templateType, version)
+		templatePath = filepath.Join(path, strings.ToLower(kind), templateType, version, "*")
 	}
 
 	templatesFiles, err := filepath.Glob(templatePath)
@@ -93,14 +104,15 @@ func GetAllTemplates(path string, kind string, templateType string, version stri
 	}
 
 	// remove any subdiretories from templatesFiles
-	for index, file := range templatesFiles {
-		fi, err := os.Stat(file)
+	for index := 0; index < len(templatesFiles); index++ {
+		fi, err := os.Stat(templatesFiles[index])
 		if err != nil {
 			fmt.Print(err)
 			os.Exit(1)
 		}
 		if fi.Mode().IsDir() {
-			RemoveIndex(templatesFiles, index)
+			templatesFiles = RemoveIndex(templatesFiles, index)
+			index = -1 // restart from the beginning
 		}
 	}
 
@@ -154,10 +166,8 @@ func ExecuteTemplateData(templateData string, data interface{}) (string, error) 
 	return buff.String(), nil
 }
 
-// ExecuteTemplateFile creates a template from the file and
+// ExecuteTemplateFile - creates a template from the file and
 // execute it with the specified data
-// Note: mschuppert - can be removed when all operators switched
-//       to the above ones.
 func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 
 	templates := os.Getenv("OPERATOR_TEMPLATES")
@@ -192,7 +202,9 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 	return buff.String(), nil
 }
 
-// GetTemplateData -
+// GetTemplateData - Renders templates specified via Template struct
+//
+// Check the TType const and Template type for more details on defining the template.
 func GetTemplateData(t Template) (map[string]string, error) {
 	opts := t.ConfigOptions
 
