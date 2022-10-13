@@ -14,8 +14,6 @@ limitations under the License.
 package helpers
 
 import (
-	"time"
-
 	"github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,21 +23,21 @@ import (
 )
 
 // GetSecret -
-func GetSecret(name types.NamespacedName, timeout time.Duration, interval time.Duration) corev1.Secret {
+func (tc *TestHelper) GetSecret(name types.NamespacedName) corev1.Secret {
 	secret := &corev1.Secret{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(k8sClient.Get(ctx, name, secret)).Should(gomega.Succeed())
-	}, timeout, interval).Should(gomega.Succeed())
+		g.Expect(tc.k8sClient.Get(tc.ctx, name, secret)).Should(gomega.Succeed())
+	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
 	return *secret
 }
 
 // ListSecrets -
-func ListSecrets(namespace string, timeout time.Duration, interval time.Duration) corev1.SecretList {
+func (tc *TestHelper) ListSecrets(namespace string) corev1.SecretList {
 	secrets := &corev1.SecretList{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(k8sClient.List(ctx, secrets, client.InNamespace(namespace))).Should(gomega.Succeed())
-	}, timeout, interval).Should(gomega.Succeed())
+		g.Expect(tc.k8sClient.List(tc.ctx, secrets, client.InNamespace(namespace))).Should(gomega.Succeed())
+	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
 	return *secrets
 }

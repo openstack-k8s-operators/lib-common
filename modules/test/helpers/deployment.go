@@ -14,8 +14,6 @@ limitations under the License.
 package helpers
 
 import (
-	"time"
-
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,26 +22,26 @@ import (
 )
 
 // GetDeployment -
-func GetDeployment(name types.NamespacedName, timeout time.Duration, interval time.Duration) *appsv1.Deployment {
+func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(k8sClient.Get(ctx, name, deployment)).Should(gomega.Succeed())
-	}, timeout, interval).Should(gomega.Succeed())
+		g.Expect(tc.k8sClient.Get(tc.ctx, name, deployment)).Should(gomega.Succeed())
+	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
 	return deployment
 }
 
 // ListDeployments -
-func ListDeployments(namespace string) *appsv1.DeploymentList {
+func (tc *TestHelper) ListDeployments(namespace string) *appsv1.DeploymentList {
 	deployments := &appsv1.DeploymentList{}
-	gomega.Expect(k8sClient.List(ctx, deployments, client.InNamespace(namespace))).Should(gomega.Succeed())
+	gomega.Expect(tc.k8sClient.List(tc.ctx, deployments, client.InNamespace(namespace))).Should(gomega.Succeed())
 
 	return deployments
 }
 
 // SimulateDeploymentReplicaReady -
-func SimulateDeploymentReplicaReady(name types.NamespacedName, timeout time.Duration, interval time.Duration) {
-	deployment := GetDeployment(name, timeout, interval)
+func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) {
+	deployment := tc.GetDeployment(name)
 	// NOTE(gibi): We don't need to do this when run against a real
 	// env as there the deployment could reach the ready state automatically.
 	// But for that we would need another set of test setup, i.e. deploying
@@ -51,5 +49,5 @@ func SimulateDeploymentReplicaReady(name types.NamespacedName, timeout time.Dura
 
 	deployment.Status.Replicas = 1
 	deployment.Status.ReadyReplicas = 1
-	gomega.Expect(k8sClient.Status().Update(ctx, deployment)).To(gomega.Succeed())
+	gomega.Expect(tc.k8sClient.Status().Update(tc.ctx, deployment)).To(gomega.Succeed())
 }

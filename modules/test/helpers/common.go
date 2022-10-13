@@ -17,16 +17,21 @@ import (
 	"context"
 	"os"
 	"strconv"
+	"time"
 
 	ginkgo "github.com/onsi/ginkgo/v2"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
+// TestHelper -
+type TestHelper struct {
 	k8sClient client.Client
 	ctx       context.Context
-)
+	cancel    context.CancelFunc
+	timeout   time.Duration
+	interval  time.Duration
+}
 
 // SkipInExistingCluster -
 func SkipInExistingCluster(message string) {

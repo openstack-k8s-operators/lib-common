@@ -14,8 +14,6 @@ limitations under the License.
 package helpers
 
 import (
-	"time"
-
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,26 +22,26 @@ import (
 )
 
 // GetJob -
-func GetJob(name types.NamespacedName, timeout time.Duration, interval time.Duration) *batchv1.Job {
+func (tc *TestHelper) GetJob(name types.NamespacedName) *batchv1.Job {
 	job := &batchv1.Job{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(k8sClient.Get(ctx, name, job)).Should(gomega.Succeed())
-	}, timeout, interval).Should(gomega.Succeed())
+		g.Expect(tc.k8sClient.Get(tc.ctx, name, job)).Should(gomega.Succeed())
+	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
 	return job
 }
 
 // ListJobs -
-func ListJobs(namespace string) *batchv1.JobList {
+func (tc *TestHelper) ListJobs(namespace string) *batchv1.JobList {
 	jobs := &batchv1.JobList{}
-	gomega.Expect(k8sClient.List(ctx, jobs, client.InNamespace(namespace))).Should(gomega.Succeed())
+	gomega.Expect(tc.k8sClient.List(tc.ctx, jobs, client.InNamespace(namespace))).Should(gomega.Succeed())
 
 	return jobs
 }
 
 // SimulateJobFailure -
-func SimulateJobFailure(name types.NamespacedName, timeout time.Duration, interval time.Duration) {
-	job := GetJob(name, timeout, interval)
+func (tc *TestHelper) SimulateJobFailure(name types.NamespacedName) {
+	job := tc.GetJob(name)
 
 	// NOTE(gibi) when run against a real env we need to find a
 	// better way to make the job fail. This works but it is unreal.
@@ -51,12 +49,12 @@ func SimulateJobFailure(name types.NamespacedName, timeout time.Duration, interv
 	// Simulate that the job is failed
 	job.Status.Failed = 1
 	job.Status.Active = 0
-	gomega.Expect(k8sClient.Status().Update(ctx, job)).To(gomega.Succeed())
+	gomega.Expect(tc.k8sClient.Status().Update(tc.ctx, job)).To(gomega.Succeed())
 }
 
 // SimulateJobSuccess -
-func SimulateJobSuccess(name types.NamespacedName, timeout time.Duration, interval time.Duration) {
-	job := GetJob(name, timeout, interval)
+func (tc *TestHelper) SimulateJobSuccess(name types.NamespacedName) {
+	job := tc.GetJob(name)
 	// NOTE(gibi): We don't need to do this when run against a real
 	// env as there the job could run successfully automatically if the
 	// database user is registered manually in the DB service. But for that
@@ -66,5 +64,5 @@ func SimulateJobSuccess(name types.NamespacedName, timeout time.Duration, interv
 	// Simulate that the job is succeeded
 	job.Status.Succeeded = 1
 	job.Status.Active = 0
-	gomega.Expect(k8sClient.Status().Update(ctx, job)).To(gomega.Succeed())
+	gomega.Expect(tc.k8sClient.Status().Update(tc.ctx, job)).To(gomega.Succeed())
 }
