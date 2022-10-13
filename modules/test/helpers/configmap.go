@@ -14,6 +14,8 @@ limitations under the License.
 package helpers
 
 import (
+	"time"
+
 	"github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +25,7 @@ import (
 )
 
 // GetConfigMap -
-func GetConfigMap(name types.NamespacedName) corev1.ConfigMap {
+func GetConfigMap(name types.NamespacedName, timeout time.Duration, interval time.Duration) corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(k8sClient.Get(ctx, name, cm)).Should(gomega.Succeed())
@@ -33,7 +35,7 @@ func GetConfigMap(name types.NamespacedName) corev1.ConfigMap {
 }
 
 // ListConfigMaps -
-func ListConfigMaps(namespace string) corev1.ConfigMapList {
+func ListConfigMaps(namespace string, timeout time.Duration, interval time.Duration) corev1.ConfigMapList {
 	cms := &corev1.ConfigMapList{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(k8sClient.List(ctx, cms, client.InNamespace(namespace))).Should(gomega.Succeed())

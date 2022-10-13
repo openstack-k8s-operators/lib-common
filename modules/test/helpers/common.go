@@ -17,16 +17,10 @@ import (
 	"context"
 	"os"
 	"strconv"
-	"time"
 
 	ginkgo "github.com/onsi/ginkgo/v2"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	timeout  = time.Second * 10
-	interval = time.Millisecond * 200
 )
 
 var (

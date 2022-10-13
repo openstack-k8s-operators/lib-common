@@ -14,6 +14,8 @@ limitations under the License.
 package helpers
 
 import (
+	"time"
+
 	"github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -22,7 +24,7 @@ import (
 )
 
 // GetJob -
-func GetJob(name types.NamespacedName) *batchv1.Job {
+func GetJob(name types.NamespacedName, timeout time.Duration, interval time.Duration) *batchv1.Job {
 	job := &batchv1.Job{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(k8sClient.Get(ctx, name, job)).Should(gomega.Succeed())
@@ -40,8 +42,8 @@ func ListJobs(namespace string) *batchv1.JobList {
 }
 
 // SimulateJobFailure -
-func SimulateJobFailure(name types.NamespacedName) {
-	job := GetJob(name)
+func SimulateJobFailure(name types.NamespacedName, timeout time.Duration, interval time.Duration) {
+	job := GetJob(name, timeout, interval)
 
 	// NOTE(gibi) when run against a real env we need to find a
 	// better way to make the job fail. This works but it is unreal.
@@ -53,8 +55,8 @@ func SimulateJobFailure(name types.NamespacedName) {
 }
 
 // SimulateJobSuccess -
-func SimulateJobSuccess(name types.NamespacedName) {
-	job := GetJob(name)
+func SimulateJobSuccess(name types.NamespacedName, timeout time.Duration, interval time.Duration) {
+	job := GetJob(name, timeout, interval)
 	// NOTE(gibi): We don't need to do this when run against a real
 	// env as there the job could run successfully automatically if the
 	// database user is registered manually in the DB service. But for that

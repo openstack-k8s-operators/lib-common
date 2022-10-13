@@ -14,6 +14,8 @@ limitations under the License.
 package helpers
 
 import (
+	"time"
+
 	"github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +25,7 @@ import (
 )
 
 // GetSecret -
-func GetSecret(name types.NamespacedName) corev1.Secret {
+func GetSecret(name types.NamespacedName, timeout time.Duration, interval time.Duration) corev1.Secret {
 	secret := &corev1.Secret{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(k8sClient.Get(ctx, name, secret)).Should(gomega.Succeed())
@@ -33,7 +35,7 @@ func GetSecret(name types.NamespacedName) corev1.Secret {
 }
 
 // ListSecrets -
-func ListSecrets(namespace string) corev1.SecretList {
+func ListSecrets(namespace string, timeout time.Duration, interval time.Duration) corev1.SecretList {
 	secrets := &corev1.SecretList{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(k8sClient.List(ctx, secrets, client.InNamespace(namespace))).Should(gomega.Succeed())
