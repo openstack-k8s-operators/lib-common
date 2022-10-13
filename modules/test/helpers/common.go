@@ -33,6 +33,21 @@ type TestHelper struct {
 	interval  time.Duration
 }
 
+// NewDefaultTestHelper returns a TestHelper with some defaults
+func NewDefaultTestHelper(
+	k8sClient client.Client,
+) *TestHelper {
+	ctx, cancel := context.WithCancel(context.TODO())
+
+	return &TestHelper{
+		k8sClient: k8sClient,
+		ctx:       ctx,
+		cancel:    cancel,
+		timeout:   time.Second * 10,
+		interval:  time.Millisecond * 200,
+	}
+}
+
 // SkipInExistingCluster -
 func SkipInExistingCluster(message string) {
 	s := os.Getenv("USE_EXISTING_CLUSTER")
