@@ -41,16 +41,14 @@ const hashAnnotation = "hash"
 func NewJob(
 	job *batchv1.Job,
 	jobType string,
-	preserve bool,
-	timeout int,
+	timeout time.Duration,
 	beforeHash string,
 ) *Job {
 
 	return &Job{
 		job:        job,
 		jobType:    jobType,
-		preserve:   preserve,
-		timeout:    time.Duration(timeout) * time.Second, // timeout to set in s to reconcile
+		timeout:    timeout,
 		beforeHash: beforeHash,
 		changed:    false,
 	}
@@ -150,12 +148,6 @@ func (j *Job) HasChanged() bool {
 // GetHash func
 func (j *Job) GetHash() string {
 	return j.hash
-}
-
-// SetTimeout defines the duration used for requeueing while waiting for the job
-// to finish.
-func (j *Job) SetTimeout(timeout time.Duration) {
-	j.timeout = timeout
 }
 
 // DeleteJob func

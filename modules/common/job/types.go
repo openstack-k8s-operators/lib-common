@@ -26,7 +26,6 @@ import (
 type Job struct {
 	job        *batchv1.Job
 	jobType    string
-	preserve   bool
 	timeout    time.Duration
 	beforeHash string
 	hash       string
