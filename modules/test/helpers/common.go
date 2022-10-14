@@ -28,23 +28,22 @@ import (
 type TestHelper struct {
 	k8sClient client.Client
 	ctx       context.Context
-	cancel    context.CancelFunc
 	timeout   time.Duration
 	interval  time.Duration
 }
 
-// NewDefaultTestHelper returns a TestHelper with some defaults
-func NewDefaultTestHelper(
+// NewTestHelper returns a TestHelper
+func NewTestHelper(
+	ctx context.Context,
 	k8sClient client.Client,
+	timeout time.Duration,
+	interval time.Duration,
 ) *TestHelper {
-	ctx, cancel := context.WithCancel(context.TODO())
-
 	return &TestHelper{
-		k8sClient: k8sClient,
 		ctx:       ctx,
-		cancel:    cancel,
-		timeout:   time.Second * 10,
-		interval:  time.Millisecond * 200,
+		k8sClient: k8sClient,
+		timeout:   timeout,
+		interval:  interval,
 	}
 }
 
