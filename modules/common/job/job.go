@@ -29,10 +29,13 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"errors"
 )
+
+const hashAnnotation = "hash"
 
 // NewJob returns an initialized Job.
 func NewJob(
@@ -63,6 +66,9 @@ func (j *Job) createJob(
 		if err != nil {
 			return err
 		}
+		// Add the job hash as an annotation, this is used by the DeleteAllSucceededJobs
+		// to filter on jobs by hash
+		j.job.Annotations = util.MergeStringMaps(j.job.Labels, map[string]string{hashAnnotation: j.hash})
 
 		return nil
 	})
@@ -83,8 +89,7 @@ func (j *Job) createJob(
 
 //
 // DoJob - run a job if the hashBefore and hash is different. If there is an existing job, wait for the job
-// to finish. Right now we do not expect the job to change while running. If the job finished successful
-// and preserve flag is not set it gets deleted.
+// to finish. Right now we do not expect the job to change while running.
 //
 func (j *Job) DoJob(
 	ctx context.Context,
@@ -134,15 +139,6 @@ func (j *Job) DoJob(
 			return ctrl.Result{}, err
 		}
 	}
-
-	// delete the job if PreserveJobs is not enabled
-	if !j.preserve {
-		err = DeleteJob(ctx, h, j.job.Name, j.job.Namespace)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-	}
-
 	return ctrl.Result{}, nil
 }
 
@@ -172,14 +168,71 @@ func DeleteJob(
 ) error {
 	foundJob, err := h.GetKClient().BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err == nil {
-		h.GetLogger().Info("Deleting Job", "Job.Namespace", namespace, "Job.Name", name)
-		background := metav1.DeletePropagationBackground
-		err = h.GetKClient().BatchV1().Jobs(foundJob.Namespace).Delete(
-			ctx, foundJob.Name, metav1.DeleteOptions{PropagationPolicy: &background})
+		err := deleteJobByObject(ctx, h, *foundJob)
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+	return nil
+}
+
+func deleteJobByObject(ctx context.Context, h *helper.Helper, job batchv1.Job) error {
+	util.LogForObject(h, "Deleting Job", h.GetBeforeObject(), "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+	background := metav1.DeletePropagationBackground
+	err := h.GetKClient().BatchV1().Jobs(job.Namespace).Delete(
+		ctx, job.Name, metav1.DeleteOptions{PropagationPolicy: &background})
+	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// DeleteAllSucceededJobs deletes all the jobs that matching the criterias:
+// 1. owned by the caller
+// 2. the Job's hash is in the jobHashes list
+// 3. the Job is succeeded i.e. job.Status.Succeeded > 0
+func DeleteAllSucceededJobs(
+	ctx context.Context,
+	h *helper.Helper,
+	jobHashes []string,
+) error {
+	jobs := &batchv1.JobList{}
+
+	err := h.GetClient().List(ctx, jobs, client.InNamespace(h.GetBefore().GetNamespace()))
+	if err != nil {
+		return err
+	}
+	h.GetBeforeObject()
+
+	for _, job := range jobs.Items {
+		// 1. check if caller owns it
+		controller := metav1.GetControllerOf(&job)
+		if controller == nil {
+			continue
+		}
+		kind := h.GetBeforeObject().GetObjectKind().GroupVersionKind().Kind
+		name := h.GetBeforeObject().GetName()
+		if controller.Kind != kind || controller.Name != name {
+			continue
+		}
+		// 2. check if Job's hash is in jobHashes
+		v, ok := job.Annotations[hashAnnotation]
+		if !ok {
+			continue
+		}
+		if !util.StringInSlice(v, jobHashes) {
+			continue
+		}
+		// 3. check if succeeded
+		if job.Status.Succeeded <= 0 {
+			continue
+		}
+
+		err = deleteJobByObject(ctx, h, job)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
