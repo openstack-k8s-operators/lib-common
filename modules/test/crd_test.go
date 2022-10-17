@@ -27,23 +27,23 @@ func TestGetCRDDirFromModule(t *testing.T) {
 	t.Run("with an existing module in go.mod", func(t *testing.T) {
 		g := NewWithT(t)
 
-		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../database/go.mod")
+		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../database/go.mod", "bases")
 		g.Expect(err).ShouldNot(HaveOccurred())
-		g.Expect(path).Should(MatchRegexp("/.*/github.com/openstack-k8s-operators/mariadb-operator/api@v.*/config/crd/bases"))
+		g.Expect(path).Should(MatchRegexp("/.*/github.com/openstack-k8s-operators/mariadb-operator/api@v.*/bases"))
 	})
 	t.Run("with a wrong go.mod path", func(t *testing.T) {
 		g := NewWithT(t)
 
-		_, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../nonexistent/go.mod")
+		_, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../nonexistent/go.mod", "bases")
 		g.Expect(err).Should(HaveOccurred())
 		g.Expect(err).Should(MatchError("open ../nonexistent/go.mod: no such file or directory"))
 	})
 	t.Run("with a module not in go.mod", func(t *testing.T) {
 		g := NewWithT(t)
 
-		_, err := GetCRDDirFromModule("foobar", "go.mod")
+		_, err := GetCRDDirFromModule("foobar", "go.mod", "bases")
 		g.Expect(err).Should(HaveOccurred())
-		g.Expect(err).Should(MatchError("cannot find foobar in the go.mod file"))
+		g.Expect(err).Should(MatchError("cannot find foobar in go.mod file"))
 	})
 }
 
@@ -74,6 +74,6 @@ require (
 		_, err := GetOpenShiftCRDDir("route/v1", "go.mod")
 		g.Expect(err).Should(HaveOccurred())
 		fmt.Printf("%s", err)
-		g.Expect(err).Should(MatchError("cannot find github.com/openstack-k8s-operators/lib-common/modules/test in the go.mod file"))
+		g.Expect(err).Should(MatchError("cannot find github.com/openstack-k8s-operators/lib-common/modules/test in go.mod file"))
 	})
 }
