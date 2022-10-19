@@ -81,10 +81,34 @@ func (j *Job) createJob(
 	return ctrl.Result{}, nil
 }
 
+func (j *Job) defaultTTL() {
+	// preserve has higher priority than having any kind of TTL
+	if j.preserve {
+		// so we reset TTL to avoid automatic deletion
+		j.job.Spec.TTLSecondsAfterFinished = nil
+		return
+	}
+	// if the client set a specific TTL then we honore it.
+	if j.job.Spec.TTLSecondsAfterFinished != nil {
+		return
+	}
+	// we are here as preserve is false and no TTL is set. We apply a default
+	// TTL:
+	// i) to make sure that the Job is eventually cleaned up
+	// ii) to trigger the Job deletion with a delay to avoid racing between
+	// Job deletion and callers reading old CR data from caches and re-creating
+	// the Job. See more in https://github.com/openstack-k8s-operators/nova-operator/issues/110
+	ttl := defaultTTL
+	j.job.Spec.TTLSecondsAfterFinished = &ttl
+}
+
 //
 // DoJob - run a job if the hashBefore and hash is different. If there is an existing job, wait for the job
-// to finish. Right now we do not expect the job to change while running. If the job finished successful
-// and preserve flag is not set it gets deleted.
+// to finish. Right now we do not expect the job to change while running.
+// If TTLSecondsAfterFinished is unset on the Job and preserve is false, the Job
+// will be deleted after 10 minutes. Set preserve to true if you want to keep
+// the job, or set a specific value to job.Spec.TTLSecondsAfterFinished to
+// define when the Job should be deleted.
 //
 func (j *Job) DoJob(
 	ctx context.Context,
@@ -103,10 +127,20 @@ func (j *Job) DoJob(
 		j.changed = true
 	}
 
+	// NOTE(gibi): This should be in NewJob but then the defaulting would affect
+	// the hash of the Job calculated in DoJob above. As preserve can change
+	// after the job finished and preserve is implemented by changing TTL the
+	// change of preserve would change the hash of the Job after such hash is
+	// persisted by the caller.
+	// Moving hash calculation and defaultTTL to NewJob would be logically
+	// possible but as hash calculation might fail NewJob inteface would need
+	// to be changed to report the possible error.
+	j.defaultTTL()
+
 	//
 	// Check if this job already exists
 	//
-	_, err = GetJobWithName(ctx, h, j.job.Name, j.job.Namespace)
+	job, err := GetJobWithName(ctx, h, j.job.Name, j.job.Namespace)
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return ctrl.Result{}, err
 	}
@@ -135,12 +169,13 @@ func (j *Job) DoJob(
 		}
 	}
 
-	// delete the job if PreserveJobs is not enabled
-	if !j.preserve {
-		err = DeleteJob(ctx, h, j.job.Name, j.job.Namespace)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
+	// allow updating TTLSecondsAfterFinished even after the job is finished
+	_, err = controllerutil.CreateOrPatch(ctx, h.GetClient(), job, func() error {
+		job.Spec.TTLSecondsAfterFinished = j.job.Spec.TTLSecondsAfterFinished
+		return nil
+	})
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

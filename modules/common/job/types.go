@@ -22,6 +22,10 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
+const (
+	defaultTTL int32 = 10 * 60 // 10 minutes
+)
+
 // Job -
 type Job struct {
 	job        *batchv1.Job
