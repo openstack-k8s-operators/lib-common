@@ -18,7 +18,6 @@ package endpoint
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -122,7 +121,6 @@ func ExposeEndpoints(
 		// Update instance status with service endpoint url from route host information
 		//
 		var protocol string
-		var port string
 		hostname := route.GetHostname()
 
 		// TODO: need to support https default here
@@ -131,15 +129,10 @@ func ExposeEndpoints(
 		} else {
 			protocol = ""
 		}
-		if data.Port == 80 && protocol == "http://" {
-			port = ""
-		} else {
-			port = fmt.Sprintf(":%d", data.Port)
-		}
 
 		// Do not include data.Path in parsing check because %(project_id)s
 		// is invalid without being encoded, but they should not be encoded in the actual endpoint
-		apiEndpoint, err := url.Parse(protocol + hostname + port)
+		apiEndpoint, err := url.Parse(protocol + hostname)
 		if err != nil {
 			return endpointMap, ctrlResult, err
 		}
