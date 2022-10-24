@@ -38,7 +38,7 @@ func NewStatefulSet(
 ) *StatefulSet {
 	return &StatefulSet{
 		statefulset: statefulset,
-		timeout:     timeout,
+		timeout:     time.Duration(timeout) * time.Second,
 	}
 }
 
@@ -75,8 +75,8 @@ func (s *StatefulSet) CreateOrPatch(
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("StatefulSet %s not found, reconcile in %ds", statefulset.Name, s.timeout))
-			return ctrl.Result{RequeueAfter: time.Duration(s.timeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("StatefulSet %s not found, reconcile in %s", statefulset.Name, s.timeout))
+			return ctrl.Result{RequeueAfter: s.timeout}, nil
 		}
 		return ctrl.Result{}, err
 	}
@@ -127,4 +127,10 @@ func (s *StatefulSet) Delete(
 	}
 
 	return nil
+}
+
+// SetTimeout defines the duration used for requeueing while waiting for the
+// stateful set to exist.
+func (s *StatefulSet) SetTimeout(timeout time.Duration) {
+	s.timeout = timeout
 }

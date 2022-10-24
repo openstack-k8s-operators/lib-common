@@ -16,10 +16,14 @@ limitations under the License.
 
 package statefulset
 
-import appsv1 "k8s.io/api/apps/v1"
+import (
+	"time"
+
+	appsv1 "k8s.io/api/apps/v1"
+)
 
 // StatefulSet -
 type StatefulSet struct {
 	statefulset *appsv1.StatefulSet
-	timeout     int
+	timeout     time.Duration
 }
