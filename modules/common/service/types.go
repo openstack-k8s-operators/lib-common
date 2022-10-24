@@ -31,6 +31,7 @@ type GenericServiceDetails struct {
 	Labels    map[string]string
 	Selector  map[string]string
 	Port      GenericServicePort
+	ClusterIP string
 }
 
 // GenericServicePort -
