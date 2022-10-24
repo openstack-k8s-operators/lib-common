@@ -170,12 +170,20 @@ func (j *Job) DoJob(
 	}
 
 	// allow updating TTLSecondsAfterFinished even after the job is finished
-	_, err = controllerutil.CreateOrPatch(ctx, h.GetClient(), job, func() error {
-		job.Spec.TTLSecondsAfterFinished = j.job.Spec.TTLSecondsAfterFinished
-		return nil
-	})
-	if err != nil {
+	job, err = GetJobWithName(ctx, h, j.job.Name, j.job.Namespace)
+	if err != nil && !k8s_errors.IsNotFound(err) {
 		return ctrl.Result{}, err
+	}
+
+	if err == nil {
+		_, err = controllerutil.CreateOrPatch(ctx, h.GetClient(), job, func() error {
+			job.Spec.TTLSecondsAfterFinished = j.job.Spec.TTLSecondsAfterFinished
+			return nil
+		})
+
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	return ctrl.Result{}, nil
