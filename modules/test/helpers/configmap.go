@@ -23,21 +23,21 @@ import (
 )
 
 // GetConfigMap -
-func (tc *TestHelper) GetConfigMap(name types.NamespacedName) corev1.ConfigMap {
+func (tc *TestHelper) GetConfigMap(name types.NamespacedName) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(tc.k8sClient.Get(tc.ctx, name, cm)).Should(gomega.Succeed())
 	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
-	return *cm
+	return cm
 }
 
 // ListConfigMaps -
-func (tc *TestHelper) ListConfigMaps(namespace string) corev1.ConfigMapList {
+func (tc *TestHelper) ListConfigMaps(namespace string) *corev1.ConfigMapList {
 	cms := &corev1.ConfigMapList{}
 	gomega.Eventually(func(g gomega.Gomega) {
 		g.Expect(tc.k8sClient.List(tc.ctx, cms, client.InNamespace(namespace))).Should(gomega.Succeed())
 	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
-	return *cms
+	return cms
 }
