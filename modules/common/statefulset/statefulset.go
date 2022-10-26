@@ -65,6 +65,7 @@ func (s *StatefulSet) CreateOrPatch(
 		statefulset.Labels = util.MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
 		statefulset.Spec.Template = s.statefulset.Spec.Template
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
+		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
 		if err != nil {
