@@ -42,13 +42,24 @@ func NewTestHelper(
 	return &TestHelper{
 		ctx:       ctx,
 		k8sClient: k8sClient,
-		timeout:   timeout,
+		timeout:   getTestTimeout(timeout),
 		interval:  interval,
 	}
 }
 
+// getTestTimeout returns test timeout from TEST_TIMEOUT_SEC environment
+// variable, in seconds; or picks defaultTimeout, in milliseconds
+func getTestTimeout(defaultTimeout time.Duration) time.Duration {
+	t := os.Getenv("TEST_TIMEOUT_SEC")
+	timeout, err := strconv.Atoi(t)
+	if err != nil {
+		return defaultTimeout
+	}
+	return time.Duration(timeout) * time.Second
+}
+
 // SkipInExistingCluster -
-func SkipInExistingCluster(message string) {
+func (tc *TestHelper) SkipInExistingCluster(message string) {
 	s := os.Getenv("USE_EXISTING_CLUSTER")
 	v, err := strconv.ParseBool(s)
 
