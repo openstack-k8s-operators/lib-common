@@ -234,7 +234,7 @@ func (d *Database) getDBWithName(
 }
 
 //
-// Returns a *Database object with specified name and namespace
+// GetDatabaseByName returns a *Database object with specified name and namespace
 //
 func GetDatabaseByName(
 	ctx context.Context,
@@ -253,7 +253,7 @@ func GetDatabaseByName(
 }
 
 //
-// Delete a finalizer by its object
+// DeleteFinalizer deletes a finalizer by its object
 //
 func (d *Database) DeleteFinalizer(
 	ctx context.Context,
