@@ -229,3 +229,36 @@ func (d *Database) getDBWithName(
 
 	return nil
 }
+
+//
+// Returns a *Database object with specified name and namespace
+//
+func DatabaseName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+) (*Database, error) {
+	// create a Database here by only filling what we need (name and namespace)
+	db := &Database{
+		databaseName: name,
+	}
+	// then querying the MariaDBDatabase and store it in db by calling
+	if err := db.getDBWithName(ctx, h); err != nil {
+		return db, err
+	}
+	return db, nil
+}
+
+//
+// Delete a finalizer by its object
+//
+func (d *Database) DeleteFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+) error {
+	controllerutil.RemoveFinalizer(d.database, h.GetFinalizer())
+	if err := h.GetClient().Update(ctx, d.database); err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	}
+	return nil
+}
