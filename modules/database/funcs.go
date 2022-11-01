@@ -241,7 +241,7 @@ func DatabaseName(
 	h *helper.Helper,
 	name string,
 ) (*Database, error) {
-	// create a Database here by only filling what we need (name and namespace)
+	// create a Database by suppplying a resource name
 	db := &Database{
 		databaseName: name,
 	}
