@@ -135,6 +135,9 @@ func (d *Database) CreateOrPatchDB(
 			return err
 		}
 
+		// If the service object doesn't have our finalizer, add it.
+		controllerutil.AddFinalizer(db, h.GetFinalizer())
+
 		return nil
 	})
 
