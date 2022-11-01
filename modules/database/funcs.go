@@ -236,7 +236,7 @@ func (d *Database) getDBWithName(
 //
 // Returns a *Database object with specified name and namespace
 //
-func DatabaseName(
+func GetDatabaseByName(
 	ctx context.Context,
 	h *helper.Helper,
 	name string,
