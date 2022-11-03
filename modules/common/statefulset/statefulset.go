@@ -66,6 +66,7 @@ func (s *StatefulSet) CreateOrPatch(
 		statefulset.Spec.Template = s.statefulset.Spec.Template
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
 		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
+		statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
 		if err != nil {
