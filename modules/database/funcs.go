@@ -192,6 +192,9 @@ func (d *Database) CreateOrPatchDBByName(
 			return err
 		}
 
+		// If the service object doesn't have our finalizer, add it.
+		controllerutil.AddFinalizer(db, h.GetFinalizer())
+
 		return nil
 	})
 
@@ -300,5 +303,38 @@ func (d *Database) getDBWithName(
 
 	d.database = db
 
+	return nil
+}
+
+//
+// GetDatabaseByName returns a *Database object with specified name and namespace
+//
+func GetDatabaseByName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+) (*Database, error) {
+	// create a Database by suppplying a resource name
+	db := &Database{
+		databaseName: name,
+	}
+	// then querying the MariaDBDatabase and store it in db by calling
+	if err := db.getDBWithName(ctx, h); err != nil {
+		return db, err
+	}
+	return db, nil
+}
+
+//
+// DeleteFinalizer deletes a finalizer by its object
+//
+func (d *Database) DeleteFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+) error {
+	controllerutil.RemoveFinalizer(d.database, h.GetFinalizer())
+	if err := h.GetClient().Update(ctx, d.database); err != nil && !k8s_errors.IsNotFound(err) {
+		return err
+	}
 	return nil
 }
