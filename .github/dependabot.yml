@@ -1,6 +1,22 @@
 version: 2
 updates:
 - package-ecosystem: "gomod"
-  directory: "/"
+  directory: "/modules/common"
+  schedule:
+    interval: "daily"
+- package-ecosystem: "gomod"
+  directory: "/modules/database"
+  schedule:
+    interval: "daily"
+- package-ecosystem: "gomod"
+  directory: "/modules/openstack"
+  schedule:
+    interval: "daily"
+- package-ecosystem: "gomod"
+  directory: "/modules/storage"
+  schedule:
+    interval: "daily"
+- package-ecosystem: "gomod"
+  directory: "/modules/test"
   schedule:
     interval: "daily"
