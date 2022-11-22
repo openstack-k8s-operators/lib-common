@@ -363,12 +363,7 @@ func GetDataFromSecret(
 	secret, _, err := GetSecret(ctx, h, secretName, h.GetBeforeObject().GetNamespace())
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			util.LogForObject(
-				h,
-				fmt.Sprintf("%s secret does not exist", secretName),
-				secret,
-			)
-
+			h.GetLogger().Info(fmt.Sprintf("Secret %s not found, reconcile in %ds", secretName, requeueTimeout))
 			return data, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
 		}
 
