@@ -7,7 +7,7 @@ require (
 	github.com/onsi/gomega v1.24.1
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	k8s.io/api v0.25.2
-	k8s.io/apimachinery v0.25.2
+	k8s.io/apimachinery v0.25.4
 	sigs.k8s.io/controller-runtime v0.13.0
 )
 
