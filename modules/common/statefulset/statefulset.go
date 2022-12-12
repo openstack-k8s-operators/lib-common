@@ -63,10 +63,18 @@ func (s *StatefulSet) CreateOrPatch(
 
 		statefulset.Annotations = util.MergeStringMaps(statefulset.Annotations, s.statefulset.Annotations)
 		statefulset.Labels = util.MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
-		statefulset.Spec.Template = s.statefulset.Spec.Template
+		// We need to copy the Spec field by field as Selector is not updatable
+		// This list needs to be synced StatefulSet to gain ability to set
+		// those new fields via lib-common
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
-		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
+		statefulset.Spec.Template = s.statefulset.Spec.Template
 		statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
+		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
+		statefulset.Spec.PodManagementPolicy = s.statefulset.Spec.PodManagementPolicy
+		statefulset.Spec.UpdateStrategy = s.statefulset.Spec.UpdateStrategy
+		statefulset.Spec.RevisionHistoryLimit = s.statefulset.Spec.RevisionHistoryLimit
+		statefulset.Spec.MinReadySeconds = s.statefulset.Spec.MinReadySeconds
+		statefulset.Spec.PersistentVolumeClaimRetentionPolicy = s.statefulset.Spec.PersistentVolumeClaimRetentionPolicy
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
 		if err != nil {
