@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/test
 go 1.18
 
 require (
-	github.com/onsi/ginkgo/v2 v2.5.1
+	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	k8s.io/api v0.25.4
