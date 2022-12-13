@@ -17,6 +17,7 @@ limitations under the License.
 package helper
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/go-logr/logr"
@@ -28,6 +29,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // Helper is a utility for ensuring the proper patching of objects.
@@ -162,6 +166,67 @@ func (h *Helper) calculateChanges(after client.Object) (map[string]bool, error) 
 		res[key] = true
 	}
 	return res, nil
+}
+
+// PatchInstance - Patch an instance's metadata and/or status if they have changed (based
+// on comparison with its old state as represented in the helper.Helper)
+//
+// NOTE: This function is mainly intended for use in Podified Operators with their
+// deferred-instance-persistence pattern within the reconcile loop.  If used in this manner,
+// any error returned by this function should be set as the error returned by the encompassing
+// Reconcile(...) function so that the error from PatchInstance is properly propagated.
+//
+// Example:
+//
+// func (r *SomeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, _err error) {
+//     ...
+//     defer func() {
+//         ...
+//         err := instance.PatchInstance(ctx, h, instance)
+//         if err != nil {
+//             _err = err
+//             return
+//         }
+//     }
+//     ...
+// }
+//
+func (h *Helper) PatchInstance(ctx context.Context, instance client.Object) error {
+	var err error
+
+	l := log.FromContext(ctx)
+
+	if err = h.SetAfter(instance); err != nil {
+		l.Error(err, "Set after and calc patch/diff")
+		return err
+	}
+
+	changes := h.GetChanges()
+	patch := client.MergeFrom(h.GetBeforeObject())
+
+	if changes["metadata"] {
+		err = h.GetClient().Patch(ctx, instance, patch)
+		if k8s_errors.IsConflict(err) {
+			l.Info("Metadata update conflict")
+			return err
+		} else if err != nil && !k8s_errors.IsNotFound(err) {
+			l.Error(err, "Metadate update failed")
+			return err
+		}
+	}
+
+	if changes["status"] {
+		err = h.GetClient().Status().Patch(ctx, instance, patch)
+		if k8s_errors.IsConflict(err) {
+			l.Info("Status update conflict")
+			return err
+
+		} else if err != nil && !k8s_errors.IsNotFound(err) {
+			l.Error(err, "Status update failed")
+			return err
+		}
+	}
+	return nil
 }
 
 // ToUnstructured - convert to unstructured
