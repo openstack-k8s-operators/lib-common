@@ -64,7 +64,7 @@ func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 					Protocol: svcInfo.Port.Protocol,
 				},
 			},
-			ClusterIP:  svcInfo.ClusterIP,
+			ClusterIP: svcInfo.ClusterIP,
 		},
 	}
 }
