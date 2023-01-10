@@ -19,10 +19,25 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-logr/logr"
 	ginkgo "github.com/onsi/ginkgo/v2"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
+	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+type conditionsGetter interface {
+	GetConditions(name types.NamespacedName) condition.Conditions
+}
+
+// ConditionGetterFunc - recieves custom condition getters for operators specific needs
+type ConditionGetterFunc func(name types.NamespacedName) condition.Conditions
+
+// GetConditions - implements conditions getter for operators specific needs
+func (f ConditionGetterFunc) GetConditions(name types.NamespacedName) condition.Conditions {
+	return f(name)
+}
 
 // TestHelper -
 type TestHelper struct {
@@ -30,6 +45,7 @@ type TestHelper struct {
 	ctx       context.Context
 	timeout   time.Duration
 	interval  time.Duration
+	logger    logr.Logger
 }
 
 // NewTestHelper returns a TestHelper
@@ -38,12 +54,14 @@ func NewTestHelper(
 	k8sClient client.Client,
 	timeout time.Duration,
 	interval time.Duration,
+	logger logr.Logger,
 ) *TestHelper {
 	return &TestHelper{
 		ctx:       ctx,
 		k8sClient: k8sClient,
 		timeout:   getTestTimeout(timeout),
 		interval:  interval,
+		logger:    logger,
 	}
 }
 
