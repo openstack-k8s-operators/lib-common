@@ -316,7 +316,7 @@ func GetDatabaseByName(
 ) (*Database, error) {
 	// create a Database by suppplying a resource name
 	db := &Database{
-		databaseName: name,
+		name: name,
 	}
 	// then querying the MariaDBDatabase and store it in db by calling
 	if err := db.getDBWithName(ctx, h); err != nil {
