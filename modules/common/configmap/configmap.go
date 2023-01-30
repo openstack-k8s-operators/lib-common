@@ -238,13 +238,13 @@ func GetConfigMapAndHashWithName(
 //
 // GetConfigMap - Get config map
 //
-// if the config map is not found, requeue after requeueTimeout in seconds
+// if the config map is not found, requeue after requeueTimeout
 func GetConfigMap(
 	ctx context.Context,
 	h *helper.Helper,
 	object client.Object,
 	configMapName string,
-	requeueTimeout int,
+	requeueTimeout time.Duration,
 ) (*corev1.ConfigMap, ctrl.Result, error) {
 
 	configMap := &corev1.ConfigMap{}
@@ -254,7 +254,7 @@ func GetConfigMap(
 			msg := fmt.Sprintf("%s config map does not exist: %v", configMapName, err)
 			util.LogForObject(h, msg, object)
 
-			return configMap, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
+			return configMap, ctrl.Result{RequeueAfter: requeueTimeout}, nil
 		}
 		msg := fmt.Sprintf("Error getting %s config map: %v", configMapName, err)
 		err = util.WrapErrorForObject(msg, object, err)

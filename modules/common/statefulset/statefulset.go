@@ -34,11 +34,11 @@ import (
 // NewStatefulSet returns an initialized NewStatefulset.
 func NewStatefulSet(
 	statefulset *appsv1.StatefulSet,
-	timeout int,
+	timeout time.Duration,
 ) *StatefulSet {
 	return &StatefulSet{
 		statefulset: statefulset,
-		timeout:     time.Duration(timeout) * time.Second,
+		timeout:     timeout,
 	}
 }
 
@@ -137,10 +137,4 @@ func (s *StatefulSet) Delete(
 	}
 
 	return nil
-}
-
-// SetTimeout defines the duration used for requeueing while waiting for the
-// stateful set to exist.
-func (s *StatefulSet) SetTimeout(timeout time.Duration) {
-	s.timeout = timeout
 }

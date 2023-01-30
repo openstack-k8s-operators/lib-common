@@ -349,12 +349,12 @@ func DeleteSecretsWithName(
 //
 // GetDataFromSecret - Get data from Secret
 //
-// if the secret or data is not found, requeue after requeueTimeout in seconds
+// if the secret or data is not found, requeue after requeueTimeout
 func GetDataFromSecret(
 	ctx context.Context,
 	h *helper.Helper,
 	secretName string,
-	requeueTimeout int,
+	requeueTimeout time.Duration,
 	key string,
 ) (string, ctrl.Result, error) {
 
@@ -363,8 +363,8 @@ func GetDataFromSecret(
 	secret, _, err := GetSecret(ctx, h, secretName, h.GetBeforeObject().GetNamespace())
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Secret %s not found, reconcile in %ds", secretName, requeueTimeout))
-			return data, ctrl.Result{RequeueAfter: time.Duration(requeueTimeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("Secret %s not found, reconcile in %s", secretName, requeueTimeout))
+			return data, ctrl.Result{RequeueAfter: requeueTimeout}, nil
 		}
 
 		return data, ctrl.Result{}, util.WrapErrorForObject(

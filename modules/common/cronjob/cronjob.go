@@ -87,12 +87,6 @@ func (cj *CronJob) GetCronJob() batchv1.CronJob {
 	return *cj.cronjob
 }
 
-// SetTimeout defines the duration used for requeueing while waiting for the cronjob
-// to finish.
-func (cj *CronJob) SetTimeout(timeout time.Duration) {
-	cj.timeout = timeout
-}
-
 // GetCronJobWithName func
 func GetCronJobWithName(
 	ctx context.Context,

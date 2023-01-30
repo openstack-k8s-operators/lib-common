@@ -16,12 +16,16 @@ limitations under the License.
 
 package service
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 // Service -
 type Service struct {
 	service *corev1.Service
-	timeout int
+	timeout time.Duration
 }
 
 // GenericServiceDetails -

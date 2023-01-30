@@ -37,7 +37,7 @@ import (
 func NewService(
 	service *corev1.Service,
 	labels map[string]string,
-	timeout int,
+	timeout time.Duration,
 ) *Service {
 	return &Service{
 		service: service,
@@ -95,8 +95,8 @@ func (s *Service) CreateOrPatch(
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Service %s not found, reconcile in %ds", service.Name, s.timeout))
-			return ctrl.Result{RequeueAfter: time.Duration(s.timeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("Service %s not found, reconcile in %s", service.Name, s.timeout))
+			return ctrl.Result{RequeueAfter: s.timeout}, nil
 		}
 		return ctrl.Result{}, err
 	}

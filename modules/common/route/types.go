@@ -16,12 +16,16 @@ limitations under the License.
 
 package route
 
-import routev1 "github.com/openshift/api/route/v1"
+import (
+	"time"
+
+	routev1 "github.com/openshift/api/route/v1"
+)
 
 // Route -
 type Route struct {
 	route    *routev1.Route
-	timeout  int
+	timeout  time.Duration
 	hostname string
 }
 

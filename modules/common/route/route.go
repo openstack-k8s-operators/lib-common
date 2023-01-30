@@ -36,7 +36,7 @@ import (
 func NewRoute(
 	route *routev1.Route,
 	labels map[string]string,
-	timeout int,
+	timeout time.Duration,
 ) *Route {
 	return &Route{
 		route:   route,
@@ -98,8 +98,8 @@ func (r *Route) CreateOrPatch(
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Route %s not found, reconcile in %ds", route.Name, r.timeout))
-			return ctrl.Result{RequeueAfter: time.Duration(r.timeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("Route %s not found, reconcile in %s", route.Name, r.timeout))
+			return ctrl.Result{RequeueAfter: r.timeout}, nil
 		}
 		return ctrl.Result{}, err
 	}
