@@ -25,6 +25,7 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -175,4 +176,39 @@ func GetServicesListWithLabel(
 	}
 
 	return serviceList, nil
+}
+
+// GetServiceWithName - Get service with name in namespace
+func GetServiceWithName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) (*corev1.Service, error) {
+
+	service := &corev1.Service{}
+
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, service)
+	if err != nil {
+		err = fmt.Errorf("Error getting service %s/%s - %w", name, namespace, err)
+
+		return nil, err
+	}
+
+	return service, nil
+}
+
+// GetServicesPortDetails - Return ServicePort with name from a Service
+func GetServicesPortDetails(
+	service *corev1.Service,
+	portName string,
+) *corev1.ServicePort {
+
+	for _, servicePort := range service.Spec.Ports {
+		if servicePort.Name == portName {
+			return &servicePort
+		}
+	}
+
+	return nil
 }
