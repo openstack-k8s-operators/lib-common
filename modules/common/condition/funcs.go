@@ -86,6 +86,21 @@ func (conditions *Conditions) Set(c *Condition) {
 	conditions.Sort()
 }
 
+// Remove a condition from the slice of conditions
+func (conditions *Conditions) Remove(t Type) {
+	if conditions == nil || len(*conditions) == 0 {
+		return
+	}
+	newConditions := make([]Condition, 0, len(*conditions)-1)
+	for _, condition := range *conditions {
+		if condition.Type != t {
+			newConditions = append(newConditions, condition)
+		}
+	}
+
+	*conditions = newConditions
+}
+
 // Get returns the condition with the given type, if the condition does not exists,
 // it returns nil.
 func (conditions *Conditions) Get(t Type) *Condition {
