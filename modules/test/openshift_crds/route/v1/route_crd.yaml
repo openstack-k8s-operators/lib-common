@@ -174,4 +174,3 @@ spec:
     plural: routes
     singular: route
     kind: Route
-

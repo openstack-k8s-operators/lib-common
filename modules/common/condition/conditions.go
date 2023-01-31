@@ -18,9 +18,7 @@ limitations under the License.
 
 package condition
 
-//
 // Common Condition Types used by API objects.
-//
 const (
 	// ReadyCondition defines the Ready condition type that summarizes the operational state of an API object.
 	ReadyCondition Type = "Ready"
@@ -53,9 +51,7 @@ const (
 	KeystoneEndpointReadyCondition Type = "KeystoneEndpointReady"
 )
 
-//
 // Common Reasons used by API objects.
-//
 const (
 	// RequestedReason (Severity=Info) documents a condition not in Status=True because the underlying object is not ready.
 	RequestedReason = "Requested"
@@ -84,9 +80,7 @@ const (
 	DeletedReason = "Deleted"
 )
 
-//
 // Common Messages used by API objects.
-//
 const (
 	//
 	// Overall Ready Condition messages

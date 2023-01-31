@@ -235,7 +235,6 @@ func GetConfigMapAndHashWithName(
 	return configMap, configMapHash, nil
 }
 
-//
 // GetConfigMap - Get config map
 //
 // if the config map is not found, requeue after requeueTimeout in seconds

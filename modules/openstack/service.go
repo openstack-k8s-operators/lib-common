@@ -35,9 +35,7 @@ type Service struct {
 	Enabled     bool
 }
 
-//
 // CreateService - create service
-//
 func (o *OpenStack) CreateService(
 	log logr.Logger,
 	s Service,
@@ -77,9 +75,7 @@ func (o *OpenStack) CreateService(
 	return serviceID, nil
 }
 
-//
 // GetService - get service with type and name
-//
 func (o *OpenStack) GetService(
 	log logr.Logger,
 	serviceType string,
@@ -106,9 +102,7 @@ func (o *OpenStack) GetService(
 	return &allServices[0], nil
 }
 
-//
 // UpdateService - update service with type and name
-//
 func (o *OpenStack) UpdateService(
 	log logr.Logger,
 	s Service,
@@ -129,9 +123,7 @@ func (o *OpenStack) UpdateService(
 	return nil
 }
 
-//
 // DeleteService - delete service with serviceID
-//
 func (o *OpenStack) DeleteService(
 	log logr.Logger,
 	serviceID string,

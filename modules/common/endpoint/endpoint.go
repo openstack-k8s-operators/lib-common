@@ -49,9 +49,7 @@ type Data struct {
 	Path string
 }
 
-//
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
-//
 func ExposeEndpoints(
 	ctx context.Context,
 	h *helper.Helper,

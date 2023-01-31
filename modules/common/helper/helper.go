@@ -178,19 +178,18 @@ func (h *Helper) calculateChanges(after client.Object) (map[string]bool, error) 
 //
 // Example:
 //
-// func (r *SomeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, _err error) {
-//     ...
-//     defer func() {
-//         ...
-//         err := instance.PatchInstance(ctx, h, instance)
-//         if err != nil {
-//             _err = err
-//             return
-//         }
-//     }
-//     ...
-// }
-//
+//	func (r *SomeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, _err error) {
+//	    ...
+//	    defer func() {
+//	        ...
+//	        err := instance.PatchInstance(ctx, h, instance)
+//	        if err != nil {
+//	            _err = err
+//	            return
+//	        }
+//	    }
+//	    ...
+//	}
 func (h *Helper) PatchInstance(ctx context.Context, instance client.Object) error {
 	var err error
 

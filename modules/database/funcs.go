@@ -69,10 +69,8 @@ func NewDatabaseWithNamespace(
 	}
 }
 
-//
 // setDatabaseHostname - set the service name of the DB as the databaseHostname
 // by looking up the Service via the name of the MariaDB CR which provides it.
-//
 func (d *Database) setDatabaseHostname(
 	ctx context.Context,
 	h *helper.Helper,
@@ -114,26 +112,20 @@ func (d *Database) setDatabaseHostname(
 	return nil
 }
 
-//
 // GetDatabaseHostname - returns the DB hostname which host the DB
-//
 func (d *Database) GetDatabaseHostname() string {
 	return d.databaseHostname
 }
 
-//
 // GetDatabase - returns the DB
-//
 func (d *Database) GetDatabase() *mariadbv1.MariaDBDatabase {
 	return d.database
 }
 
-//
 // CreateOrPatchDB - create or patch the service DB instance
 // Deprecated. Use CreateOrPatchDBByName instead. If you want to use the
 // default the DB service instance of the deployment then pass "openstack" as
 // the name.
-//
 func (d *Database) CreateOrPatchDB(
 	ctx context.Context,
 	h *helper.Helper,
@@ -141,11 +133,9 @@ func (d *Database) CreateOrPatchDB(
 	return d.CreateOrPatchDBByName(ctx, h, "openstack")
 }
 
-//
 // CreateOrPatchDBByName - create or patch the service DB instance on
 // the DB service. The DB service is selected by the name of the MariaDB CR
 // providing the service.
-//
 func (d *Database) CreateOrPatchDBByName(
 	ctx context.Context,
 	h *helper.Helper,
@@ -222,9 +212,7 @@ func (d *Database) CreateOrPatchDBByName(
 	return ctrl.Result{}, nil
 }
 
-//
 // WaitForDBCreatedWithTimeout - wait until the MariaDBDatabase is initialized and reports Status.Completed == true
-//
 func (d *Database) WaitForDBCreatedWithTimeout(
 	ctx context.Context,
 	h *helper.Helper,
@@ -252,7 +240,6 @@ func (d *Database) WaitForDBCreatedWithTimeout(
 	return ctrl.Result{}, nil
 }
 
-//
 // WaitForDBCreated - wait until the MariaDBDatabase is initialized and reports Status.Completed == true
 // Deprecated, use WaitForDBCreatedWithTimeout instead
 func (d *Database) WaitForDBCreated(
@@ -262,9 +249,7 @@ func (d *Database) WaitForDBCreated(
 	return d.WaitForDBCreatedWithTimeout(ctx, h, time.Second*5)
 }
 
-//
 // getDBWithName - get DB object with name in namespace
-//
 func (d *Database) getDBWithName(
 	ctx context.Context,
 	h *helper.Helper,
@@ -306,9 +291,7 @@ func (d *Database) getDBWithName(
 	return nil
 }
 
-//
 // GetDatabaseByName returns a *Database object with specified name and namespace
-//
 func GetDatabaseByName(
 	ctx context.Context,
 	h *helper.Helper,
@@ -325,9 +308,7 @@ func GetDatabaseByName(
 	return db, nil
 }
 
-//
 // DeleteFinalizer deletes a finalizer by its object
-//
 func (d *Database) DeleteFinalizer(
 	ctx context.Context,
 	h *helper.Helper,

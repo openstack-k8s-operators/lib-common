@@ -102,14 +102,12 @@ func (j *Job) defaultTTL() {
 	j.job.Spec.TTLSecondsAfterFinished = &ttl
 }
 
-//
 // DoJob - run a job if the hashBefore and hash is different. If there is an existing job, wait for the job
 // to finish. Right now we do not expect the job to change while running.
 // If TTLSecondsAfterFinished is unset on the Job and preserve is false, the Job
 // will be deleted after 10 minutes. Set preserve to true if you want to keep
 // the job, or set a specific value to job.Spec.TTLSecondsAfterFinished to
 // define when the Job should be deleted.
-//
 func (j *Job) DoJob(
 	ctx context.Context,
 	h *helper.Helper,
