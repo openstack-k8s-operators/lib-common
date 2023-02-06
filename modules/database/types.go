@@ -27,6 +27,7 @@ const (
 
 // Database -
 type Database struct {
+	dbInstance       *mariadbv1.MariaDB
 	database         *mariadbv1.MariaDBDatabase
 	databaseHostname string
 	databaseName     string
