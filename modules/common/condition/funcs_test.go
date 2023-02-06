@@ -165,6 +165,69 @@ func TestSet(t *testing.T) {
 	g.Expect(c2.LastTransitionTime).To(BeIdenticalTo(time1))
 }
 
+func TestRemove(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions Conditions
+		cType      Type
+		expected   Conditions
+	}{
+		{
+			name: "present",
+			conditions: CreateList(
+				unknownReady,
+				unknownA,
+				unknownB,
+			),
+			cType: unknownA.Type,
+			expected: CreateList(
+				unknownReady,
+				unknownB,
+			),
+		},
+		{
+			name: "unknownReady-remove",
+			conditions: CreateList(
+				unknownReady,
+				unknownA,
+				unknownB,
+			),
+			cType: unknownReady.Type,
+			expected: CreateList(
+				unknownA,
+				unknownB,
+			),
+		},
+		{
+			name: "absent",
+			conditions: CreateList(
+				unknownReady,
+				unknownA,
+			),
+			cType: unknownB.Type,
+			expected: CreateList(
+				unknownReady,
+				unknownA,
+			),
+		},
+		{
+			name:       "empty",
+			conditions: Conditions{},
+			cType:      unknownA.Type,
+			expected:   Conditions{},
+		},
+	}
+
+	g := NewWithT(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.conditions.Remove(tt.cType)
+			g.Expect(tt.expected).To(haveSameConditionsOf(tt.conditions))
+		})
+	}
+}
+
 func TestHasSameState(t *testing.T) {
 	g := NewWithT(t)
 
