@@ -16,10 +16,14 @@ limitations under the License.
 
 package pvc
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+)
 
 // Pvc -
 type Pvc struct {
 	pvc     *corev1.PersistentVolumeClaim
-	timeout int
+	timeout time.Duration
 }

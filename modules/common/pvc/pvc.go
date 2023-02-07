@@ -34,7 +34,7 @@ import (
 // NewPvc returns an initialized Pvc.
 func NewPvc(
 	pvc *corev1.PersistentVolumeClaim,
-	timeout int,
+	timeout time.Duration,
 ) *Pvc {
 	return &Pvc{
 		pvc:     pvc,
@@ -79,8 +79,8 @@ func (p *Pvc) CreateOrPatch(
 
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Pvc %s not found, reconcile in %ds", pvc.Name, p.timeout))
-			return ctrl.Result{RequeueAfter: time.Duration(p.timeout) * time.Second}, nil
+			h.GetLogger().Info(fmt.Sprintf("Pvc %s not found, reconcile in %s", pvc.Name, p.timeout))
+			return ctrl.Result{RequeueAfter: p.timeout}, nil
 		}
 		return ctrl.Result{}, err
 	}

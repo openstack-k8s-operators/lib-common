@@ -34,11 +34,11 @@ import (
 // NewDeployment returns an initialized Deployment.
 func NewDeployment(
 	deployment *appsv1.Deployment,
-	timeout int,
+	timeout time.Duration,
 ) *Deployment {
 	return &Deployment{
 		deployment: deployment,
-		timeout:    time.Duration(timeout) * time.Second,
+		timeout:    timeout,
 	}
 }
 
@@ -109,12 +109,6 @@ func (d *Deployment) Delete(
 // GetDeployment - get the deployment object.
 func (d *Deployment) GetDeployment() appsv1.Deployment {
 	return *d.deployment
-}
-
-// SetTimeout defines the duration used for requeueing while waiting for the deployment
-// to finish.
-func (d *Deployment) SetTimeout(timeout time.Duration) {
-	d.timeout = timeout
 }
 
 // GetDeploymentWithName func
