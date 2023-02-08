@@ -20,6 +20,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/route"
@@ -49,15 +50,14 @@ type Data struct {
 	Path string
 }
 
-//
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
-//
 func ExposeEndpoints(
 	ctx context.Context,
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
 	endpoints map[Endpoint]Data,
+	timeout time.Duration,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
 
@@ -85,7 +85,7 @@ func ExposeEndpoints(
 					Protocol: corev1.ProtocolTCP,
 				}}),
 			exportLabels,
-			5,
+			timeout,
 		)
 		ctrlResult, err := svc.CreateOrPatch(ctx, h)
 		if err != nil {
@@ -106,7 +106,7 @@ func ExposeEndpoints(
 				TargetPortName: endpointName,
 			}),
 			exportLabels,
-			5,
+			timeout,
 		)
 
 		ctrlResult, err = route.CreateOrPatch(ctx, h)
