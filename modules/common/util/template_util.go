@@ -78,15 +78,14 @@ func GetTemplatesPath() string {
 	return templatesPath
 }
 
-//
 // GetAllTemplates - get all template files
 //
 // The structur of the folder is, base path, the kind (CRD in lower case),
-// - path - base path of the templates folder
-// - kind - sub folder for the CRDs templates
-// - templateType - TType of the templates. When the templates got rendered and added to a CM
-//   this information is e.g. used for the permissions they get mounted into the pod
-// - version - if there need to be templates for different versions, they can be stored in a version subdir
+//   - path - base path of the templates folder
+//   - kind - sub folder for the CRDs templates
+//   - templateType - TType of the templates. When the templates got rendered and added to a CM
+//     this information is e.g. used for the permissions they get mounted into the pod
+//   - version - if there need to be templates for different versions, they can be stored in a version subdir
 //
 // Sub directories inside the specified directory with the above parameters get ignored.
 func GetAllTemplates(path string, kind string, templateType string, version string) []string {
@@ -178,7 +177,7 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		filepath = path.Join(path.Dir(basefile), "../../templates/"+filename)
 	} else {
 		// deployed as a container
-		filepath = path.Join(templates + filename)
+		filepath = path.Join(templates, filename)
 	}
 
 	b, err := ioutil.ReadFile(filepath)
