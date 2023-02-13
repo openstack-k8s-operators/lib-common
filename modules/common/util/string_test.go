@@ -41,3 +41,55 @@ func TestStringInSlice(t *testing.T) {
 		})
 	}
 }
+
+func TestDumpListToString(t *testing.T) {
+	tests := []struct {
+		name string
+		data []string
+		want string
+	}{
+		{
+			name: "Dump list to string",
+			data: []string{"c", "a", "b"},
+			want: "a,b,c",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			b := DumpListToString(
+				tt.data,
+			)
+
+			g.Expect(b).To(BeIdenticalTo(tt.want))
+		})
+	}
+}
+
+func TestLoadListFromString(t *testing.T) {
+	tests := []struct {
+		name string
+		data string
+		want []string
+	}{
+		{
+			name: "Load list from string",
+			data: "a,b,c",
+			want: []string{"c", "a", "b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			b := LoadListFromString(
+				tt.data,
+			)
+
+			g.Expect(b).To(BeIdenticalTo(tt.want))
+		})
+	}
+}

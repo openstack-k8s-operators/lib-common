@@ -16,6 +16,11 @@ limitations under the License.
 
 package util
 
+import (
+	"sort"
+	"strings"
+)
+
 // StringInSlice - is string in slice
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -24,4 +29,13 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func DumpListToString(list []string) string {
+	sort.Strings(list)
+	return strings.Join(list[:], ",")
+}
+
+func LoadListFromString(a string) []string {
+	return strings.Split(a, ",")
 }
