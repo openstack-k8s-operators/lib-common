@@ -33,6 +33,7 @@ type net struct {
 
 // GetNADAnnotation returns pod annotation for network-attachment-definition
 // e.g. k8s.v1.cni.cncf.io/networks: '[{"name": "internalapi", "namespace": "openstack"},{"name": "storage", "namespace": "openstack"}]'
+// DEPRECATED in favor of CreateNetworksAnnotation from network pkg
 func GetNADAnnotation(namespace string, nads []string) (map[string]string, error) {
 
 	netAnnotations := []net{}
