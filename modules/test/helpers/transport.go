@@ -15,7 +15,7 @@ package helpers
 
 import (
 	t "github.com/onsi/gomega"
-	rabbitmqv1 "github.com/openstack-k8s-operators/openstack-operator/apis/rabbitmq/v1beta1"
+	rabbitmqv1 "github.com/openstack-k8s-operators/infra-operator/apis/rabbitmq/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
