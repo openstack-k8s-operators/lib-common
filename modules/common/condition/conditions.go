@@ -18,9 +18,7 @@ limitations under the License.
 
 package condition
 
-//
 // Common Condition Types used by API objects.
-//
 const (
 	// ReadyCondition defines the Ready condition type that summarizes the operational state of an API object.
 	ReadyCondition Type = "Ready"
@@ -51,11 +49,12 @@ const (
 
 	// KeystoneEndpointReadyCondition This condition is mirrored from the Ready condition in the keystoneendpoint ref object to the service API.
 	KeystoneEndpointReadyCondition Type = "KeystoneEndpointReady"
+
+	// NetworkAttachmentsReadyCondition Status=True condition when all pods k8s.v1.cni.cncf.io/network-status shows configured interfaces for all the NetworkAttachments with IP address
+	NetworkAttachmentsReadyCondition Type = "NetworkAttachmentsReady"
 )
 
-//
 // Common Reasons used by API objects.
-//
 const (
 	// RequestedReason (Severity=Info) documents a condition not in Status=True because the underlying object is not ready.
 	RequestedReason = "Requested"
@@ -84,9 +83,7 @@ const (
 	DeletedReason = "Deleted"
 )
 
-//
 // Common Messages used by API objects.
-//
 const (
 	//
 	// Overall Ready Condition messages
@@ -198,4 +195,19 @@ const (
 
 	// DeploymentReadyErrorMessage
 	DeploymentReadyErrorMessage = "Deployment error occured %s"
+
+	//
+	// NetworkAttachmentsReady condition messages
+	//
+	// NetworkAttachmentsReadyInitMessage
+	NetworkAttachmentsReadyInitMessage = "NetworkAttachments not started"
+
+	// NetworkAttachmentsReadyMessage
+	NetworkAttachmentsReadyMessage = "NetworkAttachments completed"
+
+	// NetworkAttachmentsReadyWaitingMessage
+	NetworkAttachmentsReadyWaitingMessage = "NetworkAttachment resources missing: %s"
+
+	// NetworkAttachmentsReadyErrorMessage
+	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occured %s"
 )
