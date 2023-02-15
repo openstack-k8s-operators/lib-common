@@ -16,6 +16,11 @@ limitations under the License.
 
 package util
 
+import (
+	"math/rand"
+	"time"
+)
+
 // StringInSlice - is string in slice
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -24,4 +29,16 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+// RandomString - generate a random string of given length
+func RandomString(length int) []byte {
+	rand.Seed(time.Now().UnixNano())
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	ret := make([]byte, length)
+	for i := 0; i < length; i++ {
+		ret[i] = charset[rand.Intn(len(charset))]
+	}
+	return ret
 }
