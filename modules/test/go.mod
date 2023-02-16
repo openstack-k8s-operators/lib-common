@@ -9,7 +9,7 @@ require (
 	github.com/openstack-k8s-operators/infra-operator/apis v0.0.0-20230210143210-6e3aad14c3aa
 	github.com/openstack-k8s-operators/keystone-operator/api v0.0.0-20230113085458-cccfbcaf9f22
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230207162833-94c25ed85b4c
-	golang.org/x/mod v0.6.0
+	golang.org/x/mod v0.8.0
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.1
 	sigs.k8s.io/controller-runtime v0.14.1
