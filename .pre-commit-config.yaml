@@ -1,4 +1,13 @@
 repos:
+- repo: local
+  hooks:
+    - id: make-operator-lint
+      name: make-operator-lint
+      language: system
+      entry: make
+      args: ['operator-lint']
+      pass_filenames: false
+
 - repo: https://github.com/dnephin/pre-commit-golang
   rev: v0.5.1
   hooks:
