@@ -29,9 +29,7 @@ type Project struct {
 	Description string
 }
 
-//
 // CreateProject - creates project with projectName and projectDescription if it does not exist
-//
 func (o *OpenStack) CreateProject(
 	log logr.Logger,
 	p Project,

@@ -312,9 +312,7 @@ func DeleteSecretsWithLabel(
 	return nil
 }
 
-//
 // DeleteSecretsWithName - Delete names secret object in namespace
-//
 func DeleteSecretsWithName(
 	ctx context.Context,
 	h *helper.Helper,
@@ -346,7 +344,6 @@ func DeleteSecretsWithName(
 	return nil
 }
 
-//
 // GetDataFromSecret - Get data from Secret
 //
 // if the secret or data is not found, requeue after requeueTimeout

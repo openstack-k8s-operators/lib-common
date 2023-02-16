@@ -54,7 +54,7 @@ func TestGetOpenShiftCRDDir(t *testing.T) {
 		// We need to generate a go.mod that has lib-common dependency in it
 		dir := t.TempDir()
 		mod := []byte(`module foo
-go 1.18
+go 1.19
 require (
 	github.com/openstack-k8s-operators/lib-common/modules/test v0.0.0-20220630111354-9f8383d4a2ea
 )

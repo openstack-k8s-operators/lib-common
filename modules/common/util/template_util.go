@@ -19,7 +19,6 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -122,10 +121,12 @@ func GetAllTemplates(path string, kind string, templateType string, version stri
 // execute it with the specified data
 func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 
-	b, err := ioutil.ReadFile(templateFile)
+	b, err := os.ReadFile(templateFile)
 	if err != nil {
+
 		return "", err
 	}
+
 	file := string(b)
 
 	renderedTemplate, err := ExecuteTemplateData(file, data)
@@ -180,7 +181,7 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		filepath = path.Join(templates, filename)
 	}
 
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err != nil {
 		return "", err
 	}

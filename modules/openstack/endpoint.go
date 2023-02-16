@@ -32,9 +32,7 @@ type Endpoint struct {
 	URL          string
 }
 
-//
 // CreateEndpoint - create endpoint
-//
 func (o *OpenStack) CreateEndpoint(
 	log logr.Logger,
 	e Endpoint,
@@ -68,10 +66,8 @@ func (o *OpenStack) CreateEndpoint(
 	return createdEndpoint.ID, nil
 }
 
-//
 // GetEndpoints - get endpoints for the registered service. if endpointInterface
 // is provided, just return the endpoint for that type.
-//
 func (o *OpenStack) GetEndpoints(
 	log logr.Logger,
 	serviceID string,
@@ -106,9 +102,7 @@ func (o *OpenStack) GetEndpoints(
 	return allEndpoints, nil
 }
 
-//
 // DeleteEndpoint - delete endpoint
-//
 func (o *OpenStack) DeleteEndpoint(
 	log logr.Logger,
 	e Endpoint,
@@ -133,9 +127,7 @@ func (o *OpenStack) DeleteEndpoint(
 	return nil
 }
 
-//
 // UpdateEndpoint -
-//
 func (o *OpenStack) UpdateEndpoint(
 	log logr.Logger,
 	e Endpoint,

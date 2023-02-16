@@ -74,30 +74,22 @@ func NewOpenStack(
 	return &os, nil
 }
 
-//
 // GetRegion - returns the region
-//
 func (o *OpenStack) GetRegion() string {
 	return o.region
 }
 
-//
 // GetAuthURL - returns the region
-//
 func (o *OpenStack) GetAuthURL() string {
 	return o.authURL
 }
 
-//
 // GetOSClient - returns the client
-//
 func (o *OpenStack) GetOSClient() *gophercloud.ServiceClient {
 	return o.osclient
 }
 
-//
 // GetAvailability - returns mapping of enpointtype to gophercloud.Availability
-//
 func GetAvailability(
 	endpointInterface string,
 ) (gophercloud.Availability, error) {

@@ -41,4 +41,3 @@ with the full CRD definition.
 
 We store such generated CRDs in our repo under ``openshift_crds`` for now to
 avoid the need for regenerating them for every run.
-

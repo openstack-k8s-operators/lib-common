@@ -34,9 +34,7 @@ type User struct {
 	ProjectID string
 }
 
-//
 // CreateUser - creates user with userName, password and default project projectID
-//
 func (o *OpenStack) CreateUser(
 	log logr.Logger,
 	u User,
@@ -74,9 +72,7 @@ func (o *OpenStack) CreateUser(
 	return userID, nil
 }
 
-//
 // GetUser - get user with userName
-//
 func (o *OpenStack) GetUser(
 	log logr.Logger,
 	userName string,
@@ -97,9 +93,7 @@ func (o *OpenStack) GetUser(
 	return &allUsers[0], nil
 }
 
-//
 // DeleteUser - deletes user with userName
-//
 func (o *OpenStack) DeleteUser(
 	log logr.Logger,
 	userName string,

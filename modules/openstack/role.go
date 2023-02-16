@@ -32,9 +32,7 @@ type Role struct {
 	Name string
 }
 
-//
 // CreateRole - creates role with projectuserName, password and default project projectID
-//
 func (o *OpenStack) CreateRole(
 	log logr.Logger,
 	roleName string,
@@ -67,9 +65,7 @@ func (o *OpenStack) CreateRole(
 	return roleID, nil
 }
 
-//
 // GetRole - gets role with roleName
-//
 func (o *OpenStack) GetRole(
 	log logr.Logger,
 	roleName string,
@@ -90,9 +86,7 @@ func (o *OpenStack) GetRole(
 	return &allRoles[0], nil
 }
 
-//
 // AssignUserRole - adds user with userID,projectID to role with roleName
-//
 func (o *OpenStack) AssignUserRole(
 	log logr.Logger,
 	roleName string,
