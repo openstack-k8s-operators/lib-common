@@ -263,3 +263,98 @@ func GetConfigMap(
 
 	return configMap, ctrl.Result{}, nil
 }
+
+// GetConfigMapListWithLabel - Get all configmaps in namespace of the obj matching label selector
+func GetConfigMapListWithLabel(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	labelSelectorMap map[string]string,
+) (*corev1.ConfigMapList, error) {
+	configMaps := &corev1.ConfigMapList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabels(labelSelectorMap),
+	}
+
+	if err := h.GetClient().List(ctx, configMaps, listOpts...); err != nil {
+		err = fmt.Errorf("Error listing config map for labels: %v - %v", labelSelectorMap, err)
+		return nil, err
+	}
+
+	return configMaps, nil
+}
+
+// EnsureOperatorConfigMap - Create ConfigMap consumed by operators
+func EnsureOperatorConfigMap(
+	ctx context.Context,
+	h *helper.Helper,
+	obj client.Object,
+	name string,
+	data map[string]string,
+	labels map[string]string,
+	scope string,
+) error {
+	cmLabels := util.MergeStringMaps(
+		labels,
+		map[string]string{
+			"operators.openstack.org/consumer": "operator",
+			"operators.openstack.org/scope":    scope,
+		},
+	)
+
+	cms := []util.Template{
+		{
+			Name:       name,
+			Namespace:  obj.GetNamespace(),
+			Type:       util.TemplateTypeConfig,
+			CustomData: data,
+			Labels:     cmLabels,
+		},
+	}
+
+	envVars := make(map[string]env.Setter)
+	return EnsureConfigMaps(ctx, h, obj, cms, &envVars)
+}
+
+// GetOperatorConfigMapList - Get ConfigMap for operators, tagged for the specific scope
+func GetOperatorConfigMapList(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	scope string,
+) (*corev1.ConfigMapList, *corev1.ConfigMapList, error) {
+
+	globalLabelSelectorMap := map[string]string{
+		"operators.openstack.org/consumer": "operator",
+		"operators.openstack.org/scope":    "global",
+	}
+	globalList, err := GetConfigMapListWithLabel(ctx, h, namespace, globalLabelSelectorMap)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	localLabelSelectorMap := map[string]string{
+		"operators.openstack.org/consumer": "operator",
+		"operators.openstack.org/scope":    scope,
+	}
+	localList, err := GetConfigMapListWithLabel(ctx, h, namespace, localLabelSelectorMap)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return globalList, localList, err
+}
+
+// MergeConfigMapData - Merge multiple ConfigMaps and generate a single map
+func MergeConfigMapData(
+	list *corev1.ConfigMapList,
+) map[string]string {
+	result := map[string]string{}
+
+	for _, cm := range list.Items {
+		result = util.MergeStringMaps(result, cm.Data)
+	}
+
+	return result
+}
