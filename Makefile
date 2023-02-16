@@ -124,6 +124,7 @@ golint: get-ci-tools
 gowork:
 	test -f go.work || go work init
 	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
+	go work sync
 
 .PHONY: operator-lint
 operator-lint: gowork ## Runs operator-lint
