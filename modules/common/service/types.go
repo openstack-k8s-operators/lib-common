@@ -50,13 +50,12 @@ type GenericServicePort struct {
 
 // MetalLBServiceDetails -
 type MetalLBServiceDetails struct {
-	Name            string
-	Namespace       string
-	Annotations     map[string]string
-	Labels          map[string]string
-	Selector        map[string]string
-	Port            GenericServicePort
-	LoadBalancerIPs []string
+	Name        string
+	Namespace   string
+	Annotations map[string]string
+	Labels      map[string]string
+	Selector    map[string]string
+	Port        GenericServicePort
 }
 
 const (
