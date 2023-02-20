@@ -64,6 +64,7 @@ func (d *Deployment) CreateOrPatch(
 		deployment.Labels = util.MergeStringMaps(deployment.Labels, d.deployment.Labels)
 		deployment.Spec.Template = d.deployment.Spec.Template
 		deployment.Spec.Replicas = d.deployment.Spec.Replicas
+		deployment.Spec.Strategy = d.deployment.Spec.Strategy
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), deployment, h.GetScheme())
 		if err != nil {
