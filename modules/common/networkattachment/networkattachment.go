@@ -114,8 +114,10 @@ func VerifyNetworkStatusFromAnnotation(
 			}
 		}
 
-		for _, net := range networkAttachmentStatus {
-			if len(net) < int(readyCount) {
+		for _, netAtt := range networkAttachments {
+			netAtt = helper.GetBeforeObject().GetNamespace() + "/" + netAtt
+
+			if net, ok := networkAttachmentStatus[netAtt]; !ok || len(net) < int(readyCount) {
 				networkReady = false
 				break
 			}
