@@ -1,4 +1,4 @@
-module github.com/openstack-k8s-operators/lib-common/ansible
+module github.com/openstack-k8s-operators/lib-common/modules/ansible
 
 go 1.19
 
