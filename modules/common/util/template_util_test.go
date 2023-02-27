@@ -44,7 +44,7 @@ func TestGetTemplatesPath(t *testing.T) {
 	t.Run("Lower string", func(t *testing.T) {
 		g := NewWithT(t)
 
-		p := GetTemplatesPath()
+		p, _ := GetTemplatesPath()
 
 		g.Expect(p).To(BeIdenticalTo(templatePath))
 	})
@@ -93,7 +93,7 @@ func TestGetAllTemplates(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			p := GetTemplatesPath()
+			p, _ := GetTemplatesPath()
 			g.Expect(p).To(BeADirectory())
 
 			templatesFiles := GetAllTemplates(p, tt.kind, string(tt.tmplType), tt.version)
@@ -201,7 +201,7 @@ func TestGetTemplateData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			p := GetTemplatesPath()
+			p, _ := GetTemplatesPath()
 			g.Expect(p).To(BeADirectory())
 
 			templatesFiles, err := GetTemplateData(tt.tmpl)
