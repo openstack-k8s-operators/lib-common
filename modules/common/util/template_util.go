@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"text/template"
 
@@ -61,20 +60,23 @@ type Template struct {
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
-func GetTemplatesPath() string {
+func GetTemplatesPath() (string, error) {
 
 	templates := os.Getenv("OPERATOR_TEMPLATES")
 	templatesPath := ""
 	if templates == "" {
 		// support local testing with 'up local'
-		_, basefile, _, _ := runtime.Caller(1)
-		templatesPath = path.Join(path.Dir(basefile), "../../templates")
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		templatesPath = path.Join(cwd, "/templates")
 	} else {
 		// deployed as a container
 		templatesPath = templates
 	}
 
-	return templatesPath
+	return templatesPath, nil
 }
 
 // GetAllTemplates - get all template files
@@ -174,8 +176,11 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 	filepath := ""
 	if templates == "" {
 		// support local testing with 'up local'
-		_, basefile, _, _ := runtime.Caller(1)
-		filepath = path.Join(path.Dir(basefile), "../../templates/"+filename)
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", err
+		}
+		filepath = path.Join(cwd, "/templates/"+filename)
 	} else {
 		// deployed as a container
 		filepath = path.Join(templates, filename)
@@ -209,7 +214,10 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	opts := t.ConfigOptions
 
 	// get templates base path, either running local or deployed as container
-	templatesPath := GetTemplatesPath()
+	templatesPath, err := GetTemplatesPath()
+	if err != nil {
+		return nil, err
+	}
 
 	data := make(map[string]string)
 
