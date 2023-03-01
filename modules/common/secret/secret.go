@@ -385,3 +385,42 @@ func GetDataFromSecret(
 
 	return data, ctrl.Result{}, nil
 }
+
+// VerifySecret - verifies if the Secret object exists and the expected fields
+// are in the Secret. It returns a hash of the values of the expected fields.
+func VerifySecret(
+	ctx context.Context,
+	secretName types.NamespacedName,
+	expectedFields []string,
+	reader client.Reader,
+	requeueTimeout time.Duration,
+) (string, ctrl.Result, error) {
+	secret := &corev1.Secret{}
+	err := reader.Get(ctx, secretName, secret)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return "",
+				ctrl.Result{RequeueAfter: requeueTimeout},
+				fmt.Errorf("Secret %s not found", secretName)
+		}
+		return "", ctrl.Result{}, fmt.Errorf("Get secret %s failed: %w", secretName, err)
+	}
+
+	// collect the secret values the caller expects to exist
+	values := [][]byte{}
+	for _, field := range expectedFields {
+		val, ok := secret.Data[field]
+		if !ok {
+			err := fmt.Errorf("field %s not found in Secret %s", field, secretName)
+			return "", ctrl.Result{}, err
+		}
+		values = append(values, val)
+	}
+
+	hash, err := util.ObjectHash(values)
+	if err != nil {
+		return "", ctrl.Result{}, err
+	}
+
+	return hash, ctrl.Result{}, nil
+}
