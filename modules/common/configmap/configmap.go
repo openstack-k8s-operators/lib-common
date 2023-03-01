@@ -263,3 +263,42 @@ func GetConfigMap(
 
 	return configMap, ctrl.Result{}, nil
 }
+
+// VerifyConfigMap - verifies if the ConfigMap object exists and the expected fields
+// are in the ConfigMap. It returns a hash of the values of the expected fields.
+func VerifyConfigMap(
+	ctx context.Context,
+	configMapName types.NamespacedName,
+	expectedFields []string,
+	reader client.Reader,
+	requeueTimeout time.Duration,
+) (string, ctrl.Result, error) {
+	configMap := &corev1.ConfigMap{}
+	err := reader.Get(ctx, configMapName, configMap)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return "",
+				ctrl.Result{RequeueAfter: requeueTimeout},
+				fmt.Errorf("ConfigMap %s not found", configMapName)
+		}
+		return "", ctrl.Result{}, fmt.Errorf("Get ConfigMap %s failed: %w", configMapName, err)
+	}
+
+	// collect the ConfigMap values the caller expects to exist
+	values := []string{}
+	for _, field := range expectedFields {
+		val, ok := configMap.Data[field]
+		if !ok {
+			err := fmt.Errorf("field %s not found in ConfigMap %s", field, configMapName)
+			return "", ctrl.Result{}, err
+		}
+		values = append(values, val)
+	}
+
+	hash, err := util.ObjectHash(values)
+	if err != nil {
+		return "", ctrl.Result{}, err
+	}
+
+	return hash, ctrl.Result{}, nil
+}
