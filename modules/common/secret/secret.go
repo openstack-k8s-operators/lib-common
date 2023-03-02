@@ -395,6 +395,11 @@ func VerifySecret(
 	reader client.Reader,
 	requeueTimeout time.Duration,
 ) (string, ctrl.Result, error) {
+	if len(secretName.Name) == 0 {
+		return "",
+			ctrl.Result{},
+			fmt.Errorf("empty secret name")
+	}
 	secret := &corev1.Secret{}
 	err := reader.Get(ctx, secretName, secret)
 	if err != nil {
