@@ -295,9 +295,15 @@ func GetHigherPrioCondition(cond1, cond2 *Condition) *Condition {
 }
 
 // Mirror - mirrors Status, Message, Reason and Severity from the latest condition
-// of a sorted conditionGroup list into a target condition of type t.
-// The conditionGroup entries are split by Status with the order False, True, Unknown.
+// of a sorted conditionGroup list into a target condition of type t. If the
+// top level ReadyCondition is True then it is assumed that there are no False
+// or important Uknown conditions present in the list as ReadyCondition is expected
+// to be an aggregated status condition.
+// If ReadyCondition is not True then the conditionGroup entries are split by
+// Status with the order False, Unknown, True.
 // If Status=False its again split into Severity with the order Error, Warning, Info.
+// So Mirror either reflects the ReadyCondition=True or reflects the latest most
+// sever False or Uknown condition.
 func (conditions *Conditions) Mirror(t Type) *Condition {
 
 	if conditions == nil || len(*conditions) == 0 {
@@ -344,8 +350,17 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 			break
 		}
 
-		mirrorCondition = UnknownCondition(t, c.Reason, c.Message)
-		mirrorCondition.LastTransitionTime = c.LastTransitionTime
+		if c.Status == corev1.ConditionUnknown {
+			mirrorCondition = UnknownCondition(t, c.Reason, c.Message)
+			mirrorCondition.LastTransitionTime = c.LastTransitionTime
+			break
+		}
+
+		// The only valid values for Status is True, False, Unknown are handled
+		// above so if we reach here then we have an invalid status condition.
+		// This should never happen.
+		panic(fmt.Sprintf("Condition %v has invalid status value '%s'. The only valid values are True, False, Unknown", c, c.Status))
+
 	}
 
 	return mirrorCondition
@@ -392,9 +407,9 @@ func groupOrder(c Condition) int {
 		case SeverityInfo:
 			return 2
 		}
-	case corev1.ConditionTrue:
-		return 3
 	case corev1.ConditionUnknown:
+		return 3
+	case corev1.ConditionTrue:
 		return 4
 	}
 

@@ -386,11 +386,11 @@ func TestMirror(t *testing.T) {
 	conditions.Set(trueA)
 	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA)))
 	targetCondition = conditions.Mirror("targetConditon")
-	// expect to be mirrored trueA
-	g.Expect(targetCondition.Status).To(BeIdenticalTo(trueA.Status))
-	g.Expect(targetCondition.Severity).To(BeIdenticalTo(trueA.Severity))
-	g.Expect(targetCondition.Reason).To(BeIdenticalTo(trueA.Reason))
-	g.Expect(targetCondition.Message).To(BeIdenticalTo(trueA.Message))
+	// expect to be mirrored unknownReady
+	g.Expect(targetCondition.Status).To(BeIdenticalTo(unknownReady.Status))
+	g.Expect(targetCondition.Severity).To(BeIdenticalTo(unknownReady.Severity))
+	g.Expect(targetCondition.Reason).To(BeIdenticalTo(unknownReady.Reason))
+	g.Expect(targetCondition.Message).To(BeIdenticalTo(unknownReady.Message))
 
 	conditions.Set(falseB)
 	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady, trueA, falseB)))
@@ -410,16 +410,42 @@ func TestMirror(t *testing.T) {
 	g.Expect(targetCondition.Reason).To(BeIdenticalTo(falseBError.Reason))
 	g.Expect(targetCondition.Message).To(BeIdenticalTo(falseBError.Message))
 
-	// mark all non true conditions to be true
+	// mark ReadyCondition to true
+	// We expect that ReadyCondition True means the overall status of the
+	// resource is ready that condition is mirrored even if there are other
+	// conditions in non True state.
 	conditions.MarkTrue(ReadyCondition, ReadyMessage)
-	conditions.MarkTrue(trueB.Type, trueB.Message)
-	g.Expect(conditions).To(haveSameConditionsOf(CreateList(trueReady, trueA, trueB)))
+	conditions.Set(unknownA)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(trueReady, unknownA, falseBError)))
 	targetCondition = conditions.Mirror("targetConditon")
 	// expect to be mirrored trueReady
 	g.Expect(targetCondition.Status).To(BeIdenticalTo(trueReady.Status))
 	g.Expect(targetCondition.Severity).To(BeIdenticalTo(trueReady.Severity))
 	g.Expect(targetCondition.Reason).To(BeIdenticalTo(trueReady.Reason))
 	g.Expect(targetCondition.Message).To(BeIdenticalTo(trueReady.Message))
+}
+
+func TestMirrorInvalidStatus(t *testing.T) {
+	g := NewWithT(t)
+
+	conditions := Conditions{}
+	invalidStatusA := Condition{
+		Type:     "a",
+		Status:   "FooBar",
+		Reason:   "",
+		Severity: SeverityNone,
+		Message:  "",
+	}
+	conditions.Init(&Conditions{invalidStatusA})
+	// NOTE(gibi): we always have a ReadyCondition with Unknown status added
+	// automatically so it is picked up by Mirror before reaching to the
+	// condition with FooBar status as FooBar status handled as the lowest prio
+	// as it is not matching of any expectes Status value. So to trigger the
+	// error case we need to remove the ReadyCondition explicitly.
+	conditions.Remove(ReadyCondition)
+
+	g.Expect(func() { conditions.Mirror("targetConditon") }).To(
+		PanicWith(MatchRegexp(`Condition \{a FooBar .*\} has invalid status value 'FooBar'.`)))
 }
 
 func TestIsError(t *testing.T) {
@@ -444,11 +470,15 @@ func TestGetHigherPrioCondition(t *testing.T) {
 	c = GetHigherPrioCondition(nil, unknownA)
 	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
 
-	// Status True has higher prio then Status Unknown
+	// Status Unknown has higher prio then Status True
 	c = GetHigherPrioCondition(unknownA, trueA)
-	g.Expect(hasSameState(c, trueA)).To(BeTrue())
+	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
 
 	// Status False has higher prio then Status Unknown
+	c = GetHigherPrioCondition(falseA, unknownA)
+	g.Expect(hasSameState(c, falseA)).To(BeTrue())
+
+	// Status False has higher prio then Status True
 	c = GetHigherPrioCondition(falseA, trueA)
 	g.Expect(hasSameState(c, falseA)).To(BeTrue())
 
