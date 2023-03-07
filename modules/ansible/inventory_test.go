@@ -20,7 +20,7 @@ import (
 	"testing"
 )
 
-func TestInventoryMarshall(t *testing.T) {
+func TestInventoryMarshallBasic(t *testing.T) {
 	inventory := MakeInventory()
 	all := inventory.AddGroup("all")
 	host := all.AddHost("testing")
@@ -39,10 +39,43 @@ func TestInventoryMarshall(t *testing.T) {
         testing:
             ansible_host: host.test
     children:
-        all:
+        child_test:
             hosts:
                 child_testing:
                     ansible_host: child.host.test
+`
+	result := string(invData)
+	if result != expected {
+		t.Log("error should be"+expected+", but got", result)
+		t.Fail()
+	}
+}
+
+func TestInventoryMarshallNestedChildren(t *testing.T) {
+	inventory := MakeInventory()
+	all := inventory.AddGroup("allovercloud")
+	// host := all.AddHost("testing")
+	// host.Vars["ansible_host"] = "host.test"
+	childTest := all.AddChild(MakeGroup("overcloud"))
+	// childHost := childTest.AddHost("child_testing")
+	// childHost.Vars["ansible_host"] = "child.host.test"
+	compTest := childTest.AddChild(MakeGroup("Compute"))
+	compHost := compTest.AddHost("192.168.0.1")
+	compHost.Vars["ansible_ssh_user"] = "root"
+
+	invData, err := inventory.MarshalYAML()
+	if err != nil {
+		t.Log("error should be nil", err)
+		t.Fail()
+	}
+	expected := `allovercloud:
+    children:
+        overcloud:
+            children:
+                Compute:
+                    hosts:
+                        192.168.0.1:
+                            ansible_ssh_user: root
 `
 	result := string(invData)
 	if result != expected {

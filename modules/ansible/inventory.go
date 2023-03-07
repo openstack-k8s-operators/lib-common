@@ -59,7 +59,7 @@ func MakeGroup(name string) Group {
 
 // AddChild adds a child group to the current group
 func (group Group) AddChild(newGroup Group) Group {
-	group.Children[group.name] = newGroup
+	group.Children[newGroup.name] = newGroup
 	return newGroup
 }
 
