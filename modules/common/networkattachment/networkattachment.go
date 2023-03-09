@@ -56,8 +56,9 @@ func CreateNetworksAnnotation(namespace string, nads []string) (map[string]strin
 		netAnnotations = append(
 			netAnnotations,
 			networkv1.NetworkSelectionElement{
-				Name:      nad,
-				Namespace: namespace,
+				Name:             nad,
+				Namespace:        namespace,
+				InterfaceRequest: GetNetworkIFName(nad),
 			},
 		)
 	}
@@ -68,6 +69,15 @@ func CreateNetworksAnnotation(namespace string, nads []string) (map[string]strin
 	}
 
 	return map[string]string{networkv1.NetworkAttachmentAnnot: string(networks)}, nil
+}
+
+// GetNetworkIFName returns the interface name base on the NAD name
+// the interface name in Linux must not be longer then 15 chars.
+func GetNetworkIFName(nad string) string {
+	if len(nad) > 15 {
+		return nad[:15]
+	}
+	return nad
 }
 
 // GetNetworkStatusFromAnnotation returns NetworkStatus list with networking details the pods are attached to
