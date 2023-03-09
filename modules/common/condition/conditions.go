@@ -210,4 +210,19 @@ const (
 
 	// NetworkAttachmentsReadyErrorMessage
 	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occured %s"
+
+	//
+	// CronjobReady condition messages
+	//
+	// CronjobReadyInitMessage
+	CronjobReadyInitMessage = "Cronjob not started"
+
+	// CronjobReadyMessage
+	CronjobReadyMessage = "Cronjob completed"
+
+	// CronjobReadyRunningMessage
+	CronjobReadyRunningMessage = "Cronjob in progress"
+
+	// CronjobReadyErrorMessage
+	CronjobReadyErrorMessage = "Cronjob error occured %s"
 )
