@@ -42,13 +42,13 @@ func TestCreateNetworksAnnotation(t *testing.T) {
 			name:      "Single network",
 			networks:  []string{"one"},
 			namespace: "foo",
-			want:      map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\"}]"},
+			want:      map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\"}]"},
 		},
 		{
 			name:      "Multiple networks",
 			networks:  []string{"one", "two"},
 			namespace: "foo",
-			want:      map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\"},{\"name\":\"two\",\"namespace\":\"foo\"}]"},
+			want:      map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\"},{\"name\":\"two\",\"namespace\":\"foo\",\"interface\":\"two\"}]"},
 		},
 	}
 
@@ -138,4 +138,34 @@ func TestGetNetworkStatusFromAnnotation(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGetNetworkIFName(t *testing.T) {
+
+	tests := []struct {
+		name string
+		nad  string
+		want string
+	}{
+		{
+			name: "short NAD name",
+			nad:  "short",
+			want: "short",
+		},
+		{
+			name: "long NAD name",
+			nad:  "reallylongnadnamewithmorethan15chars",
+			want: "reallylongnadna",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			ifName := GetNetworkIFName(tt.nad)
+
+			g.Expect(ifName).To(BeEquivalentTo(tt.want))
+		})
+	}
 }
