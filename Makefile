@@ -127,7 +127,7 @@ gowork:
 
 .PHONY: operator-lint
 operator-lint: gowork ## Runs operator-lint
-	GOBIN=$(LOCALBIN) go install github.com/gibizer/operator-lint@v0.1.0
+	GOBIN=$(LOCALBIN) go install github.com/gibizer/operator-lint@v0.3.0
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		set -x ; \
 		if [ $$mod == "modules/archive" ]; then continue; fi ; \

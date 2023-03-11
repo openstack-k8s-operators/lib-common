@@ -43,7 +43,7 @@ type Backend struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="CephUser"
 	// User set the Ceph cluster pool
-	User string `json:"cephUser,omitempty"`
+	User string `json:"cephUser"`
 	// +kubebuilder:validation:Optional
 	// Pools - Map of chosen names to spec definitions for the Ceph cluster
 	// pools
