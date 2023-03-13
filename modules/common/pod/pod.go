@@ -41,9 +41,30 @@ func GetPodListWithLabel(
 	// otherwise we hit "Error listing pods for labels: map[ ... ] - unable to get: default because of unknown namespace for the cache"
 	podList, err := h.GetKClient().CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelectorString})
 	if err != nil {
-		err = fmt.Errorf("Error listing pods for labels: %v - %w", labelSelectorMap, err)
+		err = fmt.Errorf("error listing pods for labels: %v - %w", labelSelectorMap, err)
 		return nil, err
 	}
 
 	return podList, nil
+}
+
+// GetPodFQDNList gets a list of pods matching the labels provided and returns a slice of pod FQDNs.
+func GetPodFQDNList(ctx context.Context, h *helper.Helper, namespace string, labelSelector map[string]string) ([]string, error) {
+	var podSvcNames []string
+	var podList *corev1.PodList
+
+	podList, err := GetPodListWithLabel(ctx, h, namespace, labelSelector)
+	if err != nil {
+		return nil, fmt.Errorf("error getting list of pods: %w", err)
+	}
+
+	for _, pod := range podList.Items {
+		// Check for pod.Spec.Hostname and Subdomain
+		if pod.Spec.Hostname == "" || pod.Spec.Subdomain == "" {
+			return nil, fmt.Errorf("Pod does not have the required Spec Hostname and Subdomain details to accurately form a FQDN")
+		}
+		podSvcNames = append(podSvcNames, fmt.Sprintf("%s.%s", pod.Spec.Hostname, pod.Spec.Subdomain))
+	}
+
+	return podSvcNames, nil
 }
