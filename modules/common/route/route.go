@@ -59,7 +59,7 @@ func GenericRoute(routeInfo *GenericRouteDetails) *routev1.Route {
 		TargetPort: intstr.FromString(routeInfo.TargetPortName),
 	}
 
-	return &routev1.Route{
+	result := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      routeInfo.Name,
 			Namespace: routeInfo.Namespace,
@@ -70,6 +70,10 @@ func GenericRoute(routeInfo *GenericRouteDetails) *routev1.Route {
 			Port: routePort,
 		},
 	}
+	if len(routeInfo.FQDN) > 0 {
+		result.Spec.Host = routeInfo.FQDN
+	}
+	return result
 }
 
 // CreateOrPatch - creates or patches a route, reconciles after Xs if object won't exist.
@@ -88,6 +92,9 @@ func (r *Route) CreateOrPatch(
 		route.Labels = util.MergeStringMaps(route.Labels, r.route.Labels)
 		route.Annotations = r.route.Annotations
 		route.Spec = r.route.Spec
+		if len(route.Spec.Host) == 0 && len(route.Status.Ingress) > 0 {
+			route.Spec.Host = route.Status.Ingress[0].Host
+		}
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), route, h.GetScheme())
 		if err != nil {
