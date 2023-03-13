@@ -52,6 +52,9 @@ const (
 
 	// NetworkAttachmentsReadyCondition Status=True condition when all pods k8s.v1.cni.cncf.io/network-status shows configured interfaces for all the NetworkAttachments with IP address
 	NetworkAttachmentsReadyCondition Type = "NetworkAttachmentsReady"
+
+	// CronJobReadyCondition Status=True condition when cron jobs created ok.
+	CronJobReadyCondition Type = "CronJobReady"
 )
 
 // Common Reasons used by API objects.
@@ -212,17 +215,17 @@ const (
 	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occured %s"
 
 	//
-	// CronjobReady condition messages
+	// CronJobReady condition messages
 	//
-	// CronjobReadyInitMessage
-	CronjobReadyInitMessage = "Cronjob not started"
+	// CronJobReadyInitMessage
+	CronJobReadyInitMessage = "CronJob not started"
 
-	// CronjobReadyMessage
-	CronjobReadyMessage = "Cronjob completed"
+	// CronJobReadyMessage
+	CronJobReadyMessage = "CronJob completed"
 
-	// CronjobReadyRunningMessage
-	CronjobReadyRunningMessage = "Cronjob in progress"
+	// CronJobReadyRunningMessage
+	CronJobReadyRunningMessage = "CronJob in progress"
 
-	// CronjobReadyErrorMessage
-	CronjobReadyErrorMessage = "Cronjob error occured %s"
+	// CronJobReadyErrorMessage
+	CronJobReadyErrorMessage = "CronJob error occured %s"
 )
