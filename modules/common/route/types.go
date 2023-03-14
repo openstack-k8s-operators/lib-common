@@ -36,4 +36,5 @@ type GenericRouteDetails struct {
 	Labels         map[string]string
 	ServiceName    string
 	TargetPortName string
+	FQDN           string
 }
