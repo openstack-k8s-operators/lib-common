@@ -95,3 +95,19 @@ func SortSetterMapByKey(in map[string]Setter) SetterList {
 
 	return sorted
 }
+
+// DownwardAPI - set env from FieldRef->FieldPath, e.g. status.podIP
+func DownwardAPI(field string) Setter {
+	return func(env *corev1.EnvVar) {
+		if env.ValueFrom == nil {
+			env.ValueFrom = &corev1.EnvVarSource{}
+		}
+		env.Value = ""
+
+		if env.ValueFrom.FieldRef == nil {
+			env.ValueFrom.FieldRef = &corev1.ObjectFieldSelector{}
+		}
+
+		env.ValueFrom.FieldRef.FieldPath = field
+	}
+}
