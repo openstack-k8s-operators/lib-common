@@ -55,6 +55,9 @@ const (
 
 	// CronJobReadyCondition Status=True condition when cron jobs created ok.
 	CronJobReadyCondition Type = "CronJobReady"
+
+	// AnsibleEECondition Status=True condition when the AnsibleEE run has been created ok
+	AnsibleEECondition Type = "AnsibleEEReady"
 )
 
 // Common Reasons used by API objects.
@@ -228,4 +231,19 @@ const (
 
 	// CronJobReadyErrorMessage
 	CronJobReadyErrorMessage = "CronJob error occured %s"
+
+	//
+	// AnsibleEEReady condition messages
+	//
+	// AnsibleEEReadyInitMessage
+	AnsibleEEReadyInitMessage = "AnsibleEE not started"
+
+	// AnsibleEEReadyMessage
+	AnsibleEEReadyMessage = "AnsibleEE completed"
+
+	// AnsibleEEReadyRunningMessage
+	AnsibleEEReadyRunningMessage = "AnsibleEE in progress"
+
+	// AnsibleEEReadyErrorMessage
+	AnsibleEEReadyErrorMessage = "AnsibleEE error occured %s"
 )
