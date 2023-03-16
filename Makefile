@@ -126,6 +126,15 @@ gowork:
 	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
 	go work sync
 
+.PHONY: gotidy
+gotidy:
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
+		set -x; \
+		pushd ./$$mod ; \
+		go mod tidy; \
+		popd; \
+	done
+
 .PHONY: operator-lint
 operator-lint: gowork ## Runs operator-lint
 	GOBIN=$(LOCALBIN) go install github.com/gibizer/operator-lint@v0.3.0
