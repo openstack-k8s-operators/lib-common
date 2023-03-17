@@ -6,7 +6,7 @@ replace github.com/openstack-k8s-operators/lib-common/modules/common => ../commo
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-00010101000000-000000000000
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230317110100-58569bbb7a85
 	golang.org/x/crypto v0.7.0
 	k8s.io/api v0.26.2
 	k8s.io/apimachinery v0.26.2
