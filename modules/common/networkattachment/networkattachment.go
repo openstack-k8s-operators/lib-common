@@ -97,18 +97,20 @@ func GetNetworkStatusFromAnnotation(annotations map[string]string) ([]networkv1.
 
 // VerifyNetworkStatusFromAnnotation - verifies if NetworkStatus annotation for the pods of a deployment,
 // pods identified via the service label selector, matches the passed in network attachments and the number of
-// per network IPs the ready count of the deployment. Return true if count matches with the list of IPs per network.
+// per network IPs the ready count of the deployment. Return true if count matches with the list of IPs per network,
+// no networkAttachments provided or expectedCount == 0
 func VerifyNetworkStatusFromAnnotation(
 	ctx context.Context,
 	helper *helper.Helper,
 	networkAttachments []string,
 	serviceLabels map[string]string,
 	readyCount int32,
+	expectedCount int32,
 ) (bool, map[string][]string, error) {
 
 	networkReady := true
 	networkAttachmentStatus := map[string][]string{}
-	if len(networkAttachments) > 0 {
+	if len(networkAttachments) > 0 && expectedCount > 0 {
 		podList, err := pod.GetPodListWithLabel(ctx, helper, helper.GetBeforeObject().GetNamespace(), serviceLabels)
 		if err != nil {
 			return false, networkAttachmentStatus, err
