@@ -127,3 +127,45 @@ func (o *OpenStack) AssignUserRole(
 
 	return nil
 }
+
+// AssignUserDomainRole - adds user with userID and domainID to role with roleName
+func (o *OpenStack) AssignUserDomainRole(
+	log logr.Logger,
+	roleName string,
+	userID string,
+	domainID string,
+) error {
+	role, err := o.GetRole(log, roleName)
+	if err != nil {
+		return err
+	}
+
+	// validate if user is already assigned to role
+	listAssignmentsOpts := roles.ListAssignmentsOpts{
+		ScopeDomainID: domainID,
+		UserID:        userID,
+		RoleID:        role.ID,
+	}
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
+	if err != nil {
+		return err
+	}
+
+	assignUser, err := allPages.IsEmpty()
+	if err != nil {
+		return err
+	}
+
+	if assignUser {
+		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
+
+		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+			UserID:   userID,
+			DomainID: domainID}).ExtractErr()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
