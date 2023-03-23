@@ -20,6 +20,8 @@ package common
 const (
 	// AppSelector - used by operators to specify labels
 	AppSelector = "service"
+	// ComponentSelector - used by operators to specify labels for a sub component
+	ComponentSelector = "component"
 	// CustomServiceConfigFileName - file name used to add the service customizations
 	CustomServiceConfigFileName = "custom.conf"
 	// DebugCommand - Default debug command for pods
