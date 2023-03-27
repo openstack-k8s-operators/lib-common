@@ -123,7 +123,7 @@ golint: get-ci-tools
 .PHONY: gowork
 gowork:
 	test -f go.work || go work init
-	for mod in $(shell find modules -maxdepth 1 -mindepth 1 -type d); do go work use $$mod; done
+	go work use -r modules
 	go work sync
 
 .PHONY: gotidy
