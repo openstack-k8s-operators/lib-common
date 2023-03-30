@@ -113,7 +113,7 @@ const (
 	InputReadyWaitingMessage = "Input data resources missing"
 
 	// InputReadyErrorMessage
-	InputReadyErrorMessage = "Input data error occured %s"
+	InputReadyErrorMessage = "Input data error occurred %s"
 
 	//
 	// ServiceConfig condition messages
@@ -125,7 +125,7 @@ const (
 	ServiceConfigReadyMessage = "Service config create completed"
 
 	// ServiceConfigReadyErrorMessage
-	ServiceConfigReadyErrorMessage = "Service config create error occured %s"
+	ServiceConfigReadyErrorMessage = "Service config create error occurred %s"
 
 	//
 	// DBReady condition messages
@@ -136,17 +136,17 @@ const (
 	// DBReadyMessage
 	DBReadyMessage = "DB create completed"
 
-	// DBSyncReadyRunning
+	// DBReadyRunningMessage
 	DBReadyRunningMessage = "DB create job still running"
 
-	// DBSyncReadyErrorMessage
-	DBReadyErrorMessage = "DBsync job error occured %s"
+	// DBReadyErrorMessage
+	DBReadyErrorMessage = "DB create job error occurred %s"
 
 	//
 	// DBSync condition messages
 	//
 	// DBSyncReadyInitMessage
-	DBSyncReadyInitMessage = "DB sync not started"
+	DBSyncReadyInitMessage = "DBsync not started"
 
 	// DBSyncReadyMessage
 	DBSyncReadyMessage = "DBsync completed"
@@ -155,7 +155,7 @@ const (
 	DBSyncReadyRunningMessage = "DBsync job still running"
 
 	// DBSyncReadyErrorMessage
-	DBSyncReadyErrorMessage = "DBsync job error occured %s"
+	DBSyncReadyErrorMessage = "DBsync job error occurred %s"
 
 	//
 	// ExposeService condition messages
@@ -170,7 +170,7 @@ const (
 	ExposeServiceReadyRunningMessage = "Exposing service in progress"
 
 	// ExposeServiceReadyErrorMessage
-	ExposeServiceReadyErrorMessage = "Exposing service error occured %s"
+	ExposeServiceReadyErrorMessage = "Exposing service error occurred %s"
 
 	//
 	// BootstrapReady condition messages
@@ -185,7 +185,7 @@ const (
 	BootstrapReadyRunningMessage = "Bootstrap in progress"
 
 	// BootstrapReadyErrorMessage
-	BootstrapReadyErrorMessage = "Bootstrap error occured %s"
+	BootstrapReadyErrorMessage = "Bootstrap error occurred %s"
 
 	//
 	// DeploymentReady condition messages
@@ -200,7 +200,7 @@ const (
 	DeploymentReadyRunningMessage = "Deployment in progress"
 
 	// DeploymentReadyErrorMessage
-	DeploymentReadyErrorMessage = "Deployment error occured %s"
+	DeploymentReadyErrorMessage = "Deployment error occurred %s"
 
 	//
 	// NetworkAttachmentsReady condition messages
@@ -215,7 +215,7 @@ const (
 	NetworkAttachmentsReadyWaitingMessage = "NetworkAttachment resources missing: %s"
 
 	// NetworkAttachmentsReadyErrorMessage
-	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occured %s"
+	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occurred %s"
 
 	//
 	// CronJobReady condition messages
@@ -230,7 +230,7 @@ const (
 	CronJobReadyRunningMessage = "CronJob in progress"
 
 	// CronJobReadyErrorMessage
-	CronJobReadyErrorMessage = "CronJob error occured %s"
+	CronJobReadyErrorMessage = "CronJob error occurred %s"
 
 	//
 	// AnsibleEEReady condition messages
@@ -245,5 +245,5 @@ const (
 	AnsibleEEReadyRunningMessage = "AnsibleEE in progress"
 
 	// AnsibleEEReadyErrorMessage
-	AnsibleEEReadyErrorMessage = "AnsibleEE error occured %s"
+	AnsibleEEReadyErrorMessage = "AnsibleEE error occurred %s"
 )
