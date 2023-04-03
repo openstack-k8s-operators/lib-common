@@ -126,8 +126,8 @@ gowork:
 	go work use -r modules
 	go work sync
 
-.PHONY: gotidy
-gotidy:
+.PHONY: tidy
+tidy:
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		set -x; \
 		pushd ./$$mod ; \

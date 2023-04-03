@@ -37,7 +37,7 @@
     }
   ],
   "postUpgradeTasks": {
-    "commands": ["make gotidy"],
+    "commands": ["make tidy"],
     "fileFilters": ["**/go.mod", "**/go.sum", "**/*.go", "**/*.yaml"],
     "executionMode": "update"
   }
