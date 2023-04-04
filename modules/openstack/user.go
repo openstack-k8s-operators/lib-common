@@ -79,15 +79,15 @@ func (o *OpenStack) GetUser(
 ) (*users.User, error) {
 	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName}).AllPages()
 	if err != nil {
-		return nil, err
+		return &users.User{}, err
 	}
 	allUsers, err := users.ExtractUsers(allPages)
 	if err != nil {
-		return nil, err
+		return &users.User{}, err
 	}
 
 	if len(allUsers) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s %s", userName, UserNotFound))
+		return &users.User{}, fmt.Errorf(fmt.Sprintf("%s %s", userName, UserNotFound))
 	}
 
 	return &allUsers[0], nil
