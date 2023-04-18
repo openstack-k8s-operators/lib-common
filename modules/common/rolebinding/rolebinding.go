@@ -34,7 +34,6 @@ import (
 // NewRoleBinding returns an initialized RoleBinding
 func NewRoleBinding(
 	roleBinding *rbacv1.RoleBinding,
-	labels map[string]string,
 	timeout time.Duration,
 ) *RoleBinding {
 	return &RoleBinding{

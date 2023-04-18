@@ -34,7 +34,6 @@ import (
 // NewRole returns an initialized Role
 func NewRole(
 	role *rbacv1.Role,
-	labels map[string]string,
 	timeout time.Duration,
 ) *Role {
 	return &Role{

@@ -34,7 +34,6 @@ import (
 // NewServiceAccount returns an initialized ServiceAccount
 func NewServiceAccount(
 	serviceAccount *corev1.ServiceAccount,
-	labels map[string]string,
 	timeout time.Duration,
 ) *ServiceAccount {
 	return &ServiceAccount{
