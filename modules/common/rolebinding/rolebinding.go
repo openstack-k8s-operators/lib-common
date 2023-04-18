@@ -58,6 +58,8 @@ func (r *RoleBinding) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), rb, func() error {
 		rb.Labels = util.MergeStringMaps(rb.Labels, r.roleBinding.Labels)
 		rb.Annotations = r.roleBinding.Annotations
+        rb.RoleRef = r.roleBinding.RoleRef
+        rb.Subjects = r.roleBinding.Subjects
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), rb, h.GetScheme())
 		if err != nil {

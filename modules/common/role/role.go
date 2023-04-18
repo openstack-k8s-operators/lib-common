@@ -58,7 +58,7 @@ func (r *Role) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), role, func() error {
 		role.Labels = util.MergeStringMaps(role.Labels, r.role.Labels)
 		role.Annotations = r.role.Annotations
-
+        role.Rules = r.role.Rules
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), role, h.GetScheme())
 		if err != nil {
 			return err
