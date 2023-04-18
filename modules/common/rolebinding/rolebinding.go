@@ -73,7 +73,11 @@ func (r *RoleBinding) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("RoleBinding %s not found, reconcile in %s", rb.Name, r.timeout))
 			return ctrl.Result{RequeueAfter: r.timeout}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{}, util.WrapErrorForObject(
+			fmt.Sprintf("Error creating rol binding %s", rb.Name),
+			rb,
+			err,
+		)
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("RoleBinding %s - %s", rb.Name, op))
@@ -90,7 +94,7 @@ func (r *RoleBinding) Delete(
 
 	err := h.GetClient().Delete(ctx, r.roleBinding)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting roleBinding %s: %v", r.roleBinding.Name, err)
+		err = fmt.Errorf("Error deleting roleBinding %s: %w", r.roleBinding.Name, err)
 		return err
 	}
 

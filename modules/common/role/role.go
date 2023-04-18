@@ -70,7 +70,11 @@ func (r *Role) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Role %s not found, reconcile in %s", role.Name, r.timeout))
 			return ctrl.Result{RequeueAfter: r.timeout}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{}, util.WrapErrorForObject(
+			fmt.Sprintf("Error creating role %s", role.Name),
+			role,
+			err,
+		)
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Role %s - %s", role.Name, op))
@@ -87,7 +91,7 @@ func (r *Role) Delete(
 
 	err := h.GetClient().Delete(ctx, r.role)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting role %s: %v", r.role.Name, err)
+		err = fmt.Errorf("Error deleting role %s: %w", r.role.Name, err)
 		return err
 	}
 

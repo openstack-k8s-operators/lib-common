@@ -70,7 +70,11 @@ func (s *ServiceAccount) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("ServiceAccount %s not found, reconcile in %s", sa.Name, s.timeout))
 			return ctrl.Result{RequeueAfter: s.timeout}, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{}, util.WrapErrorForObject(
+			fmt.Sprintf("Error creating service account %s", sa.Name),
+			sa,
+			err,
+		)
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("ServiceAccount %s - %s", sa.Name, op))
