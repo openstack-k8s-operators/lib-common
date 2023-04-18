@@ -5,7 +5,7 @@ go 1.19
 replace github.com/openstack-k8s-operators/lib-common/modules/common => ../common
 
 require (
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230317110100-58569bbb7a85
 	golang.org/x/crypto v0.7.0
 	k8s.io/api v0.26.2
