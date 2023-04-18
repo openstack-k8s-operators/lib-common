@@ -132,7 +132,7 @@ func (s *StatefulSet) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, s.statefulset)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting statefulset %s: %v", s.statefulset.Name, err)
+		err = fmt.Errorf("Error deleting statefulset %s: %w", s.statefulset.Name, err)
 		return err
 	}
 

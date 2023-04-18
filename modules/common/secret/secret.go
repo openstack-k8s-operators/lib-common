@@ -73,7 +73,7 @@ func GetSecret(
 
 	secretHash, err := Hash(secret)
 	if err != nil {
-		return nil, "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return nil, "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 	return secret, secretHash, nil
 }
@@ -116,12 +116,12 @@ func CreateOrPatchSecret(
 		return nil
 	})
 	if err != nil {
-		return "", op, fmt.Errorf("error create/updating secret: %v", err)
+		return "", op, fmt.Errorf("error create/updating secret: %w", err)
 	}
 
 	secretHash, err := Hash(secret)
 	if err != nil {
-		return "", "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return secretHash, op, err
@@ -201,7 +201,7 @@ func createOrUpdateSecret(
 
 	secretHash, err := Hash(secret)
 	if err != nil {
-		return "", op, fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", op, fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return secretHash, op, nil
@@ -249,7 +249,7 @@ func createOrGetCustomSecret(
 
 	secretHash, err := Hash(secret)
 	if err != nil {
-		return "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return secretHash, nil
@@ -305,7 +305,7 @@ func DeleteSecretsWithLabel(
 		client.MatchingLabels(labelSelectorMap),
 	)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error DeleteAllOf Secret: %v", err)
+		err = fmt.Errorf("Error DeleteAllOf Secret: %w", err)
 		return err
 	}
 

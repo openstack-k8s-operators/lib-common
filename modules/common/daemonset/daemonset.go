@@ -101,8 +101,7 @@ func (d *DaemonSet) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, d.daemonset)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("error deleting daemonset %s: %v", d.daemonset.Name, err)
-		return err
+		return fmt.Errorf("error deleting daemonset %s: %w", d.daemonset.Name, err)
 	}
 
 	return nil

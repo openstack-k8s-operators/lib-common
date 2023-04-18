@@ -99,12 +99,12 @@ func createOrPatchConfigMap(
 		return nil
 	})
 	if err != nil {
-		return "", op, fmt.Errorf("error create/updating configmap: %v", err)
+		return "", op, fmt.Errorf("error create/updating configmap: %w", err)
 	}
 
 	configMapHash, err := Hash(configMap)
 	if err != nil {
-		return "", op, fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", op, fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return configMapHash, op, nil
@@ -149,7 +149,7 @@ func createOrGetCustomConfigMap(
 
 	configMapHash, err := Hash(configMap)
 	if err != nil {
-		return "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return configMapHash, nil
@@ -230,7 +230,7 @@ func GetConfigMapAndHashWithName(
 	}
 	configMapHash, err := Hash(configMap)
 	if err != nil {
-		return configMap, "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return configMap, "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 	return configMap, configMapHash, nil
 }
