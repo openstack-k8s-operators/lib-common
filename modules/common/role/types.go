@@ -19,7 +19,7 @@ package role
 import (
 	"time"
 
-    rbacv1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 // Role -

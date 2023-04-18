@@ -25,5 +25,5 @@ import (
 // RoleBinding -
 type RoleBinding struct {
 	roleBinding *rbacv1.RoleBinding
-	timeout        time.Duration
+	timeout     time.Duration
 }

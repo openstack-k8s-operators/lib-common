@@ -43,7 +43,7 @@ func NewServiceAccount(
 	}
 }
 
-// CreateOrPatch - creates or patches a route, reconciles after Xs if object won't exist.
+// CreateOrPatch - creates or patches a service account, reconciles after Xs if object won't exist.
 func (s *ServiceAccount) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
@@ -57,7 +57,7 @@ func (s *ServiceAccount) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), sa, func() error {
 		sa.Labels = util.MergeStringMaps(sa.Labels, s.serviceAccount.Labels)
-		sa.Annotations = s.serviceAccount.Annotations
+		sa.Annotations = util.MergeStringMaps(sa.Labels, s.serviceAccount.Annotations)
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), sa, h.GetScheme())
 		if err != nil {
@@ -88,7 +88,7 @@ func (s *ServiceAccount) Delete(
 
 	err := h.GetClient().Delete(ctx, s.serviceAccount)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting serviceAccount %s: %v", s.serviceAccount.Name, err)
+		err = fmt.Errorf("Error deleting serviceAccount %s: %w", s.serviceAccount.Name, err)
 		return err
 	}
 

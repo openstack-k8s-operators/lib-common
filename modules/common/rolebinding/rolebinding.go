@@ -39,11 +39,11 @@ func NewRoleBinding(
 ) *RoleBinding {
 	return &RoleBinding{
 		roleBinding: roleBinding,
-		timeout:        timeout,
+		timeout:     timeout,
 	}
 }
 
-// CreateOrPatch - creates or patches a route, reconciles after Xs if object won't exist.
+// CreateOrPatch - creates or patches a role binding, reconciles after Xs if object won't exist.
 func (r *RoleBinding) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
@@ -57,9 +57,10 @@ func (r *RoleBinding) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), rb, func() error {
 		rb.Labels = util.MergeStringMaps(rb.Labels, r.roleBinding.Labels)
-		rb.Annotations = r.roleBinding.Annotations
-        rb.RoleRef = r.roleBinding.RoleRef
-        rb.Subjects = r.roleBinding.Subjects
+		rb.Annotations = util.MergeStringMaps(rb.Annotations, r.roleBinding.Annotations)
+
+		rb.RoleRef = r.roleBinding.RoleRef
+		rb.Subjects = r.roleBinding.Subjects
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), rb, h.GetScheme())
 		if err != nil {

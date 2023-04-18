@@ -23,7 +23,7 @@ import (
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
-    rbacv1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,12 +38,12 @@ func NewRole(
 	timeout time.Duration,
 ) *Role {
 	return &Role{
-		role: role,
-		timeout:        timeout,
+		role:    role,
+		timeout: timeout,
 	}
 }
 
-// CreateOrPatch - creates or patches a route, reconciles after Xs if object won't exist.
+// CreateOrPatch - creates or patches a role, reconciles after Xs if object won't exist.
 func (r *Role) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
@@ -57,8 +57,8 @@ func (r *Role) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), role, func() error {
 		role.Labels = util.MergeStringMaps(role.Labels, r.role.Labels)
-		role.Annotations = r.role.Annotations
-        role.Rules = r.role.Rules
+		role.Annotations = util.MergeStringMaps(role.Labels, r.role.Annotations)
+		role.Rules = r.role.Rules
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), role, h.GetScheme())
 		if err != nil {
 			return err
