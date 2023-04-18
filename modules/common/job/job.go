@@ -117,7 +117,7 @@ func (j *Job) DoJob(
 
 	j.hash, err = util.ObjectHash(j.job)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("error calculating %s hash: %v", j.jobType, err)
+		return ctrl.Result{}, fmt.Errorf("error calculating %s hash: %w", j.jobType, err)
 	}
 
 	// if the hash changed the job should run

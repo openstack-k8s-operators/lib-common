@@ -100,8 +100,7 @@ func (d *Deployment) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, d.deployment)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting deployment %s: %v", d.deployment.Name, err)
-		return err
+		return fmt.Errorf("Error deleting deployment %s: %w", d.deployment.Name, err)
 	}
 
 	return nil

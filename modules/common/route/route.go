@@ -128,8 +128,7 @@ func (r *Route) Delete(
 
 	err := h.GetClient().Delete(ctx, r.route)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting route %s: %v", r.route.Name, err)
-		return err
+		return fmt.Errorf("Error deleting route %s: %w", r.route.Name, err)
 	}
 
 	return nil

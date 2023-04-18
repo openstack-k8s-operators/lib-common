@@ -50,7 +50,7 @@ func CreateOrGetCustomConfigMap(
 
 	configMapHash, err := util.ObjectHash(configMap)
 	if err != nil {
-		return "", fmt.Errorf("error calculating configuration hash: %v", err)
+		return "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
 
 	return configMapHash, nil

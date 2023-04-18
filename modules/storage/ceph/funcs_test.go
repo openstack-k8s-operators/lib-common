@@ -1,8 +1,9 @@
 package ceph
 
 import (
-	. "github.com/onsi/gomega"
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestGetPool(t *testing.T) {
@@ -19,7 +20,7 @@ func TestGetPool(t *testing.T) {
 		g := NewWithT(t)
 		m, _ := GetPool(
 			map[string]PoolSpec{
-				"cinder": PoolSpec{"volumes"},
+				"cinder": {"volumes"},
 			}, "cinder")
 
 		g.Expect(m).To(Equal("volumes"))
@@ -49,8 +50,8 @@ func TestGetOsdCaps(t *testing.T) {
 		g := NewWithT(t)
 		m := GetOsdCaps(
 			map[string]PoolSpec{
-				"cinder": PoolSpec{"volumes"},
-				"nova":   PoolSpec{"vms"},
+				"cinder": {"volumes"},
+				"nova":   {"vms"},
 			})
 		// We expect caps produced in an ordered list
 		expectedCaps := "profile rbd pool=vms,profile rbd pool=volumes"

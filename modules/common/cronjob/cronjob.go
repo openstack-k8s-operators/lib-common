@@ -75,8 +75,7 @@ func (cj *CronJob) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, cj.cronjob)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting cronjob %s: %v", cj.cronjob.Name, err)
-		return err
+		return fmt.Errorf("Error deleting cronjob %s: %w", cj.cronjob.Name, err)
 	}
 
 	return nil
