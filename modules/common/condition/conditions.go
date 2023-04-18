@@ -58,6 +58,15 @@ const (
 
 	// AnsibleEECondition Status=True condition when the AnsibleEE run has been created ok
 	AnsibleEECondition Type = "AnsibleEEReady"
+
+	// ServiceAccountReadyCondition Status=True condition
+	ServiceAccountReadyCondition Type = "ServiceAccountReady"
+
+	// RoleReadyCondition Status=True condition
+	RoleReadyCondition Type = "RoleReady"
+
+	// RoleBindingReadyCondition Status=True condition
+	RoleBindingReadyCondition Type = "RoleBindingReady"
 )
 
 // Common Reasons used by API objects.
@@ -246,4 +255,25 @@ const (
 
 	// AnsibleEEReadyErrorMessage
 	AnsibleEEReadyErrorMessage = "AnsibleEE error occurred %s"
+)
+
+// Common Messages used for service accounts, roles, role bindings
+const (
+	// ServiceAccountReadyErrorMessage
+	ServiceAccountReadyErrorMessage = "ServiceAccount error occurred %s"
+
+	// ServiceAccountCreatingMessage
+	ServiceAccountCreatingMessage = "ServiceAccount creation in progress"
+
+	// RoleReadyErrorMessage
+	RoleReadyErrorMessage = "Role error occurred %s"
+
+	// RoleCreatingMessage
+	RoleCreatingMessage = "Role creation in progress"
+
+	// RoleBindingReadyErrorMessage
+	RoleBindingReadyErrorMessage = "RoleBinding error occurred %s"
+
+	// RoleBindingCreatingMessage
+	RoleBindingCreatingMessage = "RoleBinding creation in progress"
 )
