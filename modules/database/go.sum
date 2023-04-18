@@ -216,8 +216,8 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/onsi/ginkgo/v2 v2.6.0 h1:9t9b9vRUbFq3C4qKFCGkVuq/fIHji802N1nrtkh1mNc=
 github.com/onsi/gomega v1.24.1 h1:KORJXNNTzJXzu4ScJWssJfJMnJ+2QJqhoQSRwNlze9E=
-github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230303135615-979250c54a27 h1:yKwUQTbWpMOgaShKjIpvWu7NR3gLCX4ijZG/WoXD0w8=
-github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230303135615-979250c54a27/go.mod h1:PM7XY+2Uq+rVQ53I/+IbLFUH22b67xMgnBsKJhQmBcA=
+github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230418061659-72d5158a8337 h1:aAsHGEf1C20+UzIbHKRYOq3aeEVuELtWr96VRooHpyg=
+github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230418061659-72d5158a8337/go.mod h1:dvvbNaiMOGOgI+JfbM6lvZbRoiqOULAbIlbW5KEuvF0=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
