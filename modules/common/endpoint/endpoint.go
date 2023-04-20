@@ -64,6 +64,8 @@ type MetalLBData struct {
 	SharedIPKey string
 	// if set request these IPs via MetalLBLoadBalancerIPs, using a list for dual stack (ipv4/ipv6)
 	LoadBalancerIPs []string
+	// protocol to be used for the service
+	Protocol *corev1.Protocol
 }
 
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
@@ -104,6 +106,14 @@ func ExposeEndpoints(
 				}
 			}
 
+			var protocol corev1.Protocol
+			if data.MetalLB.Protocol != nil {
+				protocol = *data.MetalLB.Protocol
+			} else {
+				// default to TCP if not set
+				protocol = corev1.ProtocolTCP
+			}
+
 			// Create the service
 			svc := service.NewService(
 				service.MetalLBService(&service.MetalLBServiceDetails{
@@ -115,7 +125,7 @@ func ExposeEndpoints(
 					Port: service.GenericServicePort{
 						Name:     endpointName,
 						Port:     data.Port,
-						Protocol: corev1.ProtocolTCP,
+						Protocol: protocol,
 					},
 				}),
 				exportLabels,
