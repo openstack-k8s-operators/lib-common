@@ -268,6 +268,9 @@ const (
 	// ServiceAccountReadyInitMessage
 	ServiceAccountReadyInitMessage = "ServiceAccount not created"
 
+	// ServiceAccountReadyMessage
+	ServiceAccountReadyMessage = "ServiceAccount created"
+
 	// RoleReadyErrorMessage
 	RoleReadyErrorMessage = "Role error occurred %s"
 
@@ -277,6 +280,9 @@ const (
 	// RoleReadyInitMessage
 	RoleReadyInitMessage = "Role not created"
 
+	// RoleReadyMessage
+	RoleReadyMessage = "Role created"
+
 	// RoleBindingReadyErrorMessage
 	RoleBindingReadyErrorMessage = "RoleBinding error occurred %s"
 
@@ -285,4 +291,7 @@ const (
 
 	// RoleBindingReadyInitMessage
 	RoleBindingReadyInitMessage = "RoleBinding not created"
+
+	// RoleBindingReadyMessage
+	RoleBindingReadyMessage = "RoleBinding created"
 )
