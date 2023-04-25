@@ -133,7 +133,7 @@ func ReconcileRbac(ctx context.Context, h *helper.Helper, instance Reconciler, r
 		return roleBindingResult, nil
 	}
 	instance.RbacConditionsSet(condition.TrueCondition(
-		condition.RoleReadyCondition,
+		condition.RoleBindingReadyCondition,
 		condition.RoleBindingReadyMessage))
 
 	return ctrl.Result{}, nil
