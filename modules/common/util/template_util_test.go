@@ -117,9 +117,10 @@ func TestGetTemplateData(t *testing.T) {
 	os.Setenv("OPERATOR_TEMPLATES", filepath.Join(path.Dir(filename), templatePath))
 
 	tests := []struct {
-		name string
-		tmpl Template
-		want map[string]string
+		name  string
+		tmpl  Template
+		want  map[string]string
+		error bool
 	}{
 		{
 			name: "Render TemplateTypeConfig templates with no version",
@@ -140,6 +141,7 @@ func TestGetTemplateData(t *testing.T) {
 				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
 				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
 			},
+			error: false,
 		},
 		{
 			name: "Render TemplateTypeScripts templates with version",
@@ -154,6 +156,7 @@ func TestGetTemplateData(t *testing.T) {
 			want: map[string]string{
 				"init.sh": "#!/bin//bash\nset -ex\n\necho foo\nexit 0\n",
 			},
+			error: false,
 		},
 		{
 			name: "Render TemplateTypeConfig templates with AdditionalTemplate",
@@ -167,6 +170,7 @@ func TestGetTemplateData(t *testing.T) {
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
+					"Message":     "some common func",
 				},
 				AdditionalTemplate: map[string]string{"common.sh": "/common/common.sh"},
 			},
@@ -175,6 +179,7 @@ func TestGetTemplateData(t *testing.T) {
 				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
 				"common.sh":   "#!/bin/bash\nset -e\n\nfunction common_func {\n  echo some common func\n}\n",
 			},
+			error: false,
 		},
 		{
 			name: "Render TemplateTypeNone templates with AdditionalTemplate",
@@ -188,12 +193,49 @@ func TestGetTemplateData(t *testing.T) {
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
+					"Message":     "some common func",
 				},
 				AdditionalTemplate: map[string]string{"common.sh": "/common/common.sh"},
 			},
 			want: map[string]string{
 				"common.sh": "#!/bin/bash\nset -e\n\nfunction common_func {\n  echo some common func\n}\n",
 			},
+			error: false,
+		},
+		{
+			name: "Render TemplateTypeConfig templates with incomplete ConfigOptions",
+			tmpl: Template{
+				Name:         "testservice",
+				Namespace:    "somenamespace",
+				Type:         TemplateTypeConfig,
+				InstanceType: "testservice",
+				Version:      "",
+				ConfigOptions: map[string]interface{}{
+					"Count": 1,
+					"Upper": "BAR",
+				},
+				AdditionalTemplate: map[string]string{},
+			},
+			want:  map[string]string{},
+			error: true,
+		},
+		{
+			name: "Render TemplateTypeConfig templates with AdditionamTemplate and incomplete ConfigOptions",
+			tmpl: Template{
+				Name:         "testservice",
+				Namespace:    "somenamespace",
+				Type:         TemplateTypeConfig,
+				InstanceType: "testservice",
+				Version:      "",
+				ConfigOptions: map[string]interface{}{
+					"ServiceUser": "foo",
+					"Count":       1,
+					"Upper":       "BAR",
+				},
+				AdditionalTemplate: map[string]string{"common.sh": "/common/common.sh"},
+			},
+			want:  map[string]string{},
+			error: true,
 		},
 	}
 
@@ -205,11 +247,16 @@ func TestGetTemplateData(t *testing.T) {
 			g.Expect(p).To(BeADirectory())
 
 			templatesFiles, err := GetTemplateData(tt.tmpl)
-			g.Expect(err).To(BeNil())
 
-			g.Expect(templatesFiles).To(HaveLen(len(tt.want)))
-			for k, v := range tt.want {
-				g.Expect(templatesFiles).To(HaveKeyWithValue(k, v))
+			if tt.error {
+				g.Expect(err).ToNot(BeNil())
+			} else {
+				g.Expect(err).To(BeNil())
+
+				g.Expect(templatesFiles).To(HaveLen(len(tt.want)))
+				for k, v := range tt.want {
+					g.Expect(templatesFiles).To(HaveKeyWithValue(k, v))
+				}
 			}
 		})
 	}
