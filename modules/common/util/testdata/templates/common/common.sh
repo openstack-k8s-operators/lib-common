@@ -2,5 +2,5 @@
 set -e
 
 function common_func {
-  echo some common func
+  echo {{ .Message }}
 }

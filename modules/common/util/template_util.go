@@ -157,7 +157,7 @@ func ExecuteTemplateData(templateData string, data interface{}) (string, error) 
 		"add":   add,
 		"lower": lower,
 	}
-	tmpl, err := template.New("tmp").Funcs(funcs).Parse(templateData)
+	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData)
 	if err != nil {
 		return "", err
 	}
@@ -196,7 +196,7 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		"add":   add,
 		"lower": lower,
 	}
-	tmpl, err := template.New("tmp").Funcs(funcs).Parse(file)
+	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(file)
 	if err != nil {
 		return "", err
 	}
