@@ -17,9 +17,15 @@ limitations under the License.
 package job
 
 import (
+	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -35,4 +41,16 @@ type Job struct {
 	beforeHash string
 	hash       string
 	changed    bool
+}
+
+// Helper represents the external dependencies of the Job operations
+type Helper interface {
+	GetBeforeObject() client.Object
+	GetScheme() *runtime.Scheme
+	GetLogger() logr.Logger
+
+	CreateOrPatch(ctx context.Context, obj client.Object, f controllerutil.MutateFn) (controllerutil.OperationResult, error)
+	SetControllerReference(owner, controlled metav1.Object, scheme *runtime.Scheme) error
+
+	Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error
 }

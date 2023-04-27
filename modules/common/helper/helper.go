@@ -27,8 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -241,4 +244,19 @@ func ToUnstructured(obj runtime.Object) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return &unstructured.Unstructured{Object: rawMap}, nil
+}
+
+// CreateOrPatch is equivalent of controllerutil.CreateOrPatch
+func (h *Helper) CreateOrPatch(ctx context.Context, obj client.Object, f controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+	return controllerutil.CreateOrPatch(ctx, h.GetClient(), obj, f)
+}
+
+// SetControllerReference is equivalent of controllerutil.SetControllerReference
+func (h *Helper) SetControllerReference(owner, controlled metav1.Object, scheme *runtime.Scheme) error {
+	return controllerutil.SetControllerReference(owner, controlled, scheme)
+}
+
+// Get is equivalent of h.GetClient().Get
+func (h *Helper) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return h.GetClient().Get(ctx, key, obj, opts...)
 }

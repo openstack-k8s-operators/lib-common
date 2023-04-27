@@ -56,10 +56,10 @@ func NewJob(
 // createJob - creates job, reconciles after Xs if object won't exist.
 func (j *Job) createJob(
 	ctx context.Context,
-	h *helper.Helper,
+	h Helper,
 ) (ctrl.Result, error) {
-	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), j.job, func() error {
-		err := controllerutil.SetControllerReference(h.GetBeforeObject(), j.job, h.GetScheme())
+	op, err := h.CreateOrPatch(ctx, j.job, func() error {
+		err := h.SetControllerReference(h.GetBeforeObject(), j.job, h.GetScheme())
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (j *Job) defaultTTL() {
 // define when the Job should be deleted.
 func (j *Job) DoJob(
 	ctx context.Context,
-	h *helper.Helper,
+	h Helper,
 ) (ctrl.Result, error) {
 	var ctrlResult ctrl.Result
 	var err error
@@ -174,7 +174,7 @@ func (j *Job) DoJob(
 	}
 
 	if err == nil {
-		_, err = controllerutil.CreateOrPatch(ctx, h.GetClient(), job, func() error {
+		_, err = h.CreateOrPatch(ctx, job, func() error {
 			job.Spec.TTLSecondsAfterFinished = j.job.Spec.TTLSecondsAfterFinished
 			return nil
 		})
@@ -222,7 +222,7 @@ func DeleteJob(
 // waitOnJob func -  returns true if the job
 func waitOnJob(
 	ctx context.Context,
-	h *helper.Helper,
+	h Helper,
 	name string,
 	namespace string,
 	timeout time.Duration,
@@ -255,14 +255,14 @@ func waitOnJob(
 // GetJobWithName func
 func GetJobWithName(
 	ctx context.Context,
-	h *helper.Helper,
+	h Helper,
 	name string,
 	namespace string,
 ) (*batchv1.Job, error) {
 
 	// Check if this Job already exists
 	job := &batchv1.Job{}
-	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, job)
+	err := h.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, job)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return job, err
