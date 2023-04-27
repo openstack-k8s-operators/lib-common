@@ -101,9 +101,9 @@ govet: get-ci-tools
 
 # Run go test via ci-tools script against code
 .PHONY: gotest
-gotest: get-ci-tools
+gotest: get-ci-tools envtest
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
-		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
+		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
 	done
 
 # Run golangci-lint test via ci-tools script against code
