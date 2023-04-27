@@ -104,3 +104,8 @@ func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstruc
 
 	return unstructuredObj
 }
+
+// GetName -
+func (tc *TestHelper) GetName(obj client.Object) types.NamespacedName {
+	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+}

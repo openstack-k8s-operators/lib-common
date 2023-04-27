@@ -19,12 +19,15 @@ package functional
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"go.uber.org/zap/zapcore"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,19 +37,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+
+	. "github.com/openstack-k8s-operators/lib-common/modules/test/helpers"
 	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
+const (
+	timeout = 10 * time.Second
+	// have maximum 100 retries before the timeout hits
+	interval = timeout / 100
+	// consistencyTimeout is the amount of time we use to repeatedly check
+	// that a condition is still valid. This is intended to be used in
+	// asserts using `Consistently`.
+	// consistencyTimeout = timeout
+)
+
 var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
-	ctx       context.Context
-	cancel    context.CancelFunc
-	logger    logr.Logger
+	cfg     *rest.Config
+	cClient client.Client
+	testEnv *envtest.Environment
+	ctx     context.Context
+	cancel  context.CancelFunc
+	logger  logr.Logger
+	h       *helper.Helper
+	th      *TestHelper
 )
 
 func TestCommon(t *testing.T) {
@@ -74,13 +92,31 @@ var _ = BeforeSuite(func() {
 
 	err = batchv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = corev1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 	//+kubebuilder:scaffold:scheme
 
 	logger = ctrl.Log.WithName("---Test---")
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	cClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(cClient).NotTo(BeNil())
+
+	client, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(client).NotTo(BeNil())
+
+	th = NewTestHelper(ctx, cClient, timeout, interval, logger)
+	Expect(th).NotTo(BeNil())
+
+	// NOTE(gibi): helper.Helper needs an object that is being reconciled
+	// we are not really doing reconciliation in this test but still we need to
+	// provide a valid object. It is used as controller reference for certain
+	// objects created in the test. So we provide a simple one, a Namespace.
+	genericObject := th.CreateNamespace("generic-object")
+	h, err = helper.NewHelper(genericObject, cClient, client, testEnv.Scheme, ctrl.Log)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(h).NotTo(BeNil())
 
 	go func() {
 		defer GinkgoRecover()
