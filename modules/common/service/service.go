@@ -41,8 +41,9 @@ func NewService(
 	timeout time.Duration,
 ) *Service {
 	return &Service{
-		service: service,
-		timeout: timeout,
+		service:         service,
+		serviceHostname: fmt.Sprintf("%s.%s.svc", service.Name, service.GetNamespace()),
+		timeout:         timeout,
 	}
 }
 
@@ -64,6 +65,11 @@ func (s *Service) GetServiceHostname() string {
 // GetServiceHostnamePort - returns the service hostname with port
 func (s *Service) GetServiceHostnamePort() string {
 	return fmt.Sprintf("%s:%d", s.GetServiceHostname(), GetServicesPortDetails(s.service, s.service.Name).Port)
+}
+
+// AddAnnotation - Adds annotation and merges it with the current set
+func (s *Service) AddAnnotation(anno map[string]string) {
+	s.service.Annotations = util.MergeStringMaps(s.service.Annotations, anno)
 }
 
 // GenericService func
@@ -129,7 +135,7 @@ func (s *Service) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
 		service.Labels = util.MergeStringMaps(service.Labels, s.service.Labels)
-		service.Annotations = s.service.Annotations
+		service.Annotations = util.MergeStringMaps(service.Annotations, s.service.Annotations)
 		service.Spec = s.service.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())
@@ -152,7 +158,6 @@ func (s *Service) CreateOrPatch(
 
 	// update the service instance with the ip/host information
 	s.clusterIPs = service.Spec.ClusterIPs
-	s.serviceHostname = fmt.Sprintf("%s.%s.svc", service.Name, service.GetNamespace())
 
 	if service.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		if len(service.Status.LoadBalancer.Ingress) > 0 {
