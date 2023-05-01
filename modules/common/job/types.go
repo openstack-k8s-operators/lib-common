@@ -23,16 +23,18 @@ import (
 )
 
 const (
-	defaultTTL int32 = 10 * 60 // 10 minutes
+	hashAnnotationName       = "hash"
+	defaultTTL         int32 = 10 * 60 // 10 minutes
 )
 
 // Job -
 type Job struct {
-	job        *batchv1.Job
-	jobType    string
-	preserve   bool
-	timeout    time.Duration
-	beforeHash string
-	hash       string
-	changed    bool
+	expectedJob *batchv1.Job
+	actualJob   *batchv1.Job
+	jobType     string
+	preserve    bool
+	timeout     time.Duration
+	beforeHash  string
+	hash        string
+	changed     bool
 }

@@ -37,6 +37,11 @@ const (
 	preserve = true
 )
 
+var (
+	requeue  = ctrl.Result{RequeueAfter: timeout}
+	finished = ctrl.Result{}
+)
+
 func getExampleJob(namespace string) *batchv1.Job {
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -60,7 +65,37 @@ func getExampleJob(namespace string) *batchv1.Job {
 			},
 		},
 	}
+}
 
+func runJobSuccessfully(namespace string) (*job.Job, *batchv1.Job) {
+	exampleJob := getExampleJob(namespace)
+	j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
+
+	result, err := j.DoJob(ctx, h)
+
+	// The caller is asked to requeue as the job is not finished yet
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(result).To(Equal(requeue))
+
+	// a k8s Job is created with an controller reference
+	k8sJob := th.GetJob(th.GetName(exampleJob))
+	Expect(k8sJob.GetOwnerReferences()).To(HaveLen(1))
+	Expect(k8sJob.GetOwnerReferences()[0]).To(HaveField("Name", h.GetBeforeObject().GetName()))
+	t := true
+	Expect(k8sJob.GetOwnerReferences()[0]).To(HaveField("Controller", &t))
+
+	// Simulate that the Job succeeded
+	th.SimulateJobSuccess(th.GetName(exampleJob))
+
+	result, err = j.DoJob(ctx, h)
+
+	// The empty result signals the caller that the job is finished
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(result).To(Equal(finished))
+	Expect(j.HasChanged()).To(BeTrue())
+	Expect(j.GetHash()).NotTo(Equal(noHash))
+
+	return j, th.GetJob(th.GetName(exampleJob))
 }
 
 var _ = Describe("job.Job", func() {
@@ -120,126 +155,115 @@ var _ = Describe("job.Job", func() {
 		Expect(gotJob.Spec.TTLSecondsAfterFinished).To(BeNil())
 	})
 
-	It("runs the job if it has a new hash and the job does not exists", func() {
+	It("TTL can be updated after the job is finished", func() {
 		exampleJob := getExampleJob(namespace)
 		j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
 
-		result, err := j.DoJob(ctx, h)
-
-		// The caller is asked to requeue as the job is not finished yet
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{RequeueAfter: timeout}))
-
-		// a k8s Job is created in with an controller reference
-		k8sJob := th.GetJob(th.GetName(exampleJob))
-		Expect(k8sJob.GetOwnerReferences()).To(HaveLen(1))
-		Expect(k8sJob.GetOwnerReferences()[0]).To(HaveField("Name", h.GetBeforeObject().GetName()))
-		t := true
-		Expect(k8sJob.GetOwnerReferences()[0]).To(HaveField("Controller", &t))
-
-		// The passed in hash, that was empty, is different from the hash of the
-		// job
-		Expect(j.HasChanged()).To(BeTrue())
-		Expect(j.GetHash()).NotTo(Equal(noHash))
-
-		// Simulate that the Job succeeded
-		th.SimulateJobSuccess(th.GetName(exampleJob))
-
-		result, err = j.DoJob(ctx, h)
-
-		// The empty result signals the caller that the job is finished
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{}))
-		// the hash is still different from the empty hash
-		Expect(j.HasChanged()).To(BeTrue())
-		Expect(j.GetHash()).NotTo(Equal(noHash))
-	})
-
-	It("re-runs the job if its hash differs and the previous job exists", func() {
-		exampleJob := getExampleJob(namespace)
-		j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
-
-		// runs the job to completion
 		_, err := j.DoJob(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
 		th.SimulateJobSuccess(th.GetName(exampleJob))
 		result, err := j.DoJob(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{}))
+		Expect(result).To(Equal(finished))
 
+		k8sJob := th.GetJob(th.GetName(exampleJob))
+		Expect(*k8sJob.Spec.TTLSecondsAfterFinished).To(Equal(int32(600)))
+
+		var newTTL int32 = 13
+		exampleJob.Spec.TTLSecondsAfterFinished = &newTTL
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(finished))
+
+		k8sJob = th.GetJob(th.GetName(exampleJob))
+		Expect(*k8sJob.Spec.TTLSecondsAfterFinished).To(Equal(newTTL))
+	})
+
+	It("does not re-create a job if only TTL changes", func() {
+		j, k8sJob := runJobSuccessfully(namespace)
+		successfulJobHash := j.GetHash()
+
+		background := metav1.DeletePropagationBackground
+		th.DeleteInstance(k8sJob, &client.DeleteOptions{PropagationPolicy: &background})
+
+		// We expect that the TTL change is accepted but as the job is
+		// already deleted no new job is created just for the TTL change
+		newJob := getExampleJob(namespace)
+		var newTTL int32 = 13
+		newJob.Spec.TTLSecondsAfterFinished = &newTTL
+		j = job.NewJob(newJob, "test-job", !preserve, timeout, successfulJobHash)
+		result, err := j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(finished))
+		err = cClient.Get(ctx, th.GetName(k8sJob), k8sJob)
+		Expect(k8s_errors.IsNotFound(err)).To(BeTrue())
+	})
+
+	It("runs the job if it has a new hash and the job does not exists", func() {
+		runJobSuccessfully(namespace)
+	})
+
+	It("re-runs the job if its hash differs and the previous job exists", func() {
+		j, k8sJob := runJobSuccessfully(namespace)
 		// store the job's hash after it is finished
 		storedHash := j.GetHash()
 		Expect(storedHash).NotTo(BeEmpty())
-
-		k8sJobUID := th.GetJob(th.GetName(exampleJob)).UID
 
 		// requests a new job as the input of the job is changed, e.g. the image of
 		// the job is changed
 		newJob := getExampleJob(namespace)
 		newJob.Spec.Template.Spec.Containers[0].Image = "new-image"
 		j = job.NewJob(newJob, "test-job", !preserve, timeout, noHash)
+		result, err := j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		// We expect that the old job is deleted and DoJob request a requeue
+		// so that the next DoJob call can create a new Job
+		Expect(result).To(Equal(requeue))
+
+		result, err = j.DoJob(ctx, h)
+		// now there is a new job created, but requeue is still requested as
+		// it is not succeeded yet.
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+		Expect(th.GetJob(th.GetName(newJob)).UID).NotTo(Equal(k8sJob.UID))
+
+		th.SimulateJobSuccess(th.GetName(newJob))
+
+		// Now the job is finished with a new hash
 		result, err = j.DoJob(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		// BUG
-		// We expect a new job being created as the existing one has a different
-		// hash than the newly requested one and therefore DoJob should request a
-		// requeue to wait for the Job to finish.
-		//
-		// g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: timeout}))
-		//
-		// But instead the lib-common code sees the previous finished k8s job
-		// and returns that the job is succeeded, but now with the new hash
-		// without creating a new job.
-		Expect(result).To(Equal(ctrl.Result{}))
-
+		Expect(result).To(Equal(finished))
 		Expect(j.HasChanged()).To(BeTrue())
 		Expect(j.GetHash()).NotTo(Equal(storedHash))
-
-		// This proves that there was no new k8s Job created with the same
-		// name as the UID is the same as the first job.
-		Expect(th.GetJob(th.GetName(newJob)).UID).To(Equal(k8sJobUID))
 	})
 
 	It("re-runs the job if its hash differs and the previous already deleted", func() {
-		exampleJob := getExampleJob(namespace)
-		j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
-
-		// runs the job to completion
-		_, err := j.DoJob(ctx, h)
-		Expect(err).ShouldNot(HaveOccurred())
-		th.SimulateJobSuccess(th.GetName(exampleJob))
-		result, err := j.DoJob(ctx, h)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{}))
-
+		j, k8sJob := runJobSuccessfully(namespace)
 		// store the job's hash after it is finished
 		storedHash := j.GetHash()
 		Expect(storedHash).NotTo(BeEmpty())
-
-		k8sJobUID := th.GetJob(th.GetName(exampleJob)).UID
 
 		// simulate that the TTL of the job is expired and therefore the job is
 		// deleted
 		// need background propagation policy otherwise the Job remains
 		// in orphan state
 		background := metav1.DeletePropagationBackground
-		th.DeleteInstance(exampleJob, &client.DeleteOptions{PropagationPolicy: &background})
+		th.DeleteInstance(k8sJob, &client.DeleteOptions{PropagationPolicy: &background})
 
 		// requests a new job as the input of the job is changed, e.g. the image of
 		// the job is changed
 		newJob := getExampleJob(namespace)
 		newJob.Spec.Template.Spec.Containers[0].Image = "new-image"
 		j = job.NewJob(newJob, "test-job", !preserve, timeout, noHash)
-		result, err = j.DoJob(ctx, h)
+		result, err := j.DoJob(ctx, h)
 		// we expect that a new job is created and the client is requested to
 		// requeue while waiting for the job to finish
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{RequeueAfter: timeout}))
-
+		Expect(result).To(Equal(requeue))
 		Expect(j.HasChanged()).To(BeTrue())
 		Expect(j.GetHash()).NotTo(Equal(storedHash))
 
-		Expect(th.GetJob(th.GetName(newJob)).UID).NotTo(Equal(k8sJobUID))
+		Expect(th.GetJob(th.GetName(newJob)).UID).NotTo(Equal(k8sJob.UID))
 	})
 
 	It("reports failure if the job failed", func() {
@@ -250,7 +274,7 @@ var _ = Describe("job.Job", func() {
 
 		// The caller is asked to requeue as the job is not finished yet
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{RequeueAfter: timeout}))
+		Expect(result).To(Equal(requeue))
 
 		// a k8s Job is created in with an controller reference
 		th.GetJob(th.GetName(exampleJob))
@@ -266,13 +290,13 @@ var _ = Describe("job.Job", func() {
 		Expect(statusErr.Status().Message).To(ContainSubstring("Job Failed"))
 	})
 
-	It("reports error if the job definition is changed while the job still running", func() {
+	It("requeue if the job definition is changed while the old job still running and the wait for the old job to finish before re-run", func() {
 		exampleJob := getExampleJob(namespace)
 		j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
 
 		result, err := j.DoJob(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).NotTo(Equal(ctrl.Result{}))
+		Expect(result).To(Equal(requeue))
 		oldHash := j.GetHash()
 
 		newJob := getExampleJob(namespace)
@@ -280,33 +304,88 @@ var _ = Describe("job.Job", func() {
 
 		j = job.NewJob(newJob, "test-job", !preserve, timeout, noHash)
 		result, err = j.DoJob(ctx, h)
-		// BUG: we should report an error to the caller to indicate that
-		// the job cannot be changed as it is still running
+		// As the current job still not finished it requests requeu until it
+		// finishes
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).NotTo(Equal(ctrl.Result{}))
+		Expect(result).To(Equal(requeue))
 
 		// Assert that the running job is not changed so it still has the
 		// image of the original request
-		k8sJob := th.GetJob(th.GetName(newJob))
-		Expect(k8sJob.Spec.Template.Spec.Containers[0].Image).To(
+		oldK8sJob := th.GetJob(th.GetName(newJob))
+		Expect(oldK8sJob.Spec.Template.Spec.Containers[0].Image).To(
 			Equal(exampleJob.Spec.Template.Spec.Containers[0].Image))
 
 		// Simulate that the original Job succeeds
 		th.SimulateJobSuccess(th.GetName(exampleJob))
 
-		// We expect that if DoJob is called with the new job now then a
-		// new k8s job is created to re-run the job
-		// BUG: but instead we report success for the old job content
-		// with the new jobs hash
+		// We expect that if DoJob is called with the new job now then the old
+		// job is deleted and requeue is requested
 		result, err = j.DoJob(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(result).To(Equal(ctrl.Result{}))
-		// the job content is not changed
-		k8sJob = th.GetJob(th.GetName(newJob))
-		Expect(k8sJob.Spec.Template.Spec.Containers[0].Image).To(
-			Equal(exampleJob.Spec.Template.Spec.Containers[0].Image))
-		// but the reported job has does
+		Expect(result).To(Equal(requeue))
+
+		// at the next DoJob a new job is created with the new content but
+		// requeue is still requested as the new job not finished yet
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+		newK8sJob := th.GetJob(th.GetName(newJob))
+		Expect(newK8sJob.UID).NotTo(Equal(oldK8sJob.UID))
+		Expect(newK8sJob.Spec.Template.Spec.Containers[0].Image).To(
+			Equal(newJob.Spec.Template.Spec.Containers[0].Image))
+
+		th.SimulateJobSuccess(th.GetName(newJob))
+		// now the job finished with the new hash
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(finished))
 		Expect(j.GetHash()).NotTo(Equal(oldHash))
 	})
 
+	It("deletes the failed job if hash is changed and re-runs", func() {
+		exampleJob := getExampleJob(namespace)
+		j := job.NewJob(exampleJob, "test-job", !preserve, timeout, noHash)
+
+		result, err := j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+		oldHash := j.GetHash()
+
+		newJob := getExampleJob(namespace)
+		newJob.Spec.Template.Spec.Containers[0].Image = "new-image"
+
+		j = job.NewJob(newJob, "test-job", !preserve, timeout, noHash)
+		result, err = j.DoJob(ctx, h)
+		// As the current job still not finished it requests requeu until it
+		// finishes
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+		oldK8sJob := th.GetJob(th.GetName(newJob))
+
+		// Simulate that the original Job fails
+		th.SimulateJobFailure(th.GetName(exampleJob))
+
+		// We expect that if DoJob is called with the new job now then the old
+		// job is deleted and requeue is requested
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+
+		// at the next DoJob a new job is created with the new content but
+		// requeue is still requested as the new job not finished yet
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(requeue))
+		newK8sJob := th.GetJob(th.GetName(newJob))
+		Expect(newK8sJob.UID).NotTo(Equal(oldK8sJob.UID))
+		Expect(newK8sJob.Spec.Template.Spec.Containers[0].Image).To(
+			Equal(newJob.Spec.Template.Spec.Containers[0].Image))
+
+		th.SimulateJobSuccess(th.GetName(newJob))
+		// now the job finished with the new hash
+		result, err = j.DoJob(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(result).To(Equal(finished))
+		Expect(j.GetHash()).NotTo(Equal(oldHash))
+	})
 })
