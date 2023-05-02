@@ -19,12 +19,16 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/onsi/gomega"
+
 	"github.com/go-logr/logr"
 	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 type conditionsGetter interface {
@@ -85,4 +89,15 @@ func (tc *TestHelper) SkipInExistingCluster(message string) {
 		ginkgo.Skip("Skipped running against existing cluster. " + message)
 	}
 
+}
+
+// CreateUnstructured -
+func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstructured.Unstructured {
+	tc.logger.Info("Creating", "raw", rawObj)
+	unstructuredObj := &unstructured.Unstructured{Object: rawObj}
+	_, err := controllerutil.CreateOrPatch(
+		tc.ctx, tc.k8sClient, unstructuredObj, func() error { return nil })
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+	return unstructuredObj
 }

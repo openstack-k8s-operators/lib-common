@@ -17,6 +17,8 @@ import (
 	"github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,4 +42,36 @@ func (tc *TestHelper) ListConfigMaps(namespace string) *corev1.ConfigMapList {
 	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 
 	return cms
+}
+
+// CreateEmptyConfigMap -
+func (tc *TestHelper) CreateEmptyConfigMap(name types.NamespacedName) *corev1.ConfigMap {
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+		},
+		Data: map[string]string{},
+	}
+	gomega.Expect(tc.k8sClient.Create(tc.ctx, cm)).Should(gomega.Succeed())
+
+	return cm
+}
+
+// DeleteConfigMap -
+func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		configMap := &corev1.ConfigMap{}
+		err := tc.k8sClient.Get(tc.ctx, name, configMap)
+		// if it is already gone that is OK
+		if k8s_errors.IsNotFound(err) {
+			return
+		}
+		g.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+		g.Expect(tc.k8sClient.Delete(tc.ctx, configMap)).Should(gomega.Succeed())
+
+		err = tc.k8sClient.Get(tc.ctx, name, configMap)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.timeout, tc.interval).Should(gomega.Succeed())
 }
