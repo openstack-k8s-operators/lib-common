@@ -22,6 +22,9 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/util/rand"
+
+	env "github.com/openstack-k8s-operators/lib-common/modules/common/env"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Hash - struct to add hashes to status
@@ -60,4 +63,16 @@ func SetHash(
 	}
 
 	return hashMap, false
+}
+
+// HashOfInputHashes - calculates the overall hash of hashes
+func HashOfInputHashes(
+	hashes map[string]env.Setter,
+) (string, error) {
+	mergedMapVars := env.MergeEnvs([]corev1.EnvVar{}, hashes)
+	hash, err := ObjectHash(mergedMapVars)
+	if err != nil {
+		return hash, err
+	}
+	return hash, nil
 }
