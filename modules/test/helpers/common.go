@@ -43,13 +43,16 @@ func (f ConditionGetterFunc) GetConditions(name types.NamespacedName) condition.
 	return f(name)
 }
 
-// TestHelper -
+// TestHelper is a collection EnvTest helpers writing test to code that
+// interacts with the k8s resource. If you need to handle openstack-k8s-operators
+// specific resource then you should use the extended TestHelper from
+// modules/test-operator
 type TestHelper struct {
-	k8sClient client.Client
-	ctx       context.Context
-	timeout   time.Duration
-	interval  time.Duration
-	logger    logr.Logger
+	K8sClient client.Client
+	Ctx       context.Context
+	Timeout   time.Duration
+	Interval  time.Duration
+	Logger    logr.Logger
 }
 
 // NewTestHelper returns a TestHelper
@@ -61,11 +64,11 @@ func NewTestHelper(
 	logger logr.Logger,
 ) *TestHelper {
 	return &TestHelper{
-		ctx:       ctx,
-		k8sClient: k8sClient,
-		timeout:   getTestTimeout(timeout),
-		interval:  interval,
-		logger:    logger,
+		Ctx:       ctx,
+		K8sClient: k8sClient,
+		Timeout:   getTestTimeout(timeout),
+		Interval:  interval,
+		Logger:    logger,
 	}
 }
 
@@ -93,10 +96,10 @@ func (tc *TestHelper) SkipInExistingCluster(message string) {
 
 // CreateUnstructured -
 func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstructured.Unstructured {
-	tc.logger.Info("Creating", "raw", rawObj)
+	tc.Logger.Info("Creating", "raw", rawObj)
 	unstructuredObj := &unstructured.Unstructured{Object: rawObj}
 	_, err := controllerutil.CreateOrPatch(
-		tc.ctx, tc.k8sClient, unstructuredObj, func() error { return nil })
+		tc.Ctx, tc.K8sClient, unstructuredObj, func() error { return nil })
 	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 	return unstructuredObj

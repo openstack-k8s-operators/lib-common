@@ -25,8 +25,8 @@ import (
 func (tc *TestHelper) GetServiceAccount(name types.NamespacedName) *corev1.ServiceAccount {
 	instance := &corev1.ServiceAccount{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return instance
 }
@@ -35,8 +35,8 @@ func (tc *TestHelper) GetServiceAccount(name types.NamespacedName) *corev1.Servi
 func (tc *TestHelper) GetRole(name types.NamespacedName) *rbacv1.Role {
 	instance := &rbacv1.Role{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return instance
 }
@@ -45,8 +45,8 @@ func (tc *TestHelper) GetRole(name types.NamespacedName) *rbacv1.Role {
 func (tc *TestHelper) GetRoleBinding(name types.NamespacedName) *rbacv1.RoleBinding {
 	instance := &rbacv1.RoleBinding{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return instance
 }

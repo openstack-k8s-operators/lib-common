@@ -44,7 +44,7 @@ func (tc *TestHelper) CreateDBService(namespace string, mariadbCRName string, sp
 		},
 		Spec: spec,
 	}
-	t.Expect(tc.k8sClient.Create(tc.ctx, service)).Should(t.Succeed())
+	t.Expect(tc.K8sClient.Create(tc.Ctx, service)).Should(t.Succeed())
 
 	return types.NamespacedName{Name: serviceName, Namespace: namespace}
 }
@@ -53,33 +53,33 @@ func (tc *TestHelper) CreateDBService(namespace string, mariadbCRName string, sp
 func (tc *TestHelper) DeleteDBService(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		service := &corev1.Service{}
-		err := tc.k8sClient.Get(tc.ctx, name, service)
+		err := tc.K8sClient.Get(tc.Ctx, name, service)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
 		g.Expect(err).NotTo(t.HaveOccurred())
 
-		g.Expect(tc.k8sClient.Delete(tc.ctx, service)).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, service)).Should(t.Succeed())
 
-		err = tc.k8sClient.Get(tc.ctx, name, service)
+		err = tc.K8sClient.Get(tc.Ctx, name, service)
 		g.Expect(k8s_errors.IsNotFound(err)).To(t.BeTrue())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 }
 
 // GetMariaDBDatabase -
 func (tc *TestHelper) GetMariaDBDatabase(name types.NamespacedName) *mariadbv1.MariaDBDatabase {
 	instance := &mariadbv1.MariaDBDatabase{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return instance
 }
 
 // ListMariaDBDatabase -
 func (tc *TestHelper) ListMariaDBDatabase(namespace string) *mariadbv1.MariaDBDatabaseList {
 	mariaDBDatabases := &mariadbv1.MariaDBDatabaseList{}
-	t.Expect(tc.k8sClient.List(tc.ctx, mariaDBDatabases, client.InNamespace(namespace))).Should(t.Succeed())
+	t.Expect(tc.K8sClient.List(tc.Ctx, mariaDBDatabases, client.InNamespace(namespace))).Should(t.Succeed())
 	return mariaDBDatabases
 }
 
@@ -89,9 +89,9 @@ func (tc *TestHelper) SimulateMariaDBDatabaseCompleted(name types.NamespacedName
 		db := tc.GetMariaDBDatabase(name)
 		db.Status.Completed = true
 		// This can return conflict so we have the t.Eventually block to retry
-		g.Expect(tc.k8sClient.Status().Update(tc.ctx, db)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, db)).To(t.Succeed())
 
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 
-	tc.logger.Info("Simulated DB completed", "on", name)
+	tc.Logger.Info("Simulated DB completed", "on", name)
 }

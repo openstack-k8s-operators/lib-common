@@ -23,8 +23,8 @@ import (
 func (tc *TestHelper) GetTransportURL(name types.NamespacedName) *rabbitmqv1.TransportURL {
 	instance := &rabbitmqv1.TransportURL{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return instance
 }
 
@@ -34,8 +34,8 @@ func (tc *TestHelper) SimulateTransportURLReady(name types.NamespacedName) {
 		transport := tc.GetTransportURL(name)
 		transport.Status.SecretName = transport.Spec.RabbitmqClusterName + "-secret"
 		transport.Status.Conditions.MarkTrue("TransportURLReady", "Ready")
-		g.Expect(tc.k8sClient.Status().Update(tc.ctx, transport)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, transport)).To(t.Succeed())
 
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	tc.logger.Info("Simulated TransportURL ready", "on", name)
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("Simulated TransportURL ready", "on", name)
 }

@@ -28,7 +28,7 @@ func (tc *TestHelper) ExpectCondition(
 	conditionType condition.Type,
 	expectedStatus corev1.ConditionStatus,
 ) {
-	tc.logger.Info("ExpectCondition", "type", conditionType, "expected status", expectedStatus, "on", name)
+	tc.Logger.Info("ExpectCondition", "type", conditionType, "expected status", expectedStatus, "on", name)
 	t.Eventually(func(g t.Gomega) {
 		conditions := getter.GetConditions(name)
 		g.Expect(conditions).NotTo(
@@ -40,8 +40,8 @@ func (tc *TestHelper) ExpectCondition(
 			t.Equal(expectedStatus),
 			"%s condition is in an unexpected state. Expected: %s, Actual: %s, instance name: %s, Conditions: %v",
 			conditionType, expectedStatus, actual, name, conditions)
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	tc.logger.Info("ExpectCondition succeeded", "type", conditionType, "expected status", expectedStatus, "on", name)
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("ExpectCondition succeeded", "type", conditionType, "expected status", expectedStatus, "on", name)
 }
 
 // ExpectConditionWithDetails -
@@ -53,7 +53,7 @@ func (tc *TestHelper) ExpectConditionWithDetails(
 	expectedReason condition.Reason,
 	expecteMessage string,
 ) {
-	tc.logger.Info("ExpectConditionWithDetails", "type", conditionType, "expected status", expectedStatus, "on", name)
+	tc.Logger.Info("ExpectConditionWithDetails", "type", conditionType, "expected status", expectedStatus, "on", name)
 	t.Eventually(func(g t.Gomega) {
 		conditions := getter.GetConditions(name)
 		g.Expect(conditions).NotTo(
@@ -71,7 +71,7 @@ func (tc *TestHelper) ExpectConditionWithDetails(
 		g.Expect(actualCondition.Message).To(
 			t.Equal(expecteMessage),
 			"%s condition has a different message. Actual condition: %v", conditionType, actualCondition)
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 
-	tc.logger.Info("ExpectConditionWithDetails succeeded", "type", conditionType, "expected status", expectedStatus, "on", name)
+	tc.Logger.Info("ExpectConditionWithDetails succeeded", "type", conditionType, "expected status", expectedStatus, "on", name)
 }

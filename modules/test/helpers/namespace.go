@@ -21,13 +21,14 @@ import (
 )
 
 // CreateNamespace -
-func (tc *TestHelper) CreateNamespace(name string) {
+func (tc *TestHelper) CreateNamespace(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
 	}
-	gomega.Expect(tc.k8sClient.Create(tc.ctx, ns)).Should(gomega.Succeed())
+	gomega.Expect(tc.K8sClient.Create(tc.Ctx, ns)).Should(gomega.Succeed())
+	return ns
 }
 
 // DeleteNamespace -
@@ -37,5 +38,5 @@ func (tc *TestHelper) DeleteNamespace(name string) {
 			Name: name,
 		},
 	}
-	gomega.Expect(tc.k8sClient.Delete(tc.ctx, ns)).Should(gomega.Succeed())
+	gomega.Expect(tc.K8sClient.Delete(tc.Ctx, ns)).Should(gomega.Succeed())
 }
