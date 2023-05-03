@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	env "github.com/openstack-k8s-operators/lib-common/modules/common/env"
 )
 
 func TestObjectHash(t *testing.T) {
@@ -104,6 +106,36 @@ func TestSetHash(t *testing.T) {
 			for k, v := range tt.want {
 				g.Expect(hashMap).To(HaveKeyWithValue(k, v))
 			}
+		})
+	}
+}
+
+func TestHashOfInputHashes(t *testing.T) {
+
+	tests := []struct {
+		name string
+		envs env.SetterMap
+		want string
+	}{
+		{
+			name: "Add first env",
+			envs: map[string]env.Setter{"a": env.SetValue("a")},
+			want: "n8dh59h59chfch665h5fch555h5f8h89h65dh568h5bbh8bh5f9h59dh56bh65ch685h589h655hcch599h698h564h8bh59h5fh5f8h97h55fh5d9h699q",
+		},
+		{
+			name: "Add another env",
+			envs: map[string]env.Setter{"b": env.SetValue("b")},
+			want: "n57h5d4h56h88h656h689hfdhf6h677h5c8hb6h659hc8h5c6h8h5dh8h97hb7h5c4h589hbdh56bh564h8h5cbhd8h5chch674h5d8h588q",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			hash, err := HashOfInputHashes(tt.envs)
+			g.Expect(err).To(BeNil())
+			g.Expect(hash).To(BeEquivalentTo(tt.want))
 		})
 	}
 }
