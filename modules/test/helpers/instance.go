@@ -24,19 +24,19 @@ import (
 // DeleteInstance -
 func (tc *TestHelper) DeleteInstance(instance client.Object) {
 	// We have to wait for the controller to fully delete the instance
-	tc.logger.Info("Deleting", "Name", instance.GetName(), "Namespace", instance.GetNamespace(), "Kind", instance.GetObjectKind().GroupVersionKind().Kind)
+	tc.Logger.Info("Deleting", "Name", instance.GetName(), "Namespace", instance.GetNamespace(), "Kind", instance.GetObjectKind().GroupVersionKind().Kind)
 	gomega.Eventually(func(g gomega.Gomega) {
 		name := types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}
-		err := tc.k8sClient.Get(tc.ctx, name, instance)
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
 		g.Expect(err).ShouldNot(gomega.HaveOccurred())
 
-		g.Expect(tc.k8sClient.Delete(tc.ctx, instance)).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, instance)).Should(gomega.Succeed())
 
-		err = tc.k8sClient.Get(tc.ctx, name, instance)
+		err = tc.K8sClient.Get(tc.Ctx, name, instance)
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

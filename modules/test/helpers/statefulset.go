@@ -25,15 +25,15 @@ import (
 func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.StatefulSet {
 	ss := &appsv1.StatefulSet{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, ss)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, ss)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return ss
 }
 
 // ListStatefulSets -
 func (tc *TestHelper) ListStatefulSets(namespace string) *appsv1.StatefulSetList {
 	sss := &appsv1.StatefulSetList{}
-	t.Expect(tc.k8sClient.List(tc.ctx, sss, client.InNamespace(namespace))).Should(t.Succeed())
+	t.Expect(tc.K8sClient.List(tc.Ctx, sss, client.InNamespace(namespace))).Should(t.Succeed())
 	return sss
 
 }
@@ -44,8 +44,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 		ss := tc.GetStatefulSet(name)
 		ss.Status.Replicas = 1
 		ss.Status.ReadyReplicas = 1
-		g.Expect(tc.k8sClient.Status().Update(tc.ctx, ss)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(t.Succeed())
 
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	tc.logger.Info("Simulated statefulset success", "on", name)
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("Simulated statefulset success", "on", name)
 }

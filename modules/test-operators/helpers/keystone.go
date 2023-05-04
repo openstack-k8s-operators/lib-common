@@ -21,8 +21,6 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 // CreateKeystoneAPI -
@@ -39,7 +37,7 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 		Spec: keystonev1.KeystoneAPISpec{},
 	}
 
-	t.Expect(tc.k8sClient.Create(tc.ctx, keystone.DeepCopy())).Should(t.Succeed())
+	t.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
 	name := types.NamespacedName{Namespace: namespace, Name: keystone.Name}
 
 	// the Status field needs to be written via a separate client
@@ -47,9 +45,9 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 	keystone.Status = keystonev1.KeystoneAPIStatus{
 		APIEndpoints: map[string]string{"public": "http://keystone-public-openstack.testing"},
 	}
-	t.Expect(tc.k8sClient.Status().Update(tc.ctx, keystone.DeepCopy())).Should(t.Succeed())
+	t.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
 
-	tc.logger.Info("KeystoneAPI created", "KeystoneAPI", name)
+	tc.Logger.Info("KeystoneAPI created", "KeystoneAPI", name)
 	return name
 }
 
@@ -57,26 +55,26 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		keystone := &keystonev1.KeystoneAPI{}
-		err := tc.k8sClient.Get(tc.ctx, name, keystone)
+		err := tc.K8sClient.Get(tc.Ctx, name, keystone)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
 		g.Expect(err).NotTo(t.HaveOccurred())
 
-		g.Expect(tc.k8sClient.Delete(tc.ctx, keystone)).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, keystone)).Should(t.Succeed())
 
-		err = tc.k8sClient.Get(tc.ctx, name, keystone)
+		err = tc.K8sClient.Get(tc.Ctx, name, keystone)
 		g.Expect(k8s_errors.IsNotFound(err)).To(t.BeTrue())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 }
 
 // GetKeystoneAPI -
 func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.KeystoneAPI {
 	instance := &keystonev1.KeystoneAPI{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return instance
 }
 
@@ -84,8 +82,8 @@ func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.Keys
 func (tc *TestHelper) GetKeystoneService(name types.NamespacedName) *keystonev1.KeystoneService {
 	instance := &keystonev1.KeystoneService{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return instance
 }
 
@@ -94,26 +92,17 @@ func (tc *TestHelper) SimulateKeystoneServiceReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		service := tc.GetKeystoneService(name)
 		service.Status.Conditions.MarkTrue(condition.ReadyCondition, "Ready")
-		g.Expect(tc.k8sClient.Status().Update(tc.ctx, service)).To(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	tc.logger.Info("Simulated KeystoneService ready", "on", name)
-}
-
-// AssertServiceExists -
-func (tc *TestHelper) AssertServiceExists(name types.NamespacedName) *corev1.Service {
-	instance := &corev1.Service{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	return instance
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, service)).To(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("Simulated KeystoneService ready", "on", name)
 }
 
 // GetKeystoneEndpoint -
 func (tc *TestHelper) GetKeystoneEndpoint(name types.NamespacedName) *keystonev1.KeystoneEndpoint {
 	instance := &keystonev1.KeystoneEndpoint{}
 	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 	return instance
 }
 
@@ -122,7 +111,7 @@ func (tc *TestHelper) SimulateKeystoneEndpointReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		endpoint := tc.GetKeystoneEndpoint(name)
 		endpoint.Status.Conditions.MarkTrue(condition.ReadyCondition, "Ready")
-		g.Expect(tc.k8sClient.Status().Update(tc.ctx, endpoint)).To(t.Succeed())
-	}, tc.timeout, tc.interval).Should(t.Succeed())
-	tc.logger.Info("Simulated KeystoneEndpoint ready", "on", name)
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, endpoint)).To(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("Simulated KeystoneEndpoint ready", "on", name)
 }

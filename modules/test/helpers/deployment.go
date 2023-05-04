@@ -25,8 +25,8 @@ import (
 func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, deployment)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, deployment)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return deployment
 }
@@ -34,7 +34,7 @@ func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deploymen
 // ListDeployments -
 func (tc *TestHelper) ListDeployments(namespace string) *appsv1.DeploymentList {
 	deployments := &appsv1.DeploymentList{}
-	gomega.Expect(tc.k8sClient.List(tc.ctx, deployments, client.InNamespace(namespace))).Should(gomega.Succeed())
+	gomega.Expect(tc.K8sClient.List(tc.Ctx, deployments, client.InNamespace(namespace))).Should(gomega.Succeed())
 
 	return deployments
 }
@@ -49,5 +49,5 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 
 	deployment.Status.Replicas = 1
 	deployment.Status.ReadyReplicas = 1
-	gomega.Expect(tc.k8sClient.Status().Update(tc.ctx, deployment)).To(gomega.Succeed())
+	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
 }

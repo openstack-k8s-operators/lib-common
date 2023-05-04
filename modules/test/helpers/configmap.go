@@ -28,8 +28,8 @@ import (
 func (tc *TestHelper) GetConfigMap(name types.NamespacedName) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, cm)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, cm)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return cm
 }
@@ -38,8 +38,8 @@ func (tc *TestHelper) GetConfigMap(name types.NamespacedName) *corev1.ConfigMap 
 func (tc *TestHelper) ListConfigMaps(namespace string) *corev1.ConfigMapList {
 	cms := &corev1.ConfigMapList{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.List(tc.ctx, cms, client.InNamespace(namespace))).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.List(tc.Ctx, cms, client.InNamespace(namespace))).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return cms
 }
@@ -53,7 +53,7 @@ func (tc *TestHelper) CreateEmptyConfigMap(name types.NamespacedName) *corev1.Co
 		},
 		Data: map[string]string{},
 	}
-	gomega.Expect(tc.k8sClient.Create(tc.ctx, cm)).Should(gomega.Succeed())
+	gomega.Expect(tc.K8sClient.Create(tc.Ctx, cm)).Should(gomega.Succeed())
 
 	return cm
 }
@@ -62,16 +62,16 @@ func (tc *TestHelper) CreateEmptyConfigMap(name types.NamespacedName) *corev1.Co
 func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		configMap := &corev1.ConfigMap{}
-		err := tc.k8sClient.Get(tc.ctx, name, configMap)
+		err := tc.K8sClient.Get(tc.Ctx, name, configMap)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
 		g.Expect(err).ShouldNot(gomega.HaveOccurred())
 
-		g.Expect(tc.k8sClient.Delete(tc.ctx, configMap)).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, configMap)).Should(gomega.Succeed())
 
-		err = tc.k8sClient.Get(tc.ctx, name, configMap)
+		err = tc.K8sClient.Get(tc.Ctx, name, configMap)
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

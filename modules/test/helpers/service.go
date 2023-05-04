@@ -24,8 +24,17 @@ import (
 func (tc *TestHelper) GetService(name types.NamespacedName) *corev1.Service {
 	instance := &corev1.Service{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.k8sClient.Get(tc.ctx, name, instance)).Should(gomega.Succeed())
-	}, tc.timeout, tc.interval).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
+	return instance
+}
+
+// AssertServiceExists -
+func (tc *TestHelper) AssertServiceExists(name types.NamespacedName) *corev1.Service {
+	instance := &corev1.Service{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
