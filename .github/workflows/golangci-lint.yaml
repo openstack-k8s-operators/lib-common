@@ -20,28 +20,9 @@ jobs:
       - name: Run gotest.sh
         run: make gotest
 
-  golangci:
-    name: github (golangci)
+  pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.19.x
-      - name: Checkout project code
-        uses: actions/checkout@v2
-      - name: Run golangci lint
-        run: make golangci
-
-  operator-lint:
-    name: operator-lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.19.x
-      - name: Checkout project code
-        uses: actions/checkout@v2
-      - name: Run operator-lint
-        run: make operator-lint
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+    - uses: pre-commit/action@v3.0.0
