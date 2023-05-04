@@ -249,9 +249,9 @@ func TestGetTemplateData(t *testing.T) {
 			templatesFiles, err := GetTemplateData(tt.tmpl)
 
 			if tt.error {
-				g.Expect(err).ToNot(BeNil())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).To(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(templatesFiles).To(HaveLen(len(tt.want)))
 				for k, v := range tt.want {

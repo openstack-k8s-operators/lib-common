@@ -7,14 +7,18 @@ repos:
       entry: make
       args: ['operator-lint']
       pass_filenames: false
-
-- repo: https://github.com/dnephin/pre-commit-golang
-  rev: v0.5.1
-  hooks:
-    - id: go-fmt
-      exclude: ^vendor
-    - id: go-mod-tidy
-    - id: go-lint
+    - id: make-tidy
+      name: make-tidy
+      language: system
+      entry: make
+      args: ['tidy']
+      pass_filenames: false
+    - id: make-golangci-lint
+      name: make-golangci-lint
+      language: system
+      entry: make
+      args: ['golangci']
+      pass_filenames: false
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.3.0

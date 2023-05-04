@@ -47,7 +47,7 @@ func TestToUnstructured(t *testing.T) {
 
 		// Change a spec field and validate that it stays the same in the incoming object.
 		g.Expect(unstructured.SetNestedField(newObj.Object, "false", "spec", "paused")).To(Succeed())
-		g.Expect(obj.Spec.Paused).To(Equal(true))
+		g.Expect(obj.Spec.Paused).To(BeTrue())
 	})
 
 	t.Run("with an unstructured object", func(t *testing.T) {

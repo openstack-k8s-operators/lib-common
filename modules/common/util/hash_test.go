@@ -43,7 +43,7 @@ func TestObjectHash(t *testing.T) {
 			g := NewWithT(t)
 
 			hash, err := ObjectHash(tt.data)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 
 			g.Expect(hash).To(BeIdenticalTo(tt.want))
 		})
@@ -134,7 +134,7 @@ func TestHashOfInputHashes(t *testing.T) {
 			g := NewWithT(t)
 
 			hash, err := HashOfInputHashes(tt.envs)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(hash).To(BeEquivalentTo(tt.want))
 		})
 	}

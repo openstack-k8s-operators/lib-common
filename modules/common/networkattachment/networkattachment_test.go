@@ -57,7 +57,7 @@ func TestCreateNetworksAnnotation(t *testing.T) {
 			g := NewWithT(t)
 
 			networkAnnotation, err := CreateNetworksAnnotation(tt.namespace, tt.networks)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(networkAnnotation).To(HaveLen(len(tt.want)))
 			g.Expect(networkAnnotation).To(BeEquivalentTo(tt.want))
 		})
@@ -132,7 +132,7 @@ func TestGetNetworkStatusFromAnnotation(t *testing.T) {
 			g := NewWithT(t)
 
 			networkStatus, err := GetNetworkStatusFromAnnotation(tt.annotations)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(networkStatus).To(HaveLen(len(tt.want)))
 			g.Expect(networkStatus).To(BeEquivalentTo(tt.want))
 		})

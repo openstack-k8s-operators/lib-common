@@ -62,7 +62,7 @@ func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
-		g.Expect(err).Should(t.BeNil())
+		g.Expect(err).NotTo(t.HaveOccurred())
 
 		g.Expect(tc.k8sClient.Delete(tc.ctx, keystone)).Should(t.Succeed())
 

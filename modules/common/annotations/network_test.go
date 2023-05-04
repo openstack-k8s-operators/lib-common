@@ -55,7 +55,7 @@ func TestGetNADAnnotation(t *testing.T) {
 			g := NewWithT(t)
 
 			networkAnnotation, err := GetNADAnnotation(tt.namespace, tt.networks)
-			g.Expect(err).To(BeNil())
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(networkAnnotation).To(HaveLen(len(tt.want)))
 			g.Expect(networkAnnotation).To(BeEquivalentTo(tt.want))
 		})

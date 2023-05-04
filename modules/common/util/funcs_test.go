@@ -124,9 +124,9 @@ func TestIsJSON(t *testing.T) {
 
 			err := IsJSON(tt.data)
 			if tt.error {
-				g.Expect(err).ToNot(BeNil())
+				g.Expect(err).To(HaveOccurred())
 			} else {
-				g.Expect(err).To(BeNil())
+				g.Expect(err).NotTo(HaveOccurred())
 			}
 		})
 	}
