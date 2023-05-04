@@ -159,6 +159,20 @@ func (conditions *Conditions) IsUnknown(t Type) bool {
 	return true
 }
 
+// AllSubConditionIsTrue validates if all subconditions are True
+// It assumes that all conditions report success via the True status
+func (conditions *Conditions) AllSubConditionIsTrue() bool {
+	for _, c := range *conditions {
+		if c.Type == ReadyCondition {
+			continue
+		}
+		if c.Status != corev1.ConditionTrue {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort - Sorts the list so that the Ready condition always goes first, followed by all the other
 // conditions sorted by Type. This makes it easy to identify the overall state of
 // the service

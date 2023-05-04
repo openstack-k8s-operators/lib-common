@@ -316,6 +316,63 @@ func TestIsMethods(t *testing.T) {
 	g.Expect(conditions.IsUnknown("unknownB")).To(BeTrue())
 }
 
+func TestAllSubConditionIsTrue(t *testing.T) {
+	conditions := Conditions{}
+
+	time1 := metav1.NewTime(time.Date(2022, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2022, time.August, 10, 10, 0, 0, 0, time.UTC))
+	falseBTime1 := falseB.DeepCopy()
+	falseBTime1.LastTransitionTime = time1
+
+	falseBTime2 := falseB.DeepCopy()
+	falseBTime2.LastTransitionTime = time2
+
+	tests := []struct {
+		name      string
+		condition *Condition
+		want      bool
+	}{
+		{
+			name:      "Add nil condition",
+			condition: nil,
+			want:      true,
+		},
+		{
+			name:      "Add unknownB condition",
+			condition: unknownB,
+			want:      false,
+		},
+		{
+			name:      "Add another condition unknownA",
+			condition: unknownA,
+			want:      false,
+		},
+		{
+			name:      "Change condition unknownA, to be Status=True",
+			condition: trueA,
+			want:      false,
+		},
+		{
+			name:      "Change condition unknownB, to be Status=True",
+			condition: trueB,
+			want:      true,
+		},
+	}
+
+	g := NewWithT(t)
+
+	conditions.Init(nil)
+	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			conditions.Set(tt.condition)
+			g.Expect(conditions.AllSubConditionIsTrue()).To(BeIdenticalTo(tt.want))
+		})
+	}
+}
+
 func TestMarkMethods(t *testing.T) {
 	g := NewWithT(t)
 
