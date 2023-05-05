@@ -98,7 +98,7 @@ func runJobSuccessfully(namespace string) (*job.Job, *batchv1.Job) {
 	return j, th.GetJob(th.GetName(exampleJob))
 }
 
-var _ = Describe("job.Job", func() {
+var _ = Describe("job package", func() {
 	var namespace string
 
 	BeforeEach(func() {
@@ -388,4 +388,26 @@ var _ = Describe("job.Job", func() {
 		Expect(result).To(Equal(finished))
 		Expect(j.GetHash()).NotTo(Equal(oldHash))
 	})
+
+	It("DeleteJob deletes existing jobs", func() {
+		_, k8sJob := runJobSuccessfully(namespace)
+		// the job exists
+		th.GetJob(th.GetName(k8sJob))
+
+		// assert that DeleteJob deletes it properly so the k8sJob not found
+		// any more
+		Expect(job.DeleteJob(ctx, h, k8sJob.Name, namespace)).To(Succeed())
+		Eventually(func(g Gomega) {
+			err := cClient.Get(ctx, th.GetName(k8sJob), k8sJob)
+			g.Expect(err).To(HaveOccurred())
+			var statusErr *k8s_errors.StatusError
+			g.Expect(errors.As(err, &statusErr)).To(BeTrue())
+			g.Expect(statusErr.Status().Reason).To(Equal(metav1.StatusReasonNotFound))
+		}, timeout, interval).Should(Succeed())
+	})
+
+	It("DeleteJob ignores if the job is already deleted", func() {
+		Expect(job.DeleteJob(ctx, h, "non-existent-job", namespace)).To(Succeed())
+	})
+
 })

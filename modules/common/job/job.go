@@ -29,6 +29,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"errors"
@@ -204,25 +205,25 @@ func (j *Job) GetHash() string {
 	return j.hash
 }
 
-// DeleteJob func
-// kclient required to properly cleanup the job depending pods with DeleteOptions
+// DeleteJob deletes the batchv1.Job if exists. It is not an error to call
+// this on an already deleted job.
 func DeleteJob(
 	ctx context.Context,
 	h *helper.Helper,
 	name string,
 	namespace string,
 ) error {
-	foundJob, err := h.GetKClient().BatchV1().Jobs(namespace).Get(ctx, name, metav1.GetOptions{})
-	if err == nil {
-		h.GetLogger().Info("Deleting Job", "Job.Namespace", namespace, "Job.Name", name)
-		background := metav1.DeletePropagationBackground
-		err = h.GetKClient().BatchV1().Jobs(foundJob.Namespace).Delete(
-			ctx, foundJob.Name, metav1.DeleteOptions{PropagationPolicy: &background})
-		if err != nil {
-			return err
-		}
+	job := &batchv1.Job{}
+	job.Name = name
+	job.Namespace = namespace
+
+	h.GetLogger().Info("Deleting Job", "Job.Namespace", namespace, "Job.Name", name)
+	background := metav1.DeletePropagationBackground
+	err := h.GetClient().Delete(ctx, job, &client.DeleteOptions{PropagationPolicy: &background})
+	if err != nil && !k8s_errors.IsNotFound(err) {
 		return err
 	}
+
 	return nil
 }
 
