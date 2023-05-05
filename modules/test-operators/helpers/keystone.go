@@ -43,7 +43,10 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 	// the Status field needs to be written via a separate client
 	keystone = tc.GetKeystoneAPI(name)
 	keystone.Status = keystonev1.KeystoneAPIStatus{
-		APIEndpoints: map[string]string{"public": "http://keystone-public-openstack.testing"},
+		APIEndpoints: map[string]string{
+			"public":   "http://keystone-public-openstack.testing",
+			"internal": "http://keystone-internal.openstack.svc:5000",
+		},
 	}
 	t.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
 
