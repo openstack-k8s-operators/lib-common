@@ -39,7 +39,7 @@ func NewJob(
 	job *batchv1.Job,
 	jobType string,
 	preserve bool,
-	timeout time.Duration,
+	timeout time.Duration, // unused
 	beforeHash string,
 ) *Job {
 
@@ -47,7 +47,7 @@ func NewJob(
 		job:        job,
 		jobType:    jobType,
 		preserve:   preserve,
-		timeout:    timeout,
+		timeout:    timeout, // unused
 		beforeHash: beforeHash,
 		changed:    false,
 	}
@@ -68,14 +68,14 @@ func (j *Job) createJob(
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
-			h.GetLogger().Info(fmt.Sprintf("Job %s not found, reconcile in %s", j.job.Name, j.timeout))
-			return ctrl.Result{RequeueAfter: j.timeout}, nil
+			h.GetLogger().Info(fmt.Sprintf("Job %s not found", j.job.Name))
+			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, err
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Job %s %s - %s", j.jobType, j.job.Name, op))
-		return ctrl.Result{RequeueAfter: j.timeout}, nil
+		return ctrl.Result{}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -158,7 +158,7 @@ func (j *Job) DoJob(
 	}
 
 	if wait {
-		ctrlResult, err := waitOnJob(ctx, h, j.job.Name, j.job.Namespace, j.timeout)
+		ctrlResult, err := waitOnJob(ctx, h, j.job.Name, j.job.Namespace)
 		if (ctrlResult != ctrl.Result{}) {
 			return ctrlResult, nil
 		}
@@ -225,22 +225,21 @@ func waitOnJob(
 	h *helper.Helper,
 	name string,
 	namespace string,
-	timeout time.Duration,
 ) (ctrl.Result, error) {
 	// Check if this Job already exists
 	job, err := GetJobWithName(ctx, h, name, namespace)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			h.GetLogger().Info("Job was not found.")
-			return ctrl.Result{RequeueAfter: timeout}, nil
+			return ctrl.Result{}, err
 		}
 		h.GetLogger().Info("WaitOnJob err")
 		return ctrl.Result{}, err
 	}
 
 	if job.Status.Active > 0 {
-		h.GetLogger().Info("Job Status Active... requeuing")
-		return ctrl.Result{RequeueAfter: timeout}, nil
+		h.GetLogger().Info("Job Status Active... returning")
+		return ctrl.Result{}, nil
 	} else if job.Status.Succeeded > 0 {
 		h.GetLogger().Info("Job Status Successful")
 		return ctrl.Result{}, nil
@@ -248,8 +247,8 @@ func waitOnJob(
 		h.GetLogger().Info("Job Status Failed")
 		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New("Job Failed. Check job logs"))
 	}
-	h.GetLogger().Info("Job Status incomplete... requeuing")
-	return ctrl.Result{RequeueAfter: timeout}, nil
+	h.GetLogger().Info("Job Status incomplete... returning")
+	return ctrl.Result{}, nil
 }
 
 // GetJobWithName func
