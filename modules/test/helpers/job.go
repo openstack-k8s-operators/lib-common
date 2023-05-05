@@ -50,6 +50,8 @@ func (tc *TestHelper) SimulateJobFailure(name types.NamespacedName) {
 	job.Status.Failed = 1
 	job.Status.Active = 0
 	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Job failure", "on", name)
 }
 
 // SimulateJobSuccess -
@@ -65,4 +67,6 @@ func (tc *TestHelper) SimulateJobSuccess(name types.NamespacedName) {
 	job.Status.Succeeded = 1
 	job.Status.Active = 0
 	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Job success", "on", name)
 }

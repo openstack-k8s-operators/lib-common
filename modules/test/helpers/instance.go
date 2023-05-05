@@ -22,9 +22,14 @@ import (
 )
 
 // DeleteInstance -
-func (tc *TestHelper) DeleteInstance(instance client.Object) {
+func (tc *TestHelper) DeleteInstance(instance client.Object, opts ...client.DeleteOption) {
 	// We have to wait for the controller to fully delete the instance
-	tc.Logger.Info("Deleting", "Name", instance.GetName(), "Namespace", instance.GetNamespace(), "Kind", instance.GetObjectKind().GroupVersionKind().Kind)
+	tc.Logger.Info(
+		"Deleting", "Name", instance.GetName(),
+		"Namespace", instance.GetNamespace(),
+		"Kind", instance.GetObjectKind(),
+	)
+
 	gomega.Eventually(func(g gomega.Gomega) {
 		name := types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}
 		err := tc.K8sClient.Get(tc.Ctx, name, instance)
@@ -34,9 +39,15 @@ func (tc *TestHelper) DeleteInstance(instance client.Object) {
 		}
 		g.Expect(err).ShouldNot(gomega.HaveOccurred())
 
-		g.Expect(tc.K8sClient.Delete(tc.Ctx, instance)).Should(gomega.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, instance, opts...)).Should(gomega.Succeed())
 
 		err = tc.K8sClient.Get(tc.Ctx, name, instance)
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info(
+		"Deleted", "Name", instance.GetName(),
+		"Namespace", instance.GetNamespace(),
+		"Kind", instance.GetObjectKind().GroupVersionKind().Kind,
+	)
 }
