@@ -74,6 +74,10 @@ const (
 	// RequestedReason (Severity=Info) documents a condition not in Status=True because the underlying object is not ready.
 	RequestedReason = "Requested"
 
+	// NotRequestedReason (Severity=Info) documents a condition not in
+	// Status=True because the underlying object has not yet been requested
+	NotRequestedReason = "NotRequested"
+
 	// CreationFailedReason (Severity=Error) documents a condition not in Status=True because the underlying object failed.
 	CreationFailedReason = "CreationFailed"
 
