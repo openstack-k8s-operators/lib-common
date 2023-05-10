@@ -40,6 +40,8 @@ const (
 	EndpointInternal Endpoint = "internal"
 	// EndpointPublic - public endpoint
 	EndpointPublic Endpoint = "public"
+	// AnnotationHostnameKey -
+	AnnotationHostnameKey = "dnsmasq.network.openstack.org/hostname"
 )
 
 // Data - information for generation of K8S services and Keystone endpoint URLs
@@ -92,20 +94,6 @@ func ExposeEndpoints(
 		// Create metallb service if specified, otherwise create a route
 		var hostname string
 		if data.MetalLB != nil {
-			annotations := map[string]string{
-				service.MetalLBAddressPoolAnnotation: data.MetalLB.IPAddressPool,
-			}
-			if len(data.MetalLB.LoadBalancerIPs) > 0 {
-				annotations[service.MetalLBLoadBalancerIPs] = strings.Join(data.MetalLB.LoadBalancerIPs, ",")
-			}
-			if data.MetalLB.SharedIP {
-				if data.MetalLB.SharedIPKey == "" {
-					annotations[service.MetalLBAllowSharedIPAnnotation] = data.MetalLB.IPAddressPool
-				} else {
-					annotations[service.MetalLBAllowSharedIPAnnotation] = data.MetalLB.SharedIPKey
-				}
-			}
-
 			var protocol corev1.Protocol
 			if data.MetalLB.Protocol != nil {
 				protocol = *data.MetalLB.Protocol
@@ -117,11 +105,10 @@ func ExposeEndpoints(
 			// Create the service
 			svc := service.NewService(
 				service.MetalLBService(&service.MetalLBServiceDetails{
-					Name:        endpointName,
-					Namespace:   h.GetBeforeObject().GetNamespace(),
-					Annotations: annotations,
-					Labels:      exportLabels,
-					Selector:    endpointSelector,
+					Name:      endpointName,
+					Namespace: h.GetBeforeObject().GetNamespace(),
+					Labels:    exportLabels,
+					Selector:  endpointSelector,
 					Port: service.GenericServicePort{
 						Name:     endpointName,
 						Port:     data.Port,
@@ -131,6 +118,22 @@ func ExposeEndpoints(
 				exportLabels,
 				timeout,
 			)
+			annotations := map[string]string{
+				service.MetalLBAddressPoolAnnotation: data.MetalLB.IPAddressPool,
+				AnnotationHostnameKey:                svc.GetServiceHostname(), // add annotation to register service name in dnsmasq
+			}
+			if len(data.MetalLB.LoadBalancerIPs) > 0 {
+				annotations[service.MetalLBLoadBalancerIPs] = strings.Join(data.MetalLB.LoadBalancerIPs, ",")
+			}
+			if data.MetalLB.SharedIP {
+				if data.MetalLB.SharedIPKey == "" {
+					annotations[service.MetalLBAllowSharedIPAnnotation] = data.MetalLB.IPAddressPool
+				} else {
+					annotations[service.MetalLBAllowSharedIPAnnotation] = data.MetalLB.SharedIPKey
+				}
+			}
+			svc.AddAnnotation(annotations)
+
 			ctrlResult, err := svc.CreateOrPatch(ctx, h)
 			if err != nil {
 				return endpointMap, ctrlResult, err
