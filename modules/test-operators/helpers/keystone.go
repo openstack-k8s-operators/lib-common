@@ -18,6 +18,7 @@ import (
 	t "github.com/onsi/gomega"
 	keystonev1 "github.com/openstack-k8s-operators/keystone-operator/api/v1beta1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
+	"github.com/openstack-k8s-operators/lib-common/modules/test-operators/apis"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,6 +51,56 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 	keystone.Status = keystonev1.KeystoneAPIStatus{
 		APIEndpoints: map[string]string{
 			"public":   "http://keystone-public-openstack.testing",
+			"internal": "http://keystone-internal.openstack.svc:5000",
+		},
+	}
+	t.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+
+	tc.Logger.Info("KeystoneAPI created", "KeystoneAPI", name)
+	return name
+}
+
+// CreateKeystoneAPIWithFixture creates a KeystoneAPI CR and configures
+// its endpoints to point to the KeystoneAPIFixture that simulate the
+// keystone-api behavior.
+func (tc *TestHelper) CreateKeystoneAPIWithFixture(
+	namespace string, fixture *apis.KeystoneAPIFixture,
+) types.NamespacedName {
+	n := "keystone-" + uuid.New().String()
+
+	tc.CreateSecret(
+		types.NamespacedName{Namespace: namespace, Name: n + "-secret"},
+		map[string][]byte{
+			"admin-password": []byte("admin-password"),
+		},
+	)
+
+	keystone := &keystonev1.KeystoneAPI{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "keystone.openstack.org/v1beta1",
+			Kind:       "KeystoneAPI",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      n,
+			Namespace: namespace,
+		},
+		Spec: keystonev1.KeystoneAPISpec{
+			Secret:    n + "-secret",
+			AdminUser: "admin",
+			PasswordSelectors: keystonev1.PasswordSelector{
+				Admin: "admin-password",
+			},
+		},
+	}
+
+	t.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+	name := types.NamespacedName{Namespace: namespace, Name: keystone.Name}
+
+	// the Status field needs to be written via a separate client
+	keystone = tc.GetKeystoneAPI(name)
+	keystone.Status = keystonev1.KeystoneAPIStatus{
+		APIEndpoints: map[string]string{
+			"public":   fixture.Endpoint(),
 			"internal": "http://keystone-internal.openstack.svc:5000",
 		},
 	}
