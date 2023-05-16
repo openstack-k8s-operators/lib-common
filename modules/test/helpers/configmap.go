@@ -75,3 +75,27 @@ func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
+
+// CreateConfigMap -
+func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string]interface{}) client.Object {
+	raw := map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "ConfigMap",
+		"metadata": map[string]interface{}{
+			"name":      name.Name,
+			"namespace": name.Namespace,
+		},
+		"data": data,
+	}
+
+	return tc.CreateUnstructured(raw)
+}
+
+// AssertConfigMapExists -
+func (tc *TestHelper) AssertConfigMapExists(name types.NamespacedName) *corev1.ConfigMap {
+	instance := &corev1.ConfigMap{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+	return instance
+}
