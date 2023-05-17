@@ -20,7 +20,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateNamespace -
+// CreateNamespace creates a Kubernetes Namespace resource.
+//
+// Example usage:
+//
+//	th.CreateNamespace("test-namespace")
+//
+// Note: the namespace should be unique and not be already present in the cluster, otherwise,
+// the function will fail.
 func (tc *TestHelper) CreateNamespace(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -31,7 +38,17 @@ func (tc *TestHelper) CreateNamespace(name string) *corev1.Namespace {
 	return ns
 }
 
-// DeleteNamespace -
+// DeleteNamespace deletes a Kubernetes Namespace resource.
+//
+// Example usage:
+//
+//	th.DeleteNamespace("test-namespace")
+//
+// or
+//
+//	DeferCleanup(th.DeleteNamespace, namespace)
+//
+// Note: the namespace should exist in the cluster, otherwise, the function will fail.
 func (tc *TestHelper) DeleteNamespace(name string) {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

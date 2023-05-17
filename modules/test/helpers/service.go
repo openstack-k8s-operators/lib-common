@@ -15,29 +15,17 @@ package helpers
 
 import (
 	"github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// CreateService -
-func (tc *TestHelper) CreateService(name types.NamespacedName, spec map[string]interface{}) client.Object {
-	raw := map[string]interface{}{
-		"apiVersion": "v1",
-		"kind":       "Service",
-		"metadata": map[string]interface{}{
-			"name":      name.Name,
-			"namespace": name.Namespace,
-		},
-		"spec": spec,
-	}
-
-	return tc.CreateUnstructured(raw)
-}
-
-// GetService -
+// GetService retrieves a Service resource.
+//
+// Example usage:
+//
+//	th.GetService(types.NamespacedName{Name: "test-service", Namespace: "test-namespace"})
 func (tc *TestHelper) GetService(name types.NamespacedName) *corev1.Service {
 	instance := &corev1.Service{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -47,7 +35,11 @@ func (tc *TestHelper) GetService(name types.NamespacedName) *corev1.Service {
 	return instance
 }
 
-// AssertServiceExists -
+// AssertServiceExists - asserts the existence of a Service resource in the Kubernetes cluster.
+//
+// Example usage:
+//
+//	th.AssertServiceExists(types.NamespacedName{Name: "neutron-public, Namespace: namespace})
 func (tc *TestHelper) AssertServiceExists(name types.NamespacedName) *corev1.Service {
 	instance := &corev1.Service{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -56,7 +48,11 @@ func (tc *TestHelper) AssertServiceExists(name types.NamespacedName) *corev1.Ser
 	return instance
 }
 
-// DeleteService -
+// DeleteService - deletes a Service resource from the Kubernetes cluster.
+//
+// Example usage:
+//
+//	th.DeleteService(types.NamespacedName{Name: "test-service", Namespace: "test-namespace"})
 func (tc *TestHelper) DeleteService(name types.NamespacedName) {
 	instance := &corev1.Service{}
 

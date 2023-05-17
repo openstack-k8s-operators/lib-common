@@ -19,7 +19,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// GetTransportURL -
+// GetTransportURL retrieves a TransportURL resource with the specified name.
+//
+// Example usage:
+//
+//	th.GetTransportURL(types.NamespacedName{Name: "test-transporturl", Namespace: "test-namespace"})
 func (tc *TestHelper) GetTransportURL(name types.NamespacedName) *rabbitmqv1.TransportURL {
 	instance := &rabbitmqv1.TransportURL{}
 	t.Eventually(func(g t.Gomega) {
@@ -28,7 +32,12 @@ func (tc *TestHelper) GetTransportURL(name types.NamespacedName) *rabbitmqv1.Tra
 	return instance
 }
 
-// SimulateTransportURLReady -
+// SimulateTransportURLReady function retrieves the TransportURL and
+// simulates the readiness of a TransportURL resource.
+//
+// Example usage:
+//
+//	th.SimulateTransportURLReady(types.NamespacedName{Name: "test-transporturl", Namespace: "test-namespace"})
 func (tc *TestHelper) SimulateTransportURLReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		transport := tc.GetTransportURL(name)

@@ -23,7 +23,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetStatefulSet -
+// GetStatefulSet - retrieves a StatefulSet resource.
+//
+// example usage:
+//
+//	th.GetStatefulSet(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.StatefulSet {
 	ss := &appsv1.StatefulSet{}
 	t.Eventually(func(g t.Gomega) {
@@ -32,15 +36,12 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 	return ss
 }
 
-// ListStatefulSets -
-func (tc *TestHelper) ListStatefulSets(namespace string) *appsv1.StatefulSetList {
-	sss := &appsv1.StatefulSetList{}
-	t.Expect(tc.K8sClient.List(tc.Ctx, sss, client.InNamespace(namespace))).Should(t.Succeed())
-	return sss
-
-}
-
-// SimulateStatefulSetReplicaReady -
+// SimulateStatefulSetReplicaReady - retrieves the StatefulSet  and simulates
+// a ready state for a StatefulSet's replica in a Kubernetes cluster.
+//
+// example usage:
+//
+//	th.SimulateStatefulSetReplicaReady(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		ss := tc.GetStatefulSet(name)

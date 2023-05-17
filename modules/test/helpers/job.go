@@ -21,7 +21,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-// GetJob -
+// GetJob retrieves a specified Job resource from the cluster.
+//
+// Example usage:
+//
+//	job := th.GetJob(types.NamespacedName{Name: "cell-name", Namespace: "default"})
 func (tc *TestHelper) GetJob(name types.NamespacedName) *batchv1.Job {
 	job := &batchv1.Job{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -31,7 +35,11 @@ func (tc *TestHelper) GetJob(name types.NamespacedName) *batchv1.Job {
 	return job
 }
 
-// ListJobs -
+// ListJobs retrieves a list of all job resources within a specified namespace.
+//
+// Example usage:
+//
+//	jobs := th.ListJobs("some-name").Items
 func (tc *TestHelper) ListJobs(namespace string) *batchv1.JobList {
 	jobs := &batchv1.JobList{}
 	gomega.Expect(tc.K8sClient.List(tc.Ctx, jobs, client.InNamespace(namespace))).Should(gomega.Succeed())
@@ -39,7 +47,12 @@ func (tc *TestHelper) ListJobs(namespace string) *batchv1.JobList {
 	return jobs
 }
 
-// SimulateJobFailure -
+// SimulateJobFailure function retrieves the Job and
+// simulates the failure of a Kubernetes Job resource.
+//
+// Example usage:
+//
+//	th.SimulateJobFailure(types.NamespacedName{Name: "test-job", Namespace: "default"})
 func (tc *TestHelper) SimulateJobFailure(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		job := tc.GetJob(name)
@@ -53,7 +66,15 @@ func (tc *TestHelper) SimulateJobFailure(name types.NamespacedName) {
 	tc.Logger.Info("Simulated Job failure", "on", name)
 }
 
-// SimulateJobSuccess -
+// SimulateJobSuccess retrieves the Job and simulates the success of a Kubernetes Job resource.
+//
+// Note: In a real environment where the mariadb-operator is deployed, this
+// function may not be necessary as the Job could automatically run successfully
+// if the database user is manually registered in the DB service.
+//
+// Example usage:
+//
+//	th.SimulateJobSuccess(types.NamespacedName{Name: "test-job", Namespace: "default"})
 func (tc *TestHelper) SimulateJobSuccess(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		job := tc.GetJob(name)

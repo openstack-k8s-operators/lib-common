@@ -21,7 +21,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// ExpectCondition -
+// ExpectCondition - used to assert that a specific condition on a k8s resource
+// matches an expected status.
+//
+// Example usage:
+//
+//	th.ExpectCondition(
+//		novaNames.NovaName,
+//		ConditionGetterFunc(NovaConditionGetter),
+//		condition.ReadyCondition,
+//		corev1.ConditionFalse,
+//	)
 func (tc *TestHelper) ExpectCondition(
 	name types.NamespacedName,
 	getter conditionsGetter,
@@ -44,7 +54,19 @@ func (tc *TestHelper) ExpectCondition(
 	tc.Logger.Info("ExpectCondition succeeded", "type", conditionType, "expected status", expectedStatus, "on", name)
 }
 
-// ExpectConditionWithDetails -
+// ExpectConditionWithDetails used to assert that a specific condition on a k8s resource
+// matches an expected status, reason, and message.
+//
+// Example usage:
+//
+//	th.ExpectConditionWithDetails(
+//		novaNames.NovaName,
+//		ConditionGetterFunc(NovaConditionGetter),
+//		novav1.NovaAllCellsReadyCondition,
+//		corev1.ConditionFalse,
+//		condition.ErrorReason,
+//		"NovaCell creation failed for cell0(missing cell0 specification from Spec.CellTemplates)",
+//	 )
 func (tc *TestHelper) ExpectConditionWithDetails(
 	name types.NamespacedName,
 	getter conditionsGetter,
