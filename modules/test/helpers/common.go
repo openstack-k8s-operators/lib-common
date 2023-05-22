@@ -29,6 +29,8 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 type conditionsGetter interface {
@@ -108,4 +110,15 @@ func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstruc
 // GetName -
 func (tc *TestHelper) GetName(obj client.Object) types.NamespacedName {
 	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
+}
+
+// GetEnvVarValue returns the value of the EnvVar based on the name of the Var
+// or return the defaultValue if the list does not have EnvVar with the given name
+func GetEnvVarValue(envs []corev1.EnvVar, name string, defaultValue string) string {
+	for _, e := range envs {
+		if e.Name == name {
+			return e.Value
+		}
+	}
+	return defaultValue
 }
