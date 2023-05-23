@@ -41,13 +41,13 @@ func (tc *TestHelper) ListDeployments(namespace string) *appsv1.DeploymentList {
 
 // SimulateDeploymentReplicaReady -
 func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) {
-	deployment := tc.GetDeployment(name)
-	// NOTE(gibi): We don't need to do this when run against a real
-	// env as there the deployment could reach the ready state automatically.
-	// But for that we would need another set of test setup, i.e. deploying
-	// the mariadb-operator.
+	gomega.Eventually(func(g gomega.Gomega) {
+		deployment := tc.GetDeployment(name)
 
-	deployment.Status.Replicas = 1
-	deployment.Status.ReadyReplicas = 1
-	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
+		deployment.Status.Replicas = 1
+		deployment.Status.ReadyReplicas = 1
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Deployment success", "on", name)
 }
