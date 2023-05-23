@@ -7,6 +7,8 @@ require (
 	k8s.io/api v0.26.3
 )
 
+require github.com/rogpeppe/go-internal v1.10.0 // indirect
+
 require (
 	github.com/go-logr/logr v1.2.4 // indirect; indirect // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

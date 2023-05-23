@@ -5,10 +5,13 @@ go 1.19
 require (
 	github.com/go-logr/logr v1.2.4
 	github.com/gophercloud/gophercloud v1.2.0
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230427065458-ec1b923df88c
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230522113906-6f4206cbf317
 )
 
-require github.com/kr/pretty v0.3.1 // indirect
+require (
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

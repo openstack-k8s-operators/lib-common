@@ -6,13 +6,15 @@ replace github.com/openstack-k8s-operators/lib-common/modules/common => ../commo
 
 require (
 	github.com/go-logr/logr v1.2.4
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230427065458-ec1b923df88c
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230522113906-6f4206cbf317
 	golang.org/x/crypto v0.8.0
 	k8s.io/api v0.26.3
 	k8s.io/apimachinery v0.26.3
 	k8s.io/client-go v0.26.3
 	sigs.k8s.io/controller-runtime v0.14.6
 )
+
+require github.com/rogpeppe/go-internal v1.10.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
