@@ -140,8 +140,7 @@ operator-lint: gowork ## Runs operator-lint
 	GOBIN=$(LOCALBIN) go install github.com/gibizer/operator-lint@v0.3.0
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		set -x ; \
-		if [ $$mod == "modules/archive" ]; then continue; fi ; \
-        pushd ./$$mod ; \
-        go vet -vettool=$(LOCALBIN)/operator-lint ./... || exit 1 ; \
-        popd ; \
-    done
+	        pushd ./$$mod ; \
+        	go vet -vettool=$(LOCALBIN)/operator-lint ./... || exit 1 ; \
+	        popd ; \
+	done
