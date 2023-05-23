@@ -41,32 +41,28 @@ func (tc *TestHelper) ListJobs(namespace string) *batchv1.JobList {
 
 // SimulateJobFailure -
 func (tc *TestHelper) SimulateJobFailure(name types.NamespacedName) {
-	job := tc.GetJob(name)
+	gomega.Eventually(func(g gomega.Gomega) {
+		job := tc.GetJob(name)
 
-	// NOTE(gibi) when run against a real env we need to find a
-	// better way to make the job fail. This works but it is unreal.
+		// Simulate that the job is failed
+		job.Status.Failed = 1
+		job.Status.Active = 0
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
 
-	// Simulate that the job is failed
-	job.Status.Failed = 1
-	job.Status.Active = 0
-	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
-
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated Job failure", "on", name)
 }
 
 // SimulateJobSuccess -
 func (tc *TestHelper) SimulateJobSuccess(name types.NamespacedName) {
-	job := tc.GetJob(name)
-	// NOTE(gibi): We don't need to do this when run against a real
-	// env as there the job could run successfully automatically if the
-	// database user is registered manually in the DB service. But for that
-	// we would need another set of test setup, i.e. deploying the
-	// mariadb-operator.
+	gomega.Eventually(func(g gomega.Gomega) {
+		job := tc.GetJob(name)
 
-	// Simulate that the job is succeeded
-	job.Status.Succeeded = 1
-	job.Status.Active = 0
-	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
+		// Simulate that the job is succeeded
+		job.Status.Succeeded = 1
+		job.Status.Active = 0
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, job)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated Job success", "on", name)
 }
