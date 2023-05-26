@@ -14,7 +14,10 @@ limitations under the License.
 package helpers
 
 import (
+	"encoding/json"
+	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -50,4 +53,43 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated Deployment success", "on", name)
+}
+
+// SimulateDeploymentReadyWithPods -
+func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
+	ss := tc.GetDeployment(name)
+	for i := 0; i < int(*ss.Spec.Replicas); i++ {
+		pod := &corev1.Pod{
+			ObjectMeta: ss.Spec.Template.ObjectMeta,
+			Spec:       ss.Spec.Template.Spec,
+		}
+		pod.ObjectMeta.Namespace = name.Namespace
+		pod.ObjectMeta.GenerateName = name.Name
+
+		var netStatus []networkv1.NetworkStatus
+		for network, IPs := range networkIPs {
+			netStatus = append(
+				netStatus,
+				networkv1.NetworkStatus{
+					Name: network,
+					IPs:  IPs,
+				},
+			)
+		}
+		netStatusAnnotation, err := json.Marshal(netStatus)
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
+
+		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+	}
+
+	gomega.Eventually(func(g gomega.Gomega) {
+		ss := tc.GetDeployment(name)
+		ss.Status.Replicas = 1
+		ss.Status.ReadyReplicas = 1
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
+
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info("Simulated deployment success", "on", name)
 }

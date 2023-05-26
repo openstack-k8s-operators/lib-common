@@ -14,11 +14,13 @@ limitations under the License.
 package helpers
 
 import (
+	"encoding/json"
+	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	t "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	appsv1 "k8s.io/api/apps/v1"
 )
 
 // GetStatefulSet -
@@ -47,5 +49,44 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(t.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	tc.Logger.Info("Simulated statefulset success", "on", name)
+}
+
+// SimulateStatefulSetReplicaReadyWithPods -
+func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
+	ss := tc.GetStatefulSet(name)
+	for i := 0; i < int(*ss.Spec.Replicas); i++ {
+		pod := &corev1.Pod{
+			ObjectMeta: ss.Spec.Template.ObjectMeta,
+			Spec:       ss.Spec.Template.Spec,
+		}
+		pod.ObjectMeta.Namespace = name.Namespace
+		pod.ObjectMeta.GenerateName = name.Name
+
+		var netStatus []networkv1.NetworkStatus
+		for network, IPs := range networkIPs {
+			netStatus = append(
+				netStatus,
+				networkv1.NetworkStatus{
+					Name: network,
+					IPs:  IPs,
+				},
+			)
+		}
+		netStatusAnnotation, err := json.Marshal(netStatus)
+		t.Expect(err).NotTo(t.HaveOccurred())
+		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
+
+		t.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(t.Succeed())
+	}
+
+	t.Eventually(func(g t.Gomega) {
+		ss := tc.GetStatefulSet(name)
+		ss.Status.Replicas = 1
+		ss.Status.ReadyReplicas = 1
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(t.Succeed())
+
+	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+
 	tc.Logger.Info("Simulated statefulset success", "on", name)
 }
