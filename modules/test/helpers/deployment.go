@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"encoding/json"
+
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -57,14 +58,22 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 
 // SimulateDeploymentReadyWithPods -
 func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
-	ss := tc.GetDeployment(name)
-	for i := 0; i < int(*ss.Spec.Replicas); i++ {
+	depl := tc.GetDeployment(name)
+	for i := 0; i < int(*depl.Spec.Replicas); i++ {
 		pod := &corev1.Pod{
-			ObjectMeta: ss.Spec.Template.ObjectMeta,
-			Spec:       ss.Spec.Template.Spec,
+			ObjectMeta: depl.Spec.Template.ObjectMeta,
+			Spec:       depl.Spec.Template.Spec,
 		}
 		pod.ObjectMeta.Namespace = name.Namespace
 		pod.ObjectMeta.GenerateName = name.Name
+		// NOTE(gibi): If there is a mount that refers to a volume created via
+		// persistent volume claim then that mount won't have a corresponding
+		// volume created in EnvTest as we are not simulating the k8s volume
+		// claim logic here at the moment. Therefore the Pod create would fail
+		// with a missing volume. So to avoid that we remove every mount and
+		// volume from the pod we create here.
+		pod.Spec.Volumes = []corev1.Volume{}
+		pod.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{}
 
 		var netStatus []networkv1.NetworkStatus
 		for network, IPs := range networkIPs {
@@ -84,10 +93,10 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 	}
 
 	gomega.Eventually(func(g gomega.Gomega) {
-		ss := tc.GetDeployment(name)
-		ss.Status.Replicas = 1
-		ss.Status.ReadyReplicas = 1
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
+		depl := tc.GetDeployment(name)
+		depl.Status.Replicas = 1
+		depl.Status.ReadyReplicas = 1
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, depl)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
