@@ -66,7 +66,15 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 	tc.Logger.Info("Simulated Deployment success", "on", name)
 }
 
-// SimulateDeploymentReadyWithPods -
+// SimulateDeploymentReadyWithPods simulates a Deployment with ready replicas
+// by creating and updating the corresponding Pods.
+//
+// Example:
+//
+//	    th.SimulateDeploymentReadyWithPods(
+//					manilaTest.Instance,
+//					map[string][]string{manilaName.Namespace + "/internalapi": {"10.0.0.1"}},
+//				)
 func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
 	ss := tc.GetDeployment(name)
 	for i := 0; i < int(*ss.Spec.Replicas); i++ {

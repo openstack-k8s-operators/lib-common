@@ -20,7 +20,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // GetStatefulSet - retrieves a StatefulSet resource.
@@ -36,7 +35,7 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 	return ss
 }
 
-// SimulateStatefulSetReplicaReady - retrieves the StatefulSet  and simulates
+// SimulateStatefulSetReplicaReady retrieves the StatefulSet  and simulates
 // a ready state for a StatefulSet's replica in a Kubernetes cluster.
 //
 // example usage:
@@ -53,7 +52,15 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 	tc.Logger.Info("Simulated statefulset success", "on", name)
 }
 
-// SimulateStatefulSetReplicaReadyWithPods -
+// SimulateStatefulSetReplicaReadyWithPods simulates a StatefulSet with ready replicas
+// by creating and updating the corresponding Pods.
+//
+// example usage:
+//
+//		th.SimulateStatefulSetReplicaReadyWithPods(
+//	 	cell0.ConductorStatefulSetName,
+//	 	map[string][]string{cell0.CellName.Namespace + "/internalapi": {"10.0.0.1"}},
+//	 )
 func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
 	ss := tc.GetStatefulSet(name)
 	for i := 0; i < int(*ss.Spec.Replicas); i++ {
