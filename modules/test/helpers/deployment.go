@@ -19,12 +19,27 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-// GetDeployment -
+// GetDeployment - retrieves a Deployment resource from cluster.
+// The function uses the Gomega library's Eventually function to
+// repeatedly attempt to get the Deployment until it is successful or
+// the test's timeout is reached.
+//
+// The function returns a pointer to the retrieved Deployment.
+// If the function cannot find the Deployment within the timeout,
+// it will cause the test to fail.
+//
+// Example usage:
+//
+//	  deployment := th.GetDeployment(
+//					types.NamespacedName{
+//						Namespace: neutronAPIName.Namespace,
+//						Name:      "neutron",
+//					},
+//				)
 func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deployment {
 	deployment := &appsv1.Deployment{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -34,15 +49,11 @@ func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deploymen
 	return deployment
 }
 
-// ListDeployments -
-func (tc *TestHelper) ListDeployments(namespace string) *appsv1.DeploymentList {
-	deployments := &appsv1.DeploymentList{}
-	gomega.Expect(tc.K8sClient.List(tc.Ctx, deployments, client.InNamespace(namespace))).Should(gomega.Succeed())
-
-	return deployments
-}
-
-// SimulateDeploymentReplicaReady -
+// SimulateDeploymentReplicaReady function retrieves the Deployment resource and
+// simulate that replicas are ready
+// Example usage:
+//
+//	th.SimulateDeploymentReplicaReady(ironicNames.INAName)
 func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		deployment := tc.GetDeployment(name)
@@ -55,7 +66,15 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 	tc.Logger.Info("Simulated Deployment success", "on", name)
 }
 
-// SimulateDeploymentReadyWithPods -
+// SimulateDeploymentReadyWithPods simulates a Deployment with ready replicas
+// by creating and updating the corresponding Pods.
+//
+// Example:
+//
+//	    th.SimulateDeploymentReadyWithPods(
+//					manilaTest.Instance,
+//					map[string][]string{manilaName.Namespace + "/internalapi": {"10.0.0.1"}},
+//				)
 func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
 	ss := tc.GetDeployment(name)
 	for i := 0; i < int(*ss.Spec.Replicas); i++ {

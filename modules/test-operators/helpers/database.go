@@ -19,7 +19,6 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -49,7 +48,15 @@ func (tc *TestHelper) CreateDBService(namespace string, mariadbCRName string, sp
 	return types.NamespacedName{Name: serviceName, Namespace: namespace}
 }
 
-// DeleteDBService -
+// DeleteDBService The function deletes the Service if exists and wait for it to disappear from the API.
+// If the Service does not exists then it is assumed to be successfully deleted.
+// Example:
+//
+//	th.DeleteDBService(types.NamespacedName{Name: "my-service", Namespace: "my-namespace"})
+//
+// or:
+//
+//	DeferCleanup(th.DeleteDBService, th.CreateDBService(cell0.MariaDBDatabaseName.Namespace, cell0.MariaDBDatabaseName.Name, serviceSpec))
 func (tc *TestHelper) DeleteDBService(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		service := &corev1.Service{}
@@ -67,7 +74,11 @@ func (tc *TestHelper) DeleteDBService(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 }
 
-// GetMariaDBDatabase -
+// GetMariaDBDatabase waits for and retrieves a MariaDBDatabase resource from the Kubernetes cluster
+//
+// Example:
+//
+//	mariadbDatabase := th.GetMariaDBDatabase(types.NamespacedName{Name: "my-mariadb-database", Namespace: "my-namespace"})
 func (tc *TestHelper) GetMariaDBDatabase(name types.NamespacedName) *mariadbv1.MariaDBDatabase {
 	instance := &mariadbv1.MariaDBDatabase{}
 	t.Eventually(func(g t.Gomega) {
@@ -76,14 +87,15 @@ func (tc *TestHelper) GetMariaDBDatabase(name types.NamespacedName) *mariadbv1.M
 	return instance
 }
 
-// ListMariaDBDatabase -
-func (tc *TestHelper) ListMariaDBDatabase(namespace string) *mariadbv1.MariaDBDatabaseList {
-	mariaDBDatabases := &mariadbv1.MariaDBDatabaseList{}
-	t.Expect(tc.K8sClient.List(tc.Ctx, mariaDBDatabases, client.InNamespace(namespace))).Should(t.Succeed())
-	return mariaDBDatabases
-}
-
-// SimulateMariaDBDatabaseCompleted -
+// SimulateMariaDBDatabaseCompleted simulates a completed state for a MariaDBDatabase resource in a Kubernetes cluster.
+//
+// Example:
+//
+//	th.SimulateMariaDBDatabaseCompleted(types.NamespacedName{Name: "my-mariadb-database", Namespace: "my-namespace"})
+//
+// or
+//
+//	DeferCleanup(th.SimulateMariaDBDatabaseCompleted, types.NamespacedName{Name: "my-mariadb-database", Namespace: "my-namespace"})
 func (tc *TestHelper) SimulateMariaDBDatabaseCompleted(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		db := tc.GetMariaDBDatabase(name)

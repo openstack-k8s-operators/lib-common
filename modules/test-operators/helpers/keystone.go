@@ -23,7 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// CreateKeystoneAPI -
+// CreateKeystoneAPI creates a new KeystoneAPI instance with the specified namespace in the Kubernetes cluster.
+//
+// Example usage:
+//
+//	keystoneAPI := th.CreateKeystoneAPI(namespace)
+//	DeferCleanup(th.DeleteKeystoneAPI, keystoneAPI)
 func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 	keystone := &keystonev1.KeystoneAPI{
 		TypeMeta: metav1.TypeMeta{
@@ -54,7 +59,14 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 	return name
 }
 
-// DeleteKeystoneAPI -
+// DeleteKeystoneAPI deletes a KeystoneAPI resource from the Kubernetes cluster.
+//
+// # After the deletion, the function checks again if the KeystoneAPI is successfully deleted
+//
+// Example usage:
+//
+//	keystoneAPI := th.CreateKeystoneAPI(namespace)
+//	DeferCleanup(th.DeleteKeystoneAPI, keystoneAPI)
 func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		keystone := &keystonev1.KeystoneAPI{}
@@ -72,7 +84,14 @@ func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(t.Succeed())
 }
 
-// GetKeystoneAPI -
+// GetKeystoneAPI retrieves a KeystoneAPI resource.
+//
+// The function returns a pointer to the retrieved KeystoneAPI resource.
+// example usage:
+//
+//	  keystoneAPIName := th.CreateKeystoneAPI(novaNames.NovaName.Namespace)
+//		 DeferCleanup(th.DeleteKeystoneAPI, keystoneAPIName)
+//		 keystoneAPI := th.GetKeystoneAPI(keystoneAPIName)
 func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.KeystoneAPI {
 	instance := &keystonev1.KeystoneAPI{}
 	t.Eventually(func(g t.Gomega) {
@@ -81,7 +100,11 @@ func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.Keys
 	return instance
 }
 
-// GetKeystoneService -
+// GetKeystoneService function retrieves and returns the KeystoneService resource
+//
+// Example usage:
+//
+//	keystoneServiceName := th.CreateKeystoneService(namespace)
 func (tc *TestHelper) GetKeystoneService(name types.NamespacedName) *keystonev1.KeystoneService {
 	instance := &keystonev1.KeystoneService{}
 	t.Eventually(func(g t.Gomega) {
@@ -90,7 +113,11 @@ func (tc *TestHelper) GetKeystoneService(name types.NamespacedName) *keystonev1.
 	return instance
 }
 
-// SimulateKeystoneServiceReady -
+// SimulateKeystoneServiceReady simulates the readiness of a KeystoneService
+// resource by seting the Ready condition of the KeystoneService to true
+//
+// Example usage:
+// keystoneServiceName := th.CreateKeystoneService(namespace)
 func (tc *TestHelper) SimulateKeystoneServiceReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		service := tc.GetKeystoneService(name)
@@ -100,7 +127,11 @@ func (tc *TestHelper) SimulateKeystoneServiceReady(name types.NamespacedName) {
 	tc.Logger.Info("Simulated KeystoneService ready", "on", name)
 }
 
-// GetKeystoneEndpoint -
+// GetKeystoneEndpoint retrieves a KeystoneEndpoint resource from the Kubernetes cluster.
+//
+// Example usage:
+//
+//	keystoneEndpointName := th.CreateKeystoneEndpoint(namespace)
 func (tc *TestHelper) GetKeystoneEndpoint(name types.NamespacedName) *keystonev1.KeystoneEndpoint {
 	instance := &keystonev1.KeystoneEndpoint{}
 	t.Eventually(func(g t.Gomega) {
@@ -109,7 +140,13 @@ func (tc *TestHelper) GetKeystoneEndpoint(name types.NamespacedName) *keystonev1
 	return instance
 }
 
-// SimulateKeystoneEndpointReady -
+// SimulateKeystoneEndpointReady function retrieves the KeystoneEndpoint resource and
+// simulates a KeystoneEndpoint resource being marked as ready.
+//
+// Example usage:
+//
+//	keystoneEndpointName := th.CreateKeystoneEndpoint(namespace)
+//	th.SimulateKeystoneEndpointReady(keystoneEndpointName)
 func (tc *TestHelper) SimulateKeystoneEndpointReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		endpoint := tc.GetKeystoneEndpoint(name)

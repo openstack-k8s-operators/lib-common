@@ -20,10 +20,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetStatefulSet -
+// GetStatefulSet - retrieves a StatefulSet resource.
+//
+// example usage:
+//
+//	th.GetStatefulSet(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.StatefulSet {
 	ss := &appsv1.StatefulSet{}
 	t.Eventually(func(g t.Gomega) {
@@ -32,15 +35,12 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 	return ss
 }
 
-// ListStatefulSets -
-func (tc *TestHelper) ListStatefulSets(namespace string) *appsv1.StatefulSetList {
-	sss := &appsv1.StatefulSetList{}
-	t.Expect(tc.K8sClient.List(tc.Ctx, sss, client.InNamespace(namespace))).Should(t.Succeed())
-	return sss
-
-}
-
-// SimulateStatefulSetReplicaReady -
+// SimulateStatefulSetReplicaReady retrieves the StatefulSet  and simulates
+// a ready state for a StatefulSet's replica in a Kubernetes cluster.
+//
+// example usage:
+//
+//	th.SimulateStatefulSetReplicaReady(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		ss := tc.GetStatefulSet(name)
@@ -52,7 +52,15 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 	tc.Logger.Info("Simulated statefulset success", "on", name)
 }
 
-// SimulateStatefulSetReplicaReadyWithPods -
+// SimulateStatefulSetReplicaReadyWithPods simulates a StatefulSet with ready replicas
+// by creating and updating the corresponding Pods.
+//
+// example usage:
+//
+//		th.SimulateStatefulSetReplicaReadyWithPods(
+//	 	cell0.ConductorStatefulSetName,
+//	 	map[string][]string{cell0.CellName.Namespace + "/internalapi": {"10.0.0.1"}},
+//	 )
 func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.NamespacedName, networkIPs map[string][]string) {
 	ss := tc.GetStatefulSet(name)
 	for i := 0; i < int(*ss.Spec.Replicas); i++ {

@@ -22,7 +22,6 @@ import (
 	"github.com/onsi/gomega"
 
 	"github.com/go-logr/logr"
-	ginkgo "github.com/onsi/ginkgo/v2"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
@@ -37,10 +36,10 @@ type conditionsGetter interface {
 	GetConditions(name types.NamespacedName) condition.Conditions
 }
 
-// ConditionGetterFunc - recieves custom condition getters for operators specific needs
+// ConditionGetterFunc recieves custom condition getters for operators specific needs
 type ConditionGetterFunc func(name types.NamespacedName) condition.Conditions
 
-// GetConditions - implements conditions getter for operators specific needs
+// GetConditions implements conditions getter for operators specific needs
 func (f ConditionGetterFunc) GetConditions(name types.NamespacedName) condition.Conditions {
 	return f(name)
 }
@@ -85,18 +84,22 @@ func getTestTimeout(defaultTimeout time.Duration) time.Duration {
 	return time.Duration(timeout) * time.Second
 }
 
-// SkipInExistingCluster -
-func (tc *TestHelper) SkipInExistingCluster(message string) {
-	s := os.Getenv("USE_EXISTING_CLUSTER")
-	v, err := strconv.ParseBool(s)
-
-	if err == nil && v {
-		ginkgo.Skip("Skipped running against existing cluster. " + message)
-	}
-
-}
-
-// CreateUnstructured -
+// CreateUnstructured creates an unstructured Kubernetes object from a map of key-value pairs.
+//
+// Example usage:
+//
+//	  rawObj := map[string]interface{}{
+//	    "apiVersion": "nova.openstack.org/v1beta1",
+//			"kind":       "NovaAPI",
+//			"metadata": map[string]interface{}{
+//				"name":      name.Name,
+//				"namespace": name.Namespace,
+//			},
+//			"spec": spec,
+//	    },
+//	    ...
+//	  }
+//	  unstructuredObj := tc.CreateUnstructured(rawObj)
 func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstructured.Unstructured {
 	tc.Logger.Info("Creating", "raw", rawObj)
 	unstructuredObj := &unstructured.Unstructured{Object: rawObj}
@@ -107,7 +110,7 @@ func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstruc
 	return unstructuredObj
 }
 
-// GetName -
+// GetName function is used only in lib-common
 func (tc *TestHelper) GetName(obj client.Object) types.NamespacedName {
 	return types.NamespacedName{Namespace: obj.GetNamespace(), Name: obj.GetName()}
 }

@@ -20,11 +20,13 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetSecret -
+// GetSecret fetches a Secret resource
+//
+// Example usage:
+//
+//	secret := th.GetSecret(types.NamespacedName{Name: "test-secret", Namespace: "test-namespace"})
 func (tc *TestHelper) GetSecret(name types.NamespacedName) corev1.Secret {
 	secret := &corev1.Secret{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -34,17 +36,11 @@ func (tc *TestHelper) GetSecret(name types.NamespacedName) corev1.Secret {
 	return *secret
 }
 
-// ListSecrets -
-func (tc *TestHelper) ListSecrets(namespace string) corev1.SecretList {
-	secrets := &corev1.SecretList{}
-	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.K8sClient.List(tc.Ctx, secrets, client.InNamespace(namespace))).Should(gomega.Succeed())
-	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
-
-	return *secrets
-}
-
-// CreateSecret -
+// CreateSecret creates a new Secret resource with provided data.
+//
+// Example usage:
+//
+//	secret := th.CreateSecret(types.NamespacedName{Name: "test-secret", Namespace: "test-namespace"}, map[string][]byte{"key": []byte("value")})
 func (tc *TestHelper) CreateSecret(name types.NamespacedName, data map[string][]byte) *corev1.Secret {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -60,12 +56,21 @@ func (tc *TestHelper) CreateSecret(name types.NamespacedName, data map[string][]
 	return secret
 }
 
-// CreateEmptySecret -
+// CreateEmptySecret creates a new empty Secret resource .
+//
+// Example usage:
+//
+//	secret := th.CreateSecret(types.NamespacedName{Name: "test-secret", Namespace: "test-namespace"})
 func (tc *TestHelper) CreateEmptySecret(name types.NamespacedName) *corev1.Secret {
 	return tc.CreateSecret(name, map[string][]byte{})
 }
 
-// DeleteSecret -
+// DeleteSecret deletes a Secret resource
+//
+// Example usage:
+//
+//	CreateNovaExternalComputeSSHSecret(sshSecretName)
+//	DeferCleanup(th.DeleteSecret, sshSecretName)
 func (tc *TestHelper) DeleteSecret(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		secret := &corev1.Secret{}

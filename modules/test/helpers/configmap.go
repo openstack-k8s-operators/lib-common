@@ -18,13 +18,15 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GetConfigMap -
+// GetConfigMap retrieves a ConfigMap resource from a k8s cluster.
+//
+// Example usage:
+// cm := th.GetConfigMap(types.NamespacedName{Namespace: "default", Name: "example-configmap"})
 func (tc *TestHelper) GetConfigMap(name types.NamespacedName) *corev1.ConfigMap {
 	cm := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -34,7 +36,11 @@ func (tc *TestHelper) GetConfigMap(name types.NamespacedName) *corev1.ConfigMap 
 	return cm
 }
 
-// ListConfigMaps -
+// ListConfigMaps retrieves a list of ConfigMap resources from a specific namespace
+//
+// Example usage:
+//
+//	cms := th.ListConfigMaps(novaNames.MetadataName.Name)
 func (tc *TestHelper) ListConfigMaps(namespace string) *corev1.ConfigMapList {
 	cms := &corev1.ConfigMapList{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -44,21 +50,15 @@ func (tc *TestHelper) ListConfigMaps(namespace string) *corev1.ConfigMapList {
 	return cms
 }
 
-// CreateEmptyConfigMap -
-func (tc *TestHelper) CreateEmptyConfigMap(name types.NamespacedName) *corev1.ConfigMap {
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name.Name,
-			Namespace: name.Namespace,
-		},
-		Data: map[string]string{},
-	}
-	gomega.Expect(tc.K8sClient.Create(tc.Ctx, cm)).Should(gomega.Succeed())
-
-	return cm
-}
-
-// DeleteConfigMap -
+// DeleteConfigMap deletes a ConfigMap resource from a Kubernetes cluster.
+//
+// Example usage:
+//
+//	th.DeleteConfigMap(types.NamespacedName{Namespace: "default", Name: "example-configmap"})
+//
+// or
+//
+//	DeferCleanup(th.DeleteConfigMap, inventoryName)
 func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		configMap := &corev1.ConfigMap{}
@@ -76,7 +76,12 @@ func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
 
-// CreateConfigMap -
+// CreateConfigMap creates a new ConfigMap resource with the provided data.
+//
+// Example usage:
+//
+//	data := map[string]interface{}{"key": "value"}
+//	cm := th.CreateConfigMap(types.NamespacedName{Namespace: "default", Name: "example-configmap"}, data)
 func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string]interface{}) client.Object {
 	raw := map[string]interface{}{
 		"apiVersion": "v1",
@@ -91,7 +96,7 @@ func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string
 	return tc.CreateUnstructured(raw)
 }
 
-// AssertConfigMapExists -
+// AssertConfigMapExists used only in lib-common tests
 func (tc *TestHelper) AssertConfigMapExists(name types.NamespacedName) *corev1.ConfigMap {
 	instance := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {

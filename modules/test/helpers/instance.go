@@ -21,7 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// DeleteInstance -
+// DeleteInstance deletes a specified resource and waits until it's fully removed from the cluster.
+//
+// Example usage:
+//
+//	DeferCleanup(th.DeleteInstance, metadata_instance)
 func (tc *TestHelper) DeleteInstance(instance client.Object, opts ...client.DeleteOption) {
 	// We have to wait for the controller to fully delete the instance
 	tc.Logger.Info(

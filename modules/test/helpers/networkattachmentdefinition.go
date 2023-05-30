@@ -23,7 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// CreateNetworkAttachmentDefinition -
+// CreateNetworkAttachmentDefinition creates a new NetworkAttachmentDefinition resource.
+//
+// Example usage:
+//
+//	internalAPINADName := types.NamespacedName{Namespace: "testname", Name: "internalapi"}
+//	nad := th.CreateNetworkAttachmentDefinition(internalAPINADName)
 func (tc *TestHelper) CreateNetworkAttachmentDefinition(name types.NamespacedName) client.Object {
 	instance := &networkv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{

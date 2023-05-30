@@ -21,7 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// AssertRouteExists -
+// AssertRouteExists fetches a Route resource and asserts that the operation is successful.
+//
+// Example usage:
+//
+//	th.AssertRouteExists(types.NamespacedName{Namespace: novaNames.APIName.Namespace, Name: "nova-public"})
 func (tc *TestHelper) AssertRouteExists(name types.NamespacedName) *routev1.Route {
 	instance := &routev1.Route{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -31,7 +35,11 @@ func (tc *TestHelper) AssertRouteExists(name types.NamespacedName) *routev1.Rout
 	return instance
 }
 
-// AssertRouteNotExists -
+// AssertRouteNotExists fetch a Route resource and asserts that the resource does not exist.
+//
+// Example usage:
+//
+//	th.AssertRouteNotExists(types.NamespacedName{Name: "test-route", Namespace: "test-namespace"})
 func (tc *TestHelper) AssertRouteNotExists(name types.NamespacedName) *routev1.Route {
 	instance := &routev1.Route{}
 	gomega.Consistently(func(g gomega.Gomega) {

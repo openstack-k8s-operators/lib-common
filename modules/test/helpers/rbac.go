@@ -21,7 +21,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// GetServiceAccount -
+// GetServiceAccount fetches a ServiceAccount resource
+//
+// Example usage:
+//
+//	th.GetServiceAccount(types.NamespacedName{Name: "test-service-account", Namespace: "test-namespace"})
 func (tc *TestHelper) GetServiceAccount(name types.NamespacedName) *corev1.ServiceAccount {
 	instance := &corev1.ServiceAccount{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -31,7 +35,11 @@ func (tc *TestHelper) GetServiceAccount(name types.NamespacedName) *corev1.Servi
 	return instance
 }
 
-// GetRole -
+// GetRole fetches a Role resource.
+//
+// Example usage:
+//
+//	th.GetRole(types.NamespacedName{Name: "test-role", Namespace: "test-namespace"})
 func (tc *TestHelper) GetRole(name types.NamespacedName) *rbacv1.Role {
 	instance := &rbacv1.Role{}
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -41,7 +49,11 @@ func (tc *TestHelper) GetRole(name types.NamespacedName) *rbacv1.Role {
 	return instance
 }
 
-// GetRoleBinding -
+// GetRoleBinding - fetches a RoleBinding resource
+//
+// Example usage:
+//
+//	th.GetRoleBinding(types.NamespacedName{Name: "test-rolebinding", Namespace: "test-namespace"})
 func (tc *TestHelper) GetRoleBinding(name types.NamespacedName) *rbacv1.RoleBinding {
 	instance := &rbacv1.RoleBinding{}
 	gomega.Eventually(func(g gomega.Gomega) {
