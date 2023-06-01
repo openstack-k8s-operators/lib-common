@@ -111,7 +111,7 @@ const (
 	ReadyInitMessage = "Setup started"
 
 	// ReadyMessage
-	ReadyMessage = "Setup complete"
+	ReadyMessage = "Setup completed"
 
 	//
 	// InputReady condition messages
@@ -120,7 +120,7 @@ const (
 	InputReadyInitMessage = "Input data not checked"
 
 	// InputReadyMessage
-	InputReadyMessage = "Input data complete"
+	InputReadyMessage = "Input data checked"
 
 	// InputReadyWaiting
 	InputReadyWaitingMessage = "Input data resources missing"
@@ -132,28 +132,28 @@ const (
 	// ServiceConfig condition messages
 	//
 	// ServiceConfigReadyInitMessage
-	ServiceConfigReadyInitMessage = "Service config create not started"
+	ServiceConfigReadyInitMessage = "Service config not created"
 
 	// ServiceConfigReadyMessage
-	ServiceConfigReadyMessage = "Service config create completed"
+	ServiceConfigReadyMessage = "Service config created"
 
 	// ServiceConfigReadyErrorMessage
-	ServiceConfigReadyErrorMessage = "Service config create error occurred %s"
+	ServiceConfigReadyErrorMessage = "Service config creation error occurred %s"
 
 	//
 	// DBReady condition messages
 	//
 	// DBReadyInitMessage
-	DBReadyInitMessage = "DB create not started"
+	DBReadyInitMessage = "DB not created"
 
 	// DBReadyMessage
-	DBReadyMessage = "DB create completed"
+	DBReadyMessage = "DB created"
 
 	// DBReadyRunningMessage
-	DBReadyRunningMessage = "DB create job still running"
+	DBReadyRunningMessage = "DB creation in progress"
 
 	// DBReadyErrorMessage
-	DBReadyErrorMessage = "DB create job error occurred %s"
+	DBReadyErrorMessage = "DB creation error occurred %s"
 
 	//
 	// DBSync condition messages
@@ -165,10 +165,10 @@ const (
 	DBSyncReadyMessage = "DBsync completed"
 
 	// DBSyncReadyRunning
-	DBSyncReadyRunningMessage = "DBsync job still running"
+	DBSyncReadyRunningMessage = "DBsync in progress"
 
 	// DBSyncReadyErrorMessage
-	DBSyncReadyErrorMessage = "DBsync job error occurred %s"
+	DBSyncReadyErrorMessage = "DBsync error occurred %s"
 
 	//
 	// ExposeService condition messages
@@ -219,10 +219,10 @@ const (
 	// NetworkAttachmentsReady condition messages
 	//
 	// NetworkAttachmentsReadyInitMessage
-	NetworkAttachmentsReadyInitMessage = "NetworkAttachments not started"
+	NetworkAttachmentsReadyInitMessage = "NetworkAttachments not checked"
 
 	// NetworkAttachmentsReadyMessage
-	NetworkAttachmentsReadyMessage = "NetworkAttachments completed"
+	NetworkAttachmentsReadyMessage = "NetworkAttachments checked"
 
 	// NetworkAttachmentsReadyWaitingMessage
 	NetworkAttachmentsReadyWaitingMessage = "NetworkAttachment resources missing: %s"
@@ -234,10 +234,10 @@ const (
 	// CronJobReady condition messages
 	//
 	// CronJobReadyInitMessage
-	CronJobReadyInitMessage = "CronJob not started"
+	CronJobReadyInitMessage = "CronJob not created"
 
 	// CronJobReadyMessage
-	CronJobReadyMessage = "CronJob completed"
+	CronJobReadyMessage = "CronJob created"
 
 	// CronJobReadyRunningMessage
 	CronJobReadyRunningMessage = "CronJob in progress"
