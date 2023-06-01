@@ -239,9 +239,6 @@ const (
 	// CronJobReadyMessage
 	CronJobReadyMessage = "CronJob completed"
 
-	// CronJobReadyRunningMessage
-	CronJobReadyRunningMessage = "CronJob in progress"
-
 	// CronJobReadyErrorMessage
 	CronJobReadyErrorMessage = "CronJob error occurred %s"
 
