@@ -78,8 +78,8 @@ func ExposeEndpoints(
 	endpointSelector map[string]string,
 	endpoints map[Endpoint]Data,
 	timeout time.Duration,
-) (map[string]string, ctrl.Result, error) {
-	endpointMap := make(map[string]string)
+) (map[Endpoint]string, ctrl.Result, error) {
+	endpointMap := make(map[Endpoint]string)
 
 	for endpointType, data := range endpoints {
 
@@ -214,7 +214,7 @@ func ExposeEndpoints(
 		if err != nil {
 			return endpointMap, ctrl.Result{}, err
 		}
-		endpointMap[string(endpointType)] = apiEndpoint.String() + data.Path
+		endpointMap[endpointType] = apiEndpoint.String() + data.Path
 	}
 
 	return endpointMap, ctrl.Result{}, nil
