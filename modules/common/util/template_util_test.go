@@ -220,6 +220,27 @@ func TestGetTemplateData(t *testing.T) {
 			error: true,
 		},
 		{
+			name: "Render TemplateTypeConfig templates with incomplete ConfigOptions and missingkey=default",
+			tmpl: Template{
+				Name:         "testservice",
+				Namespace:    "somenamespace",
+				Type:         TemplateTypeConfig,
+				InstanceType: "testservice",
+				Version:      "",
+				ConfigOptions: map[string]interface{}{
+					"Count": 1,
+					"Upper": "BAR",
+				},
+				AdditionalTemplate: map[string]string{},
+				MissingKey:         "default",
+			},
+			want: map[string]string{
+				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
+				"foo.conf":    "username = <no value>\ncount = 1\nadd = 3\nlower = bar\n",
+			},
+			error: false,
+		},
+		{
 			name: "Render TemplateTypeConfig templates with AdditionamTemplate and incomplete ConfigOptions",
 			tmpl: Template{
 				Name:         "testservice",

@@ -57,6 +57,7 @@ type Template struct {
 	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
 	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
 	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
+	MissingKey         string                 // Response to indexing a map with a key that is not present.
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -121,7 +122,7 @@ func GetAllTemplates(path string, kind string, templateType string, version stri
 
 // ExecuteTemplate creates a template from the file and
 // execute it with the specified data
-func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
+func ExecuteTemplate(templateFile string, data interface{}, missingKey string) (string, error) {
 
 	b, err := os.ReadFile(templateFile)
 	if err != nil {
@@ -131,7 +132,7 @@ func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 
 	file := string(b)
 
-	renderedTemplate, err := ExecuteTemplateData(file, data)
+	renderedTemplate, err := ExecuteTemplateData(file, data, missingKey)
 	if err != nil {
 		return "", err
 	}
@@ -150,14 +151,14 @@ func lower(s string) string {
 
 // ExecuteTemplateData creates a template from string and
 // execute it with the specified data
-func ExecuteTemplateData(templateData string, data interface{}) (string, error) {
+func ExecuteTemplateData(templateData string, data interface{}, missingKey string) (string, error) {
 
 	var buff bytes.Buffer
 	funcs := template.FuncMap{
 		"add":   add,
 		"lower": lower,
 	}
-	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData)
+	tmpl, err := template.New("tmp").Option(fmt.Sprintf("missingkey=%s", missingKey)).Funcs(funcs).Parse(templateData)
 	if err != nil {
 		return "", err
 	}
@@ -170,7 +171,7 @@ func ExecuteTemplateData(templateData string, data interface{}) (string, error) 
 
 // ExecuteTemplateFile - creates a template from the file and
 // execute it with the specified data
-func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
+func ExecuteTemplateFile(filename string, data interface{}, missingKey string) (string, error) {
 
 	templates := os.Getenv("OPERATOR_TEMPLATES")
 	filepath := ""
@@ -196,7 +197,7 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		"add":   add,
 		"lower": lower,
 	}
-	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(file)
+	tmpl, err := template.New("tmp").Option(fmt.Sprintf("missingkey=%s", missingKey)).Funcs(funcs).Parse(file)
 	if err != nil {
 		return "", err
 	}
@@ -221,13 +222,18 @@ func GetTemplateData(t Template) (map[string]string, error) {
 
 	data := make(map[string]string)
 
+	missingKey := "error"
+	if t.MissingKey != "" {
+		missingKey = t.MissingKey
+	}
+
 	if t.Type != TemplateTypeNone {
 		// get all scripts templates which are in ../templesPath/cr.Kind/CMType/<OSPVersion - optional>
 		templatesFiles := GetAllTemplates(templatesPath, t.InstanceType, string(t.Type), string(t.Version))
 
 		// render all template files
 		for _, file := range templatesFiles {
-			renderedData, err := ExecuteTemplate(file, opts)
+			renderedData, err := ExecuteTemplate(file, opts, missingKey)
 			if err != nil {
 				return data, err
 			}
@@ -237,7 +243,7 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	// add additional template files from different directory, which
 	// e.g. can be common to multiple controllers
 	for filename, file := range t.AdditionalTemplate {
-		renderedTemplate, err := ExecuteTemplateFile(file, opts)
+		renderedTemplate, err := ExecuteTemplateFile(file, opts, missingKey)
 		if err != nil {
 			return nil, err
 		}
