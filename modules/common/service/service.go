@@ -52,6 +52,11 @@ func (s *Service) GetClusterIPs() []string {
 	return s.clusterIPs
 }
 
+// GetIPFamilies - returns the IP families of the created service
+func (s *Service) GetIPFamilies() []corev1.IPFamily {
+	return s.ipFamilies
+}
+
 // GetExternalIPs - returns a list of external IPs of the created service
 func (s *Service) GetExternalIPs() []string {
 	return s.externalIPs
@@ -158,6 +163,7 @@ func (s *Service) CreateOrPatch(
 
 	// update the service instance with the ip/host information
 	s.clusterIPs = service.Spec.ClusterIPs
+	s.ipFamilies = service.Spec.IPFamilies
 
 	if service.Spec.Type == corev1.ServiceTypeLoadBalancer {
 		if len(service.Status.LoadBalancer.Ingress) > 0 {

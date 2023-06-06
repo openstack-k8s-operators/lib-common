@@ -28,6 +28,7 @@ type Service struct {
 	timeout         time.Duration
 	clusterIPs      []string
 	externalIPs     []string
+	ipFamilies      []corev1.IPFamily
 	serviceHostname string
 }
 
