@@ -52,7 +52,15 @@ func TestDistributePods(t *testing.T) {
 	t.Run("Default pod distribution", func(t *testing.T) {
 		g := NewWithT(t)
 
-		d := DistributePods("ThisSelector", []string{"selectorValue1", "selectorValue2"}, "ThisTopologyKey")
+		d := DistributePods(
+			map[string][]string{
+				"ThisSelector": {
+					"selectorValue1",
+					"selectorValue2",
+				},
+			},
+			"ThisTopologyKey",
+		)
 
 		g.Expect(d).To(BeEquivalentTo(affinityObj))
 	})
