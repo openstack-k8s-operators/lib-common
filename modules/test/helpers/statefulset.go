@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"encoding/json"
+
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	t "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -70,6 +71,15 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		}
 		pod.ObjectMeta.Namespace = name.Namespace
 		pod.ObjectMeta.GenerateName = name.Name
+
+		// NOTE(gibi): If there is a mount that refers to a volume created via
+		// persistent volume claim then that mount won't have a corresponding
+		// volume created in EnvTest as we are not simulating the k8s volume
+		// claim logic here at the moment. Therefore the Pod create would fail
+		// with a missing volume. So to avoid that we remove every mount and
+		// volume from the pod we create here.
+		pod.Spec.Volumes = []corev1.Volume{}
+		pod.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{}
 
 		var netStatus []networkv1.NetworkStatus
 		for network, IPs := range networkIPs {
