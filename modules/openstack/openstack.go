@@ -40,6 +40,7 @@ type AuthOpts struct {
 	TenantName string
 	DomainName string
 	Region     string
+	Scope      *gophercloud.AuthScope
 }
 
 // NewOpenStack creates a new new instance of the openstack struct from a config struct
@@ -47,12 +48,16 @@ func NewOpenStack(
 	log logr.Logger,
 	cfg AuthOpts,
 ) (*OpenStack, error) {
+
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: cfg.AuthURL,
 		Username:         cfg.Username,
 		Password:         cfg.Password,
 		TenantName:       cfg.TenantName,
 		DomainName:       cfg.DomainName,
+	}
+	if cfg.Scope != nil {
+		opts.Scope = cfg.Scope
 	}
 
 	provider, err := openstack.AuthenticatedClient(opts)
