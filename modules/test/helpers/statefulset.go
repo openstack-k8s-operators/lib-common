@@ -79,7 +79,9 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		// with a missing volume. So to avoid that we remove every mount and
 		// volume from the pod we create here.
 		pod.Spec.Volumes = []corev1.Volume{}
-		pod.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{}
+		for i := range pod.Spec.Containers {
+			pod.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{}
+		}
 
 		var netStatus []networkv1.NetworkStatus
 		for network, IPs := range networkIPs {
