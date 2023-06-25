@@ -61,9 +61,10 @@ func GenericRoute(routeInfo *GenericRouteDetails) *routev1.Route {
 
 	result := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeInfo.Name,
-			Namespace: routeInfo.Namespace,
-			Labels:    routeInfo.Labels,
+			Name:        routeInfo.Name,
+			Namespace:   routeInfo.Namespace,
+			Labels:      routeInfo.Labels,
+			Annotations: routeInfo.Annotations,
 		},
 		Spec: routev1.RouteSpec{
 			To:   serviceRef,
@@ -83,8 +84,9 @@ func (r *Route) CreateOrPatch(
 ) (ctrl.Result, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      r.route.Name,
-			Namespace: r.route.Namespace,
+			Name:        r.route.Name,
+			Namespace:   r.route.Namespace,
+			Annotations: r.route.Annotations,
 		},
 	}
 

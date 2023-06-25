@@ -77,6 +77,7 @@ func ExposeEndpoints(
 	serviceName string,
 	endpointSelector map[string]string,
 	endpoints map[Endpoint]Data,
+	routeAnnotations map[string]string,
 	timeout time.Duration,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
@@ -181,6 +182,7 @@ func ExposeEndpoints(
 						Labels:         exportLabels,
 						ServiceName:    endpointName,
 						TargetPortName: endpointName,
+						Annotations:    routeAnnotations,
 					}),
 					exportLabels,
 					timeout,
