@@ -110,8 +110,8 @@ type RegisteredLimit struct {
 	DefaultLimit int `json:"default_limit"`
 }
 
-// CreateRegisteredLimit - create limit in keystone (global across projects) if it does not exist
-func (o *OpenStack) CreateRegisteredLimit(
+// CreateOrUpdateRegisteredLimit - create or update limit in keystone (global across projects) if it does not exist
+func (o *OpenStack) CreateOrUpdateRegisteredLimit(
 	log logr.Logger,
 	l RegisteredLimit,
 ) (string, error) {
@@ -128,7 +128,17 @@ func (o *OpenStack) CreateRegisteredLimit(
 	}
 
 	if len(allLimits) == 1 {
+		// Limit already registered, let's update the limit with new default values
 		limitID = allLimits[0].ID
+		updateOpts := registeredlimits.UpdateOpts{
+			DefaultLimit: &l.DefaultLimit,
+		}
+		log.Info(fmt.Sprintf("Updating registered limit %s", l.ResourceName))
+		_, err := registeredlimits.Update(o.osclient, limitID, updateOpts).Extract()
+		if err != nil {
+			return limitID, err
+		}
+		return limitID, nil
 	} else if len(allLimits) == 0 {
 		createOpts := registeredlimits.BatchCreateOpts{
 			registeredlimits.CreateOpts{
@@ -150,4 +160,74 @@ func (o *OpenStack) CreateRegisteredLimit(
 	}
 
 	return limitID, nil
+}
+
+// DeleteRegisteredLimit - delete limit from keystone
+func (o *OpenStack) DeleteRegisteredLimit(
+	log logr.Logger,
+	registeredLimitID string,
+) error {
+	log.Info(fmt.Sprintf("Deleting registered limit %s", registeredLimitID))
+	err := registeredlimits.Delete(o.osclient, registeredLimitID).ExtractErr()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetRegisteredLimit - Get existing registered limit by ID
+func (o *OpenStack) GetRegisteredLimit(
+	log logr.Logger,
+	registeredLimitID string,
+) (*registeredlimits.RegisteredLimit, error) {
+	log.Info(fmt.Sprintf("Fetching registered limit %s", registeredLimitID))
+	registeredLimit, err := registeredlimits.Get(o.osclient, registeredLimitID).Extract()
+	if err != nil {
+		return nil, err
+	}
+	return registeredLimit, nil
+}
+
+// ListRegisteredLimitsByResourceName - List all registered limits filtered by resource name
+func (o *OpenStack) ListRegisteredLimitsByResourceName(
+	log logr.Logger,
+	resourceName string,
+) ([]registeredlimits.RegisteredLimit, error) {
+	listOpts := registeredlimits.ListOpts{
+		ResourceName: resourceName,
+	}
+
+	log.Info(fmt.Sprintf("Fetching registered limit %s", resourceName))
+	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages()
+	if err != nil {
+		return nil, err
+	}
+
+	allLimits, err := registeredlimits.ExtractRegisteredLimits(allPages)
+	if err != nil {
+		return nil, err
+	}
+	return allLimits, nil
+}
+
+// ListRegisteredLimitsByServiceID - List all registered limits filtered by service id
+func (o *OpenStack) ListRegisteredLimitsByServiceID(
+	log logr.Logger,
+	serviceID string,
+) ([]registeredlimits.RegisteredLimit, error) {
+	listOpts := registeredlimits.ListOpts{
+		ServiceID: serviceID,
+	}
+
+	log.Info(fmt.Sprintf("Fetching registered limit for service %s", serviceID))
+	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages()
+	if err != nil {
+		return nil, err
+	}
+
+	allLimits, err := registeredlimits.ExtractRegisteredLimits(allPages)
+	if err != nil {
+		return nil, err
+	}
+	return allLimits, nil
 }
