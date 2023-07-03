@@ -9,7 +9,7 @@ require (
 	github.com/onsi/gomega v1.27.6
 	github.com/openstack-k8s-operators/infra-operator/apis v0.0.0-20230609175832-5a9a30056080
 	github.com/openstack-k8s-operators/keystone-operator/api v0.0.0-20230612072624-8ebcfc19377a
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230606033311-3b01713e4d45
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230707063813-c894bf75835d
 	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230602100742-579cb85d242d
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/mod v0.9.0
@@ -18,7 +18,11 @@ require (
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
-require github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect
+require (
+	github.com/imdario/mergo v0.3.15 // indirect
+	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -36,11 +40,9 @@ require (
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -76,3 +78,7 @@ require (
 )
 
 replace github.com/openstack-k8s-operators/lib-common/modules/common => ../common
+
+// mschuppert: map to latest commit from release-4.13 tag
+// must consistent with common module
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7

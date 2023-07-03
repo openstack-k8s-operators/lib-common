@@ -69,7 +69,7 @@ require (
 	k8s.io/component-base v0.26.2 // indirect; indirect // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect; indirect // indirect
-	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 // indirect; indirect // indirect
+	k8s.io/utils v0.0.0-20230313181309-38a27ef9d749 // indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
@@ -79,3 +79,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 )
+
+// mschuppert: map to latest commit from release-4.13 tag
+// must consistent with common module
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7

@@ -52,6 +52,8 @@ type Data struct {
 	Path string
 	// details for metallb service generation
 	MetalLB *MetalLBData
+	// possible overrides for Route
+	RouteOverride *route.OverrideSpec
 }
 
 // MetalLBData - information specific to creating the MetalLB service
@@ -184,6 +186,7 @@ func ExposeEndpoints(
 					}),
 					exportLabels,
 					timeout,
+					data.RouteOverride,
 				)
 
 				ctrlResult, err = route.CreateOrPatch(ctx, h)
