@@ -18,6 +18,16 @@ limitations under the License.
 
 package condition
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
+// Common Condition Statuses used by API objects
+const (
+	// ConditionDegraded defines the status where a resource is ready but degraded (eg deployment have at least one pod but available pods are less than requested numbers)
+	ConditionDegraded corev1.ConditionStatus = "Degraded"
+)
+
 // Common Condition Types used by API objects.
 const (
 	// ReadyCondition defines the Ready condition type that summarizes the operational state of an API object.
@@ -109,6 +119,9 @@ const (
 	//
 	// ReadyInitMessage
 	ReadyInitMessage = "Setup started"
+
+	// ReadyDegraded
+	ReadyDegraded = "Setup degraded"
 
 	// ReadyMessage
 	ReadyMessage = "Setup complete"

@@ -132,6 +132,11 @@ func (conditions *Conditions) MarkUnknown(t Type, reason Reason, messageFormat s
 	conditions.Set(UnknownCondition(t, reason, messageFormat, messageArgs...))
 }
 
+// MarkDegraded sets Status=Degraded for the condition with the given type.
+func (conditions *Conditions) MarkDegraded(t Type, reason Reason, messageFormat string, messageArgs ...interface{}) {
+	conditions.Set(DegradedCondition(t, reason, messageFormat, messageArgs...))
+}
+
 // IsTrue is true if the condition with the given type is True, otherwise it return false
 // if the condition is not True or if the condition does not exist (is nil).
 func (conditions *Conditions) IsTrue(t Type) bool {
@@ -159,6 +164,24 @@ func (conditions *Conditions) IsUnknown(t Type) bool {
 	return true
 }
 
+// IsDegraded is true if the condition with the given type is Degraded, otherwise it return false
+// if the condition is not Degraded or if the condition does not exist (is nil).
+func (conditions *Conditions) IsDegraded(t Type) bool {
+	if c := conditions.Get(t); c != nil {
+		return c.Status == ConditionDegraded
+	}
+	return false
+}
+
+// IsTrueOrDegraded is true if the condition with the given type is Degraded or True,
+// otherwise it return false if the condition is not Degraded or True, or if the condition does not exist (is nil).
+func (conditions *Conditions) IsTrueOrDegraded(t Type) bool {
+	if c := conditions.Get(t); c != nil {
+		return c.Status == corev1.ConditionTrue || c.Status == ConditionDegraded
+	}
+	return false
+}
+
 // AllSubConditionIsTrue validates if all subconditions are True
 // It assumes that all conditions report success via the True status
 func (conditions *Conditions) AllSubConditionIsTrue() bool {
@@ -167,6 +190,20 @@ func (conditions *Conditions) AllSubConditionIsTrue() bool {
 			continue
 		}
 		if c.Status != corev1.ConditionTrue {
+			return false
+		}
+	}
+	return true
+}
+
+// AllSubConditionIsTrueOrDegraded validates if all subconditions are True or Degraded
+// It assumes that all conditions report success via the True/Degraded status
+func (conditions *Conditions) AllSubConditionIsTrueOrDegraded() bool {
+	for _, c := range *conditions {
+		if c.Type == ReadyCondition {
+			continue
+		}
+		if c.Status != corev1.ConditionTrue && c.Status != ConditionDegraded {
 			return false
 		}
 	}
@@ -246,6 +283,17 @@ func UnknownCondition(t Type, reason Reason, messageFormat string, messageArgs .
 		Status:   corev1.ConditionUnknown,
 		Reason:   reason,
 		Severity: SeverityNone,
+		Message:  fmt.Sprintf(messageFormat, messageArgs...),
+	}
+}
+
+// DegradedCondition returns a condition with Status=Unknown and the given type.
+func DegradedCondition(t Type, reason Reason, messageFormat string, messageArgs ...interface{}) *Condition {
+	return &Condition{
+		Type:     t,
+		Status:   ConditionDegraded,
+		Reason:   reason,
+		Severity: SeverityWarning,
 		Message:  fmt.Sprintf(messageFormat, messageArgs...),
 	}
 }
@@ -370,6 +418,12 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 			break
 		}
 
+		if c.Status == ConditionDegraded {
+			mirrorCondition = DegradedCondition(t, c.Reason, c.Message)
+			mirrorCondition.LastTransitionTime = c.LastTransitionTime
+			break
+		}
+
 		// The only valid values for Status is True, False, Unknown are handled
 		// above so if we reach here then we have an invalid status condition.
 		// This should never happen.
@@ -384,8 +438,9 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 // The groups are sorted by Status and Severity.
 func (conditions *Conditions) getConditionGroups() []conditionGroup {
 	// 6 make possible number of groups 3xConditionFalse, 1xConditionTrue
-	// 1xConditionUnknown and a catch all one which should never happen
-	groups := make([]conditionGroup, 6)
+	// 1xConditionUnknown, 1xConditionDegraded and a catch all one which should
+	// never happen
+	groups := make([]conditionGroup, 7)
 
 	for _, condition := range *conditions {
 		added := false
@@ -423,10 +478,12 @@ func groupOrder(c Condition) int {
 		}
 	case corev1.ConditionUnknown:
 		return 3
-	case corev1.ConditionTrue:
+	case ConditionDegraded:
 		return 4
+	case corev1.ConditionTrue:
+		return 5
 	}
 
 	// this hopefully never happens
-	return 5
+	return 6
 }
