@@ -19,7 +19,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -96,11 +95,11 @@ func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string
 	return tc.CreateUnstructured(raw)
 }
 
-// AssertConfigMapExists used only in lib-common tests
-func (tc *TestHelper) AssertConfigMapExists(name types.NamespacedName) *corev1.ConfigMap {
+// AssertConfigMapDoesNotExist ensures the ConfigMap resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertConfigMapDoesNotExist(name types.NamespacedName) {
 	instance := &corev1.ConfigMap{}
 	gomega.Eventually(func(g gomega.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
-	return instance
 }

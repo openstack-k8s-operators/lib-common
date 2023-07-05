@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"github.com/onsi/gomega"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -86,4 +87,13 @@ func (tc *TestHelper) SimulateJobSuccess(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated Job success", "on", name)
+}
+
+// AssertJobDoesNotExist ensures the Job resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertJobDoesNotExist(name types.NamespacedName) {
+	instance := &batchv1.Job{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

@@ -18,9 +18,10 @@ import (
 	"fmt"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	t "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -31,9 +32,9 @@ import (
 //	th.GetStatefulSet(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.StatefulSet {
 	ss := &appsv1.StatefulSet{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, ss)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, ss)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return ss
 }
 
@@ -44,13 +45,13 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 //
 //	th.SimulateStatefulSetReplicaReady(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
 func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
 		ss.Status.Replicas = 1
 		ss.Status.ReadyReplicas = 1
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated statefulset success", "on", name)
 }
 
@@ -98,19 +99,28 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 			)
 		}
 		netStatusAnnotation, err := json.Marshal(netStatus)
-		t.Expect(err).NotTo(t.HaveOccurred())
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 
-		t.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(t.Succeed())
+		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
 	}
 
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
 		ss.Status.Replicas = 1
 		ss.Status.ReadyReplicas = 1
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated statefulset success", "on", name)
+}
+
+// AssertStatefulSetDoesNotExist ensures the StatefulSet resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertStatefulSetDoesNotExist(name types.NamespacedName) {
+	instance := &appsv1.StatefulSet{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

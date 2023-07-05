@@ -18,10 +18,10 @@ import (
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // GetDeployment - retrieves a Deployment resource from cluster.
@@ -125,4 +125,13 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated deployment success", "on", name)
+}
+
+// AssertDeploymentDoesNotExist ensures the Deployment resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertDeploymentDoesNotExist(name types.NamespacedName) {
+	instance := &appsv1.Deployment{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

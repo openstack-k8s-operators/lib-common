@@ -72,3 +72,12 @@ func (tc *TestHelper) DeleteService(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 }
+
+// AssertServiceDoesNotExist ensures the Service resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertServiceDoesNotExist(name types.NamespacedName) {
+	instance := &corev1.Service{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+}

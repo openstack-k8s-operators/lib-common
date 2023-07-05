@@ -87,3 +87,12 @@ func (tc *TestHelper) DeleteSecret(name types.NamespacedName) {
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
+
+// AssertSecretDoesNotExist ensures the Secret resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertSecretDoesNotExist(name types.NamespacedName) {
+	instance := &corev1.Secret{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+}
