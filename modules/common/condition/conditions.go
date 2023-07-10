@@ -56,6 +56,12 @@ const (
 	// CronJobReadyCondition Status=True condition when cron jobs created ok.
 	CronJobReadyCondition Type = "CronJobReady"
 
+	// MemcachedReadyCondition - Indicates the memcached service is ready to be consumed
+	MemcachedReadyCondition Type = "MemcachedReady"
+
+	// RabbitMqTransportURLReadyCondition Status=True condition which indicates if the RabbitMQ TransportURLUrl is ready
+	RabbitMqTransportURLReadyCondition Type = "RabbitMqTransportURLReady"
+
 	// AnsibleEECondition Status=True condition when the AnsibleEE run has been created ok
 	AnsibleEECondition Type = "AnsibleEEReady"
 
@@ -241,6 +247,36 @@ const (
 
 	// CronJobReadyErrorMessage
 	CronJobReadyErrorMessage = "CronJob error occurred %s"
+
+	//
+	// MemcachedReady condition messages
+	//
+	// MemcachedReadyInitMessage -
+	MemcachedReadyInitMessage = " Memcached create not started"
+
+	// MemcachedReadyMessage - Provides the message to clarify memcached has been provisioned
+	MemcachedReadyMessage = " Memcached instance has been provisioned"
+
+	// MemcachedReadyWaitingMessage - Provides the message to clarify memcached has not been provisioned
+	MemcachedReadyWaitingMessage = " Memcached instance has not been provisioned"
+
+	// MemcachedReadyErrorMessage -
+	MemcachedReadyErrorMessage = " Memcached error occurred %s"
+
+	//
+	// RabbitMqTransportURLReady condition messages
+	//
+	// RabbitMqTransportURLReadyInitMessage
+	RabbitMqTransportURLReadyInitMessage = "RabbitMqTransportURL not started"
+
+	// RabbitMqTransportURLReadyRunningMessage
+	RabbitMqTransportURLReadyRunningMessage = "RabbitMqTransportURL creation in progress"
+
+	// RabbitMqTransportURLReadyMessage
+	RabbitMqTransportURLReadyMessage = "RabbitMqTransportURL successfully created"
+
+	// RabbitMqTransportURLReadyErrorMessage
+	RabbitMqTransportURLReadyErrorMessage = "RabbitMqTransportURL error occured %s"
 
 	//
 	// AnsibleEEReady condition messages
