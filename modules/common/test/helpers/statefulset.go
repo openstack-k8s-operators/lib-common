@@ -82,6 +82,9 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		for i := range pod.Spec.Containers {
 			pod.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{}
 		}
+		for i := range pod.Spec.InitContainers {
+			pod.Spec.InitContainers[i].VolumeMounts = []corev1.VolumeMount{}
+		}
 
 		var netStatus []networkv1.NetworkStatus
 		for network, IPs := range networkIPs {
