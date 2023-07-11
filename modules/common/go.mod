@@ -9,7 +9,6 @@ require (
 	github.com/onsi/ginkgo/v2 v2.9.2
 	github.com/onsi/gomega v1.27.6
 	github.com/openshift/api v3.9.0+incompatible
-	github.com/openstack-k8s-operators/lib-common/modules/test v0.0.0-20230612101529-af40f24b2b62
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.3
@@ -76,4 +75,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/openstack-k8s-operators/lib-common/modules/test => ../test
+require (
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
+)
