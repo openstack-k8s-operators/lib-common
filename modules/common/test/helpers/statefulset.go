@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	t "github.com/onsi/gomega"
@@ -70,7 +71,7 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 			Spec:       ss.Spec.Template.Spec,
 		}
 		pod.ObjectMeta.Namespace = name.Namespace
-		pod.ObjectMeta.GenerateName = name.Name
+		pod.ObjectMeta.Name = fmt.Sprintf("%s-%d", name.Name, i)
 
 		// NOTE(gibi): If there is a mount that refers to a volume created via
 		// persistent volume claim then that mount won't have a corresponding
@@ -81,6 +82,9 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		pod.Spec.Volumes = []corev1.Volume{}
 		for i := range pod.Spec.Containers {
 			pod.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{}
+		}
+		for i := range pod.Spec.InitContainers {
+			pod.Spec.InitContainers[i].VolumeMounts = []corev1.VolumeMount{}
 		}
 
 		var netStatus []networkv1.NetworkStatus
