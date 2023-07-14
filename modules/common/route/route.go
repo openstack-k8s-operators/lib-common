@@ -53,6 +53,11 @@ func (r *Route) GetHostname() string {
 	return r.hostname
 }
 
+// IsTLS - returns true if spec.TLS is configured for the route
+func (r *Route) IsTLS() bool {
+	return r.route.Spec.TLS != nil
+}
+
 // GenericRoute func
 func GenericRoute(routeInfo *GenericRouteDetails) *routev1.Route {
 	serviceRef := routev1.RouteTargetReference{

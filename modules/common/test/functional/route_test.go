@@ -81,6 +81,7 @@ var _ = Describe("route package", func() {
 
 		_, err := r.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
+		Expect(r.IsTLS()).To(BeFalse())
 		rv1 := th.AssertRouteExists(types.NamespacedName{Namespace: namespace, Name: "test-route"})
 		Expect(rv1.Annotations["anno"]).To(Equal("a"))
 		Expect(rv1.Annotations["replace"]).To(Equal("a"))
@@ -90,7 +91,6 @@ var _ = Describe("route package", func() {
 		Expect(rv1.Spec.Port.TargetPort.IntVal).To(Equal(int32(80)))
 		Expect(rv1.Spec.To.Name).To(Equal("my-service"))
 		Expect(*rv1.Spec.To.Weight).To(Equal(int32(100)))
-
 	})
 
 	It("merges labels to the route", func() {
@@ -286,6 +286,7 @@ var _ = Describe("route package", func() {
 
 		_, err := r.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
+		Expect(r.IsTLS()).To(BeTrue())
 		rv1 := th.AssertRouteExists(types.NamespacedName{Namespace: namespace, Name: "test-route"})
 		Expect(rv1.Spec.TLS.Termination).To(Equal(routev1.TLSTerminationEdge))
 		Expect(rv1.Spec.TLS.Certificate).To(Equal("cert"))

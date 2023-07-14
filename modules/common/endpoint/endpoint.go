@@ -33,6 +33,9 @@ import (
 // Endpoint - typedef to enumerate Endpoint verbs
 type Endpoint string
 
+// Protocol of the endpoint (http/https)
+type Protocol string
+
 const (
 	// EndpointAdmin - admin endpoint
 	EndpointAdmin Endpoint = "admin"
@@ -42,6 +45,12 @@ const (
 	EndpointPublic Endpoint = "public"
 	// AnnotationHostnameKey -
 	AnnotationHostnameKey = "dnsmasq.network.openstack.org/hostname"
+	// ProtocolHTTP -
+	ProtocolHTTP Protocol = "http"
+	// ProtocolHTTPS -
+	ProtocolHTTPS Protocol = "https"
+	// ProtocolNone -
+	ProtocolNone Protocol = ""
 )
 
 // Data - information for generation of K8S services and Keystone endpoint URLs
@@ -54,6 +63,8 @@ type Data struct {
 	MetalLB *MetalLBData
 	// possible overrides for Route
 	RouteOverride *route.OverrideSpec
+	// protocol of the endpoint (http/https/none)
+	Protocol *Protocol
 }
 
 // MetalLBData - information specific to creating the MetalLB service
@@ -175,7 +186,6 @@ func ExposeEndpoints(
 			// Create the route if it is public endpoint
 			if endpointType == EndpointPublic {
 				// Create the route
-				// TODO TLS
 				route := route.NewRoute(
 					route.GenericRoute(&route.GenericRouteDetails{
 						Name:           endpointName,
@@ -189,6 +199,8 @@ func ExposeEndpoints(
 					data.RouteOverride,
 				)
 
+				// TODO create TLS cert if non provided in override and data.Protocol == ProtocolHTTPS
+
 				ctrlResult, err = route.CreateOrPatch(ctx, h)
 				if err != nil {
 					return endpointMap, ctrlResult, err
@@ -197,23 +209,20 @@ func ExposeEndpoints(
 				}
 				// create route - end
 
+				// set data.Protocol to https if the route has any spec.TLS configured
+				// (either automated, see TODO comment above, or via override)
+				if route.IsTLS() {
+					data.Protocol = PtrProtocol(ProtocolHTTPS)
+				}
+
 				hostname = route.GetHostname()
 			}
 		}
 
 		// Update instance status with service endpoint url from route host information
-		var protocol string
-
-		// TODO: need to support https default here
-		if !strings.HasPrefix(hostname, "http") {
-			protocol = "http://"
-		} else {
-			protocol = ""
-		}
-
 		// Do not include data.Path in parsing check because %(project_id)s
 		// is invalid without being encoded, but they should not be encoded in the actual endpoint
-		apiEndpoint, err := url.Parse(protocol + hostname)
+		apiEndpoint, err := url.Parse(endptProtocol(data.Protocol) + hostname)
 		if err != nil {
 			return endpointMap, ctrl.Result{}, err
 		}
@@ -221,4 +230,20 @@ func ExposeEndpoints(
 	}
 
 	return endpointMap, ctrl.Result{}, nil
+}
+
+func endptProtocol(proto *Protocol) string {
+	if proto == nil {
+		return string(ProtocolHTTP) + "://"
+	}
+	if *proto == ProtocolNone {
+		return ""
+	}
+
+	return string(*proto) + "://"
+}
+
+// PtrProtocol returns a pointer to a protocol.
+func PtrProtocol(p Protocol) *Protocol {
+	return &p
 }
