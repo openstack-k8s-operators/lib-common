@@ -18,6 +18,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -61,4 +62,13 @@ func (tc *TestHelper) GetRoleBinding(name types.NamespacedName) *rbacv1.RoleBind
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return instance
+}
+
+// AssertRoleBindingDoesNotExist ensures the RoleBinding resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertRoleBindingDoesNotExist(name types.NamespacedName) {
+	instance := &rbacv1.RoleBinding{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

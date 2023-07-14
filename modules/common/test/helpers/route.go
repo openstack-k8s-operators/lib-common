@@ -49,3 +49,12 @@ func (tc *TestHelper) AssertRouteNotExists(name types.NamespacedName) *routev1.R
 
 	return instance
 }
+
+// AssertRouteDoesNotExist ensures the Route resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertRouteDoesNotExist(name types.NamespacedName) {
+	instance := &routev1.Route{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+}

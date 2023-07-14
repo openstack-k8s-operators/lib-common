@@ -15,7 +15,7 @@ package helpers
 
 import (
 	"github.com/google/uuid"
-	t "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	keystonev1 "github.com/openstack-k8s-operators/keystone-operator/api/v1beta1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"github.com/openstack-k8s-operators/lib-common/modules/test/apis"
@@ -43,7 +43,7 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 		Spec: keystonev1.KeystoneAPISpec{},
 	}
 
-	t.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+	gomega.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(gomega.Succeed())
 	name := types.NamespacedName{Namespace: namespace, Name: keystone.Name}
 
 	// the Status field needs to be written via a separate client
@@ -54,7 +54,7 @@ func (tc *TestHelper) CreateKeystoneAPI(namespace string) types.NamespacedName {
 			"internal": "http://keystone-internal.openstack.svc:5000",
 		},
 	}
-	t.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(gomega.Succeed())
 
 	tc.Logger.Info("KeystoneAPI created", "KeystoneAPI", name)
 	return name
@@ -93,7 +93,7 @@ func (tc *TestHelper) CreateKeystoneAPIWithFixture(
 		},
 	}
 
-	t.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+	gomega.Expect(tc.K8sClient.Create(tc.Ctx, keystone.DeepCopy())).Should(gomega.Succeed())
 	name := types.NamespacedName{Namespace: namespace, Name: keystone.Name}
 
 	// the Status field needs to be written via a separate client
@@ -104,7 +104,7 @@ func (tc *TestHelper) CreateKeystoneAPIWithFixture(
 			"internal": "http://keystone-internal.openstack.svc:5000",
 		},
 	}
-	t.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(t.Succeed())
+	gomega.Expect(tc.K8sClient.Status().Update(tc.Ctx, keystone.DeepCopy())).Should(gomega.Succeed())
 
 	tc.Logger.Info("KeystoneAPI created", "KeystoneAPI", name)
 	return name
@@ -119,20 +119,20 @@ func (tc *TestHelper) CreateKeystoneAPIWithFixture(
 //	keystoneAPI := th.CreateKeystoneAPI(namespace)
 //	DeferCleanup(th.DeleteKeystoneAPI, keystoneAPI)
 func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		keystone := &keystonev1.KeystoneAPI{}
 		err := tc.K8sClient.Get(tc.Ctx, name, keystone)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
-		g.Expect(err).NotTo(t.HaveOccurred())
+		g.Expect(err).NotTo(gomega.HaveOccurred())
 
-		g.Expect(tc.K8sClient.Delete(tc.Ctx, keystone)).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, keystone)).Should(gomega.Succeed())
 
 		err = tc.K8sClient.Get(tc.Ctx, name, keystone)
-		g.Expect(k8s_errors.IsNotFound(err)).To(t.BeTrue())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
 
 // GetKeystoneAPI retrieves a KeystoneAPI resource.
@@ -145,9 +145,9 @@ func (tc *TestHelper) DeleteKeystoneAPI(name types.NamespacedName) {
 //		 keystoneAPI := th.GetKeystoneAPI(keystoneAPIName)
 func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.KeystoneAPI {
 	instance := &keystonev1.KeystoneAPI{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
 
@@ -158,9 +158,9 @@ func (tc *TestHelper) GetKeystoneAPI(name types.NamespacedName) *keystonev1.Keys
 //	keystoneServiceName := th.CreateKeystoneService(namespace)
 func (tc *TestHelper) GetKeystoneService(name types.NamespacedName) *keystonev1.KeystoneService {
 	instance := &keystonev1.KeystoneService{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
 
@@ -170,12 +170,21 @@ func (tc *TestHelper) GetKeystoneService(name types.NamespacedName) *keystonev1.
 // Example usage:
 // keystoneServiceName := th.CreateKeystoneService(namespace)
 func (tc *TestHelper) SimulateKeystoneServiceReady(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		service := tc.GetKeystoneService(name)
 		service.Status.Conditions.MarkTrue(condition.ReadyCondition, "Ready")
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, service)).To(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, service)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated KeystoneService ready", "on", name)
+}
+
+// AssertKeystoneServiceDoesNotExist ensures the KeystoneService resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertKeystoneServiceDoesNotExist(name types.NamespacedName) {
+	instance := &keystonev1.KeystoneService{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
 
 // GetKeystoneEndpoint retrieves a KeystoneEndpoint resource from the Kubernetes cluster.
@@ -185,9 +194,9 @@ func (tc *TestHelper) SimulateKeystoneServiceReady(name types.NamespacedName) {
 //	keystoneEndpointName := th.CreateKeystoneEndpoint(namespace)
 func (tc *TestHelper) GetKeystoneEndpoint(name types.NamespacedName) *keystonev1.KeystoneEndpoint {
 	instance := &keystonev1.KeystoneEndpoint{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
 
@@ -199,10 +208,19 @@ func (tc *TestHelper) GetKeystoneEndpoint(name types.NamespacedName) *keystonev1
 //	keystoneEndpointName := th.CreateKeystoneEndpoint(namespace)
 //	th.SimulateKeystoneEndpointReady(keystoneEndpointName)
 func (tc *TestHelper) SimulateKeystoneEndpointReady(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		endpoint := tc.GetKeystoneEndpoint(name)
 		endpoint.Status.Conditions.MarkTrue(condition.ReadyCondition, "Ready")
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, endpoint)).To(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, endpoint)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated KeystoneEndpoint ready", "on", name)
+}
+
+// AssertKeystoneEndpointDoesNotExist ensures the KeystoneEndpoint resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertKeystoneEndpointDoesNotExist(name types.NamespacedName) {
+	instance := &keystonev1.KeystoneEndpoint{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

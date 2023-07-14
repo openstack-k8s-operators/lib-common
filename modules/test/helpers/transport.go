@@ -14,8 +14,9 @@ limitations under the License.
 package helpers
 
 import (
-	t "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	rabbitmqv1 "github.com/openstack-k8s-operators/infra-operator/apis/rabbitmq/v1beta1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -26,9 +27,9 @@ import (
 //	th.GetTransportURL(types.NamespacedName{Name: "test-transporturl", Namespace: "test-namespace"})
 func (tc *TestHelper) GetTransportURL(name types.NamespacedName) *rabbitmqv1.TransportURL {
 	instance := &rabbitmqv1.TransportURL{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
 
@@ -39,12 +40,21 @@ func (tc *TestHelper) GetTransportURL(name types.NamespacedName) *rabbitmqv1.Tra
 //
 //	th.SimulateTransportURLReady(types.NamespacedName{Name: "test-transporturl", Namespace: "test-namespace"})
 func (tc *TestHelper) SimulateTransportURLReady(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		transport := tc.GetTransportURL(name)
 		transport.Status.SecretName = transport.Spec.RabbitmqClusterName + "-secret"
 		transport.Status.Conditions.MarkTrue("TransportURLReady", "Ready")
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, transport)).To(t.Succeed())
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, transport)).To(gomega.Succeed())
 
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated TransportURL ready", "on", name)
+}
+
+// AssertTransportURLDoesNotExist ensures the TransportURL resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertTransportURLDoesNotExist(name types.NamespacedName) {
+	instance := &rabbitmqv1.TransportURL{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }

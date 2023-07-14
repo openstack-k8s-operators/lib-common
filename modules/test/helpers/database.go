@@ -14,7 +14,7 @@ limitations under the License.
 package helpers
 
 import (
-	t "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	mariadbv1 "github.com/openstack-k8s-operators/mariadb-operator/api/v1beta1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +43,7 @@ func (tc *TestHelper) CreateDBService(namespace string, mariadbCRName string, sp
 		},
 		Spec: spec,
 	}
-	t.Expect(tc.K8sClient.Create(tc.Ctx, service)).Should(t.Succeed())
+	gomega.Expect(tc.K8sClient.Create(tc.Ctx, service)).Should(gomega.Succeed())
 
 	return types.NamespacedName{Name: serviceName, Namespace: namespace}
 }
@@ -58,20 +58,20 @@ func (tc *TestHelper) CreateDBService(namespace string, mariadbCRName string, sp
 //
 //	DeferCleanup(th.DeleteDBService, th.CreateDBService(cell0.MariaDBDatabaseName.Namespace, cell0.MariaDBDatabaseName.Name, serviceSpec))
 func (tc *TestHelper) DeleteDBService(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		service := &corev1.Service{}
 		err := tc.K8sClient.Get(tc.Ctx, name, service)
 		// if it is already gone that is OK
 		if k8s_errors.IsNotFound(err) {
 			return
 		}
-		g.Expect(err).NotTo(t.HaveOccurred())
+		g.Expect(err).NotTo(gomega.HaveOccurred())
 
-		g.Expect(tc.K8sClient.Delete(tc.Ctx, service)).Should(t.Succeed())
+		g.Expect(tc.K8sClient.Delete(tc.Ctx, service)).Should(gomega.Succeed())
 
 		err = tc.K8sClient.Get(tc.Ctx, name, service)
-		g.Expect(k8s_errors.IsNotFound(err)).To(t.BeTrue())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
 
 // GetMariaDBDatabase waits for and retrieves a MariaDBDatabase resource from the Kubernetes cluster
@@ -81,9 +81,9 @@ func (tc *TestHelper) DeleteDBService(name types.NamespacedName) {
 //	mariadbDatabase := th.GetMariaDBDatabase(types.NamespacedName{Name: "my-mariadb-database", Namespace: "my-namespace"})
 func (tc *TestHelper) GetMariaDBDatabase(name types.NamespacedName) *mariadbv1.MariaDBDatabase {
 	instance := &mariadbv1.MariaDBDatabase{}
-	t.Eventually(func(g t.Gomega) {
-		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(t.Succeed())
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Get(tc.Ctx, name, instance)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	return instance
 }
 
@@ -97,13 +97,22 @@ func (tc *TestHelper) GetMariaDBDatabase(name types.NamespacedName) *mariadbv1.M
 //
 //	DeferCleanup(th.SimulateMariaDBDatabaseCompleted, types.NamespacedName{Name: "my-mariadb-database", Namespace: "my-namespace"})
 func (tc *TestHelper) SimulateMariaDBDatabaseCompleted(name types.NamespacedName) {
-	t.Eventually(func(g t.Gomega) {
+	gomega.Eventually(func(g gomega.Gomega) {
 		db := tc.GetMariaDBDatabase(name)
 		db.Status.Completed = true
-		// This can return conflict so we have the t.Eventually block to retry
-		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, db)).To(t.Succeed())
+		// This can return conflict so we have the gomega.Eventually block to retry
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, db)).To(gomega.Succeed())
 
-	}, tc.Timeout, tc.Interval).Should(t.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	tc.Logger.Info("Simulated DB completed", "on", name)
+}
+
+// AssertMariaDBDatabaseDoesNotExist ensures the MariaDBDatabase resource does not exist in a k8s cluster.
+func (tc *TestHelper) AssertMariaDBDatabaseDoesNotExist(name types.NamespacedName) {
+	instance := &mariadbv1.MariaDBDatabase{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		err := tc.K8sClient.Get(tc.Ctx, name, instance)
+		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
