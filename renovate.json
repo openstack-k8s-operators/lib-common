@@ -27,6 +27,7 @@
     {
       "groupName": "k8s.io",
       "matchPackagePatterns": ["^k8s.io"],
+      "excludePackagePatterns": ["^k8s.io/kube-openapi"],
       "allowedVersions": "< 0.27.0",
       "enabled": true
     },
