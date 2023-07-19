@@ -79,3 +79,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 )
+
+// mschuppert: map to latest commit from release-4.13 tag
+// must consistent within modules and service operators
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7
