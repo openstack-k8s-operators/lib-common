@@ -10,7 +10,7 @@ require (
 	github.com/openstack-k8s-operators/infra-operator/apis v0.0.0-20230609175832-5a9a30056080
 	github.com/openstack-k8s-operators/keystone-operator/api v0.0.0-20230612072624-8ebcfc19377a
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230606033311-3b01713e4d45
-	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230602100742-579cb85d242d
+	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230717141726-1bd909777952
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/mod v0.10.0
 	k8s.io/api v0.26.6
