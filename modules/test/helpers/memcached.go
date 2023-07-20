@@ -82,11 +82,11 @@ func (tc *TestHelper) SimulateMemcachedReady(name types.NamespacedName) {
 	t.Eventually(func(g t.Gomega) {
 		mc := tc.GetMemcached(name)
 		mc.Status.Conditions.MarkTrue(condition.ReadyCondition, condition.ReadyMessage)
-		mc.Status.ReadyCount = mc.Spec.Replicas
+		mc.Status.ReadyCount = *mc.Spec.Replicas
 
 		serverList := []string{}
 		serverListWithInet := []string{}
-		for i := 0; i < int(mc.Spec.Replicas); i++ {
+		for i := 0; i < int(*mc.Spec.Replicas); i++ {
 			serverList = append(serverList, fmt.Sprintf("%s-%d.%s:11211", mc.Name, i, mc.Name))
 			serverListWithInet = append(serverListWithInet, fmt.Sprintf("inet:[%s-%d.%s]:11211", mc.Name, i, mc.Name))
 		}
