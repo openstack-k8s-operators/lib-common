@@ -78,7 +78,7 @@ func ExposeEndpoints(
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
-	endpoints map[Endpoint]Data,
+	endpoints map[service.Endpoint]Data,
 	timeout time.Duration,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
@@ -105,7 +105,7 @@ func ExposeEndpoints(
 			}
 
 			// Create the service
-			svc := service.NewService(
+			svc, err := service.NewService(
 				service.MetalLBService(&service.MetalLBServiceDetails{
 					Name:      endpointName,
 					Namespace: h.GetBeforeObject().GetNamespace(),
@@ -119,10 +119,14 @@ func ExposeEndpoints(
 				}),
 				exportLabels,
 				timeout,
+				&service.OverrideSpec{},
 			)
+			if err != nil {
+				return endpointMap, ctrl.Result{}, err
+			}
 			annotations := map[string]string{
 				service.MetalLBAddressPoolAnnotation: data.MetalLB.IPAddressPool,
-				AnnotationHostnameKey:                svc.GetServiceHostname(), // add annotation to register service name in dnsmasq
+				service.AnnotationHostnameKey:        svc.GetServiceHostname(), // add annotation to register service name in dnsmasq
 			}
 			if len(data.MetalLB.LoadBalancerIPs) > 0 {
 				annotations[service.MetalLBLoadBalancerIPs] = strings.Join(data.MetalLB.LoadBalancerIPs, ",")
@@ -148,7 +152,7 @@ func ExposeEndpoints(
 		} else {
 
 			// Create the service
-			svc := service.NewService(
+			svc, err := service.NewService(
 				service.GenericService(&service.GenericServiceDetails{
 					Name:      endpointName,
 					Namespace: h.GetBeforeObject().GetNamespace(),
@@ -161,7 +165,12 @@ func ExposeEndpoints(
 					}}),
 				exportLabels,
 				5,
+				&service.OverrideSpec{},
 			)
+			if err != nil {
+				return endpointMap, ctrl.Result{}, err
+			}
+
 			ctrlResult, err := svc.CreateOrPatch(ctx, h)
 			if err != nil {
 				return endpointMap, ctrlResult, err
@@ -173,7 +182,7 @@ func ExposeEndpoints(
 			hostname = svc.GetServiceHostnamePort()
 
 			// Create the route if it is public endpoint
-			if endpointType == EndpointPublic {
+			if endpointType == service.EndpointPublic {
 				// Create the route
 				// TODO TLS
 				route, err := route.NewRoute(
