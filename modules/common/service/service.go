@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -106,9 +108,16 @@ func (s *Service) GetServiceHostname() string {
 	return s.serviceHostname
 }
 
-// GetServiceHostnamePort - returns the service hostname with port
-func (s *Service) GetServiceHostnamePort() string {
-	return fmt.Sprintf("%s:%d", s.GetServiceHostname(), GetServicesPortDetails(s.service, s.service.Name).Port)
+// GetServiceHostnamePort - returns the service hostname with port if service port
+// is not nil, otherwise returns GetServiceHostname()
+func (s *Service) GetServiceHostnamePort() (string, string) {
+	servicePort := GetServicesPortDetails(s.service, s.service.Name)
+	if servicePort != nil {
+		return s.GetServiceHostname(),
+			strconv.FormatInt(int64(GetServicesPortDetails(s.service, s.service.Name).Port), 10)
+	}
+
+	return s.GetServiceHostname(), ""
 }
 
 // GetLabels - returns labels of the service
@@ -135,6 +144,38 @@ func (s *Service) GetServiceType() corev1.ServiceType {
 // AddAnnotation - Adds annotation and merges it with the current set
 func (s *Service) AddAnnotation(anno map[string]string) {
 	s.service.Annotations = util.MergeStringMaps(s.service.Annotations, anno)
+}
+
+// GetAPIEndpoint - returns the API endpoint URL for the service to register in keystone.
+func (s *Service) GetAPIEndpoint(svcOverride *OverrideSpec, protocol *Protocol, path string) (string, error) {
+	var apiEndpoint *url.URL
+	var err error
+	if svcOverride != nil && svcOverride.EndpointURL != nil {
+		apiEndpoint, err = url.Parse(*svcOverride.EndpointURL)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		hostname, port := s.GetServiceHostnamePort()
+
+		var endptURL string
+		if protocol != nil &&
+			((*protocol == ProtocolHTTP && port == "80") ||
+				(*protocol == ProtocolHTTPS && port == "443")) {
+			endptURL = fmt.Sprintf("%s%s", EndptProtocol(protocol), hostname)
+		} else {
+			endptURL = fmt.Sprintf("%s%s:%s", EndptProtocol(protocol), hostname, port)
+		}
+
+		// Do not include the path in parsing check because %(project_id)s
+		// is invalid without being encoded, but they should not be encoded in the actual endpoint
+		apiEndpoint, err = url.Parse(endptURL)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return apiEndpoint.String() + path, nil
 }
 
 // GenericService func
@@ -352,4 +393,16 @@ func GetServicesPortDetails(
 	}
 
 	return nil
+}
+
+// EndptProtocol returns the protocol for the endpoint if proto is nil http is considered
+func EndptProtocol(proto *Protocol) string {
+	if proto == nil {
+		return string(ProtocolHTTP) + "://"
+	}
+	if *proto == ProtocolNone {
+		return ""
+	}
+
+	return string(*proto) + "://"
 }

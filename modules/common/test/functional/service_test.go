@@ -16,6 +16,8 @@ limitations under the License.
 package functional
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getExampleService(namespace string) *corev1.Service {
+func getExampleService(namespace string, port int32) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-svc",
@@ -45,8 +47,8 @@ func getExampleService(namespace string) *corev1.Service {
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
 				{
-					Name:       "test-port",
-					Port:       int32(80),
+					Name:       "test-svc",
+					Port:       port,
 					Protocol:   corev1.ProtocolTCP,
 					TargetPort: intstr.FromInt(8080),
 				},
@@ -76,11 +78,14 @@ var _ = Describe("service package", func() {
 
 	It("creates service with defaults", func() {
 		s, err := service.NewService(
-			getExampleService(namespace),
+			getExampleService(namespace, int32(80)),
 			timeout,
 			&service.OverrideSpec{},
 		)
 		Expect(err).ShouldNot(HaveOccurred())
+
+		// AddAnnotations()
+		s.AddAnnotation(map[string]string{"add": "bar"})
 
 		_, err = s.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
@@ -90,15 +95,59 @@ var _ = Describe("service package", func() {
 		Expect(svc.Labels["label"]).To(Equal("a"))
 		Expect(svc.Labels["replace"]).To(Equal("a"))
 		Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeClusterIP))
-		Expect(svc.Spec.Ports[0].Name).To(Equal("test-port"))
+		Expect(svc.Spec.Ports[0].Name).To(Equal("test-svc"))
 		Expect(svc.Spec.Ports[0].Port).To(Equal(int32(80)))
 		Expect(svc.Spec.Ports[0].Protocol).To(Equal(corev1.ProtocolTCP))
 		Expect(svc.Spec.Ports[0].TargetPort.IntVal).To(Equal(int32(8080)))
+
+		// Test Getters
+		Expect(s.GetAnnotations()).To(Equal(map[string]string{
+			"anno":    "a",
+			"replace": "a",
+			"add":     "bar",
+		}))
+		Expect(s.GetLabels()).To(Equal(map[string]string{
+			"label":   "a",
+			"replace": "a",
+		}))
+		Expect(s.GetServiceType()).To(Equal(corev1.ServiceTypeClusterIP))
+		Expect(s.GetServiceHostname()).To(Equal(fmt.Sprintf("test-svc.%s.svc", namespace)))
+		hostname, port := s.GetServiceHostnamePort()
+		Expect(hostname).To(Equal(fmt.Sprintf("test-svc.%s.svc", namespace)))
+		Expect(port).To(Equal("80"))
+		// HTTP endpoint with no port
+		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTP), "")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(endpointURL).To(Equal(fmt.Sprintf("http://test-svc.%s.svc", namespace)))
+
+		// GetServiceWithName()
+		svc, err = service.GetServiceWithName(th.Ctx, h, "test-svc", namespace)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		// GetServicesListWithLabel()
+		svcList, err := service.GetServicesListWithLabel(th.Ctx, h, namespace, map[string]string{
+			"label":   "a",
+			"replace": "a",
+		})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(svcList.Items).Should(HaveLen(1))
+
+		// GetServicesPortDetails()
+		servicePortDetails := service.GetServicesPortDetails(svc, "test-svc")
+		Expect(servicePortDetails).NotTo(BeNil())
+		Expect(servicePortDetails.Port).To(Equal(int32(80)))
+		Expect(servicePortDetails.TargetPort.IntVal).To(Equal(int32(8080)))
+
+		// Delete method
+		err = s.Delete(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		th.AssertServiceDoesNotExist(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
+
 	})
 
 	It("merges labels to the service", func() {
 		s, err := service.NewService(
-			getExampleService(namespace),
+			getExampleService(namespace, int32(5000)),
 			timeout,
 			&service.OverrideSpec{
 				EmbeddedLabelsAnnotations: &service.EmbeddedLabelsAnnotations{
@@ -120,11 +169,16 @@ var _ = Describe("service package", func() {
 		Expect(rv1.Labels["foo"]).To(Equal("b"))
 		// override replaces existing label
 		Expect(rv1.Labels["replace"]).To(Equal("b"))
+
+		// HTTPS endpoint with port
+		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTPS), "")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(endpointURL).To(Equal(fmt.Sprintf("https://test-svc.%s.svc:5000", namespace)))
 	})
 
 	It("merges annotations to the service", func() {
 		s, err := service.NewService(
-			getExampleService(namespace),
+			getExampleService(namespace, int32(443)),
 			timeout,
 			&service.OverrideSpec{
 				EmbeddedLabelsAnnotations: &service.EmbeddedLabelsAnnotations{
@@ -146,11 +200,16 @@ var _ = Describe("service package", func() {
 		Expect(rv1.Annotations["foo"]).To(Equal("b"))
 		// override replaces existing annotation
 		Expect(rv1.Annotations["replace"]).To(Equal("b"))
+
+		// HTTPS endpoint with no port
+		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTPS), "")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(endpointURL).To(Equal(fmt.Sprintf("https://test-svc.%s.svc", namespace)))
 	})
 
 	It("overrides spec.Type to LoadBalancer", func() {
 		s, err := service.NewService(
-			getExampleService(namespace),
+			getExampleService(namespace, int32(80)),
 			timeout,
 			&service.OverrideSpec{
 				Spec: &service.OverrideServiceSpec{
@@ -164,5 +223,10 @@ var _ = Describe("service package", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		svc := th.AssertServiceExists(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
 		Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeLoadBalancer))
+
+		// NONE endpoint with port
+		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolNone), "")
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(endpointURL).To(Equal(fmt.Sprintf("test-svc.%s.svc:80", namespace)))
 	})
 })
