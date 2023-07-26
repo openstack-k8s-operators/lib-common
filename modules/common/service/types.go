@@ -30,6 +30,9 @@ import (
 // point as we have circular dep in test module to keystone.
 type Endpoint string
 
+// Protocol of the endpoint (http/https)
+type Protocol string
+
 const (
 	// EndpointAdmin - admin endpoint
 	EndpointAdmin Endpoint = "admin"
@@ -39,6 +42,12 @@ const (
 	EndpointPublic Endpoint = "public"
 	// AnnotationHostnameKey -
 	AnnotationHostnameKey = "dnsmasq.network.openstack.org/hostname"
+	// ProtocolHTTP -
+	ProtocolHTTP Protocol = "http"
+	// ProtocolHTTPS -
+	ProtocolHTTPS Protocol = "https"
+	// ProtocolNone -
+	ProtocolNone Protocol = ""
 )
 
 // Service -
