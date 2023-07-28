@@ -95,6 +95,8 @@ func (o *OpenStack) GetUser(
 
 	if len(allUsers) == 0 {
 		return nil, fmt.Errorf(fmt.Sprintf("%s %s", userName, UserNotFound))
+	} else if len(allUsers) > 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("multiple users named \"%s\" found", userName))
 	}
 
 	return &allUsers[0], nil
