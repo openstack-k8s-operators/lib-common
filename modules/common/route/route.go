@@ -18,6 +18,7 @@ package route
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -37,11 +39,49 @@ func NewRoute(
 	route *routev1.Route,
 	labels map[string]string,
 	timeout time.Duration,
-) *Route {
-	return &Route{
+	override *OverrideSpec,
+) (*Route, error) {
+	r := &Route{
 		route:   route,
 		timeout: timeout,
 	}
+
+	// patch route with possible overrides of Labels, Annotations and Spec
+	if override != nil {
+		if override.EmbeddedLabelsAnnotations != nil {
+			if override.Labels != nil {
+				r.route.Labels = util.MergeStringMaps(override.Labels, r.route.Labels)
+			}
+			if override.Annotations != nil {
+				r.route.Annotations = util.MergeStringMaps(override.Annotations, r.route.Annotations)
+			}
+		}
+		if override.Spec != nil {
+			originalSpec, err := json.Marshal(r.route.Spec)
+			if err != nil {
+				return r, fmt.Errorf("error marshalling Route Spec: %w", err)
+			}
+
+			patch, err := json.Marshal(override.Spec)
+			if err != nil {
+				return r, fmt.Errorf("error marshalling Route Spec override: %w", err)
+			}
+
+			patchedJSON, err := strategicpatch.StrategicMergePatch(originalSpec, patch, routev1.RouteSpec{})
+			if err != nil {
+				return r, fmt.Errorf("error patching Route Spec: %w", err)
+			}
+
+			patchedSpec := routev1.RouteSpec{}
+			err = json.Unmarshal(patchedJSON, &patchedSpec)
+			if err != nil {
+				return r, fmt.Errorf("error unmarshalling patched Route Spec: %w", err)
+			}
+			r.route.Spec = patchedSpec
+		}
+	}
+
+	return r, nil
 }
 
 // GetHostname - returns the hostname of the created route
@@ -89,7 +129,7 @@ func (r *Route) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), route, func() error {
-		route.Labels = util.MergeStringMaps(route.Labels, r.route.Labels)
+		route.Labels = r.route.Labels
 		route.Annotations = r.route.Annotations
 		route.Spec = r.route.Spec
 		if len(route.Spec.Host) == 0 && len(route.Status.Ingress) > 0 {

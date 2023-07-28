@@ -52,6 +52,8 @@ type Data struct {
 	Path string
 	// details for metallb service generation
 	MetalLB *MetalLBData
+	// possible overrides for Route
+	RouteOverride *route.OverrideSpec
 }
 
 // MetalLBData - information specific to creating the MetalLB service
@@ -174,7 +176,7 @@ func ExposeEndpoints(
 			if endpointType == EndpointPublic {
 				// Create the route
 				// TODO TLS
-				route := route.NewRoute(
+				route, err := route.NewRoute(
 					route.GenericRoute(&route.GenericRouteDetails{
 						Name:           endpointName,
 						Namespace:      h.GetBeforeObject().GetNamespace(),
@@ -184,7 +186,11 @@ func ExposeEndpoints(
 					}),
 					exportLabels,
 					timeout,
+					data.RouteOverride,
 				)
+				if err != nil {
+					return endpointMap, ctrl.Result{}, err
+				}
 
 				ctrlResult, err = route.CreateOrPatch(ctx, h)
 				if err != nil {
