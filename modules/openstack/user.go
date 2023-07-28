@@ -58,11 +58,14 @@ func (o *OpenStack) CreateUser(
 		userID = user.ID
 	} else {
 		createOpts := users.CreateOpts{
-			Name:             u.Name,
-			DefaultProjectID: u.ProjectID,
-			Password:         u.Password,
-			DomainID:         u.DomainID,
+			Name:     u.Name,
+			Password: u.Password,
+			DomainID: u.DomainID,
 		}
+		if u.ProjectID != "" {
+			createOpts.DefaultProjectID = u.ProjectID
+		}
+
 		user, err := users.Create(o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return userID, err
