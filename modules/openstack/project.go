@@ -27,6 +27,7 @@ import (
 type Project struct {
 	Name        string
 	Description string
+	DomainID    string
 }
 
 // CreateProject - creates project with projectName and projectDescription if it does not exist
@@ -35,7 +36,7 @@ func (o *OpenStack) CreateProject(
 	p Project,
 ) (string, error) {
 	var projectID string
-	allPages, err := projects.List(o.osclient, projects.ListOpts{Name: p.Name}).AllPages()
+	allPages, err := projects.List(o.osclient, projects.ListOpts{Name: p.Name, DomainID: p.DomainID}).AllPages()
 	if err != nil {
 		return projectID, err
 	}
@@ -49,8 +50,9 @@ func (o *OpenStack) CreateProject(
 		createOpts := projects.CreateOpts{
 			Name:        p.Name,
 			Description: p.Description,
+			DomainID:    p.DomainID,
 		}
-		log.Info(fmt.Sprintf("Creating project %s", p.Name))
+		log.Info(fmt.Sprintf("Creating project %s in %s", p.Name, p.DomainID))
 		project, err := projects.Create(o.osclient, createOpts).Extract()
 		if err != nil {
 			return projectID, err
