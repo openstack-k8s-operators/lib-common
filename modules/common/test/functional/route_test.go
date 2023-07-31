@@ -74,7 +74,6 @@ var _ = Describe("route package", func() {
 	It("creates route with defaults", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{},
 		)
@@ -97,7 +96,6 @@ var _ = Describe("route package", func() {
 	It("merges labels to the route", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
@@ -124,7 +122,6 @@ var _ = Describe("route package", func() {
 	It("merges annotations to the route", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
@@ -151,7 +148,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.host if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -170,7 +166,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.subdomain if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -189,7 +184,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.path if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -208,7 +202,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.to if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -232,7 +225,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.alternateBackends if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -258,7 +250,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.port if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{
@@ -279,7 +270,6 @@ var _ = Describe("route package", func() {
 	It("overrides spec.tls if specified", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
-			map[string]string{},
 			timeout,
 			&route.OverrideSpec{
 				Spec: &route.Spec{

@@ -77,7 +77,6 @@ var _ = Describe("service package", func() {
 	It("creates service with defaults", func() {
 		s, err := service.NewService(
 			getExampleService(namespace),
-			map[string]string{},
 			timeout,
 			&service.OverrideSpec{},
 		)
@@ -100,7 +99,6 @@ var _ = Describe("service package", func() {
 	It("merges labels to the service", func() {
 		s, err := service.NewService(
 			getExampleService(namespace),
-			map[string]string{},
 			timeout,
 			&service.OverrideSpec{
 				EmbeddedLabelsAnnotations: &service.EmbeddedLabelsAnnotations{
@@ -127,7 +125,6 @@ var _ = Describe("service package", func() {
 	It("merges annotations to the service", func() {
 		s, err := service.NewService(
 			getExampleService(namespace),
-			map[string]string{},
 			timeout,
 			&service.OverrideSpec{
 				EmbeddedLabelsAnnotations: &service.EmbeddedLabelsAnnotations{
@@ -154,7 +151,6 @@ var _ = Describe("service package", func() {
 	It("overrides spec.Type to LoadBalancer", func() {
 		s, err := service.NewService(
 			getExampleService(namespace),
-			map[string]string{},
 			timeout,
 			&service.OverrideSpec{
 				Spec: &service.OverrideServiceSpec{
