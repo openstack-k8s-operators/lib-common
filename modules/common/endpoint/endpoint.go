@@ -117,7 +117,6 @@ func ExposeEndpoints(
 						Protocol: protocol,
 					},
 				}),
-				exportLabels,
 				timeout,
 				&service.OverrideSpec{},
 			)
@@ -163,7 +162,6 @@ func ExposeEndpoints(
 						Port:     data.Port,
 						Protocol: corev1.ProtocolTCP,
 					}}),
-				exportLabels,
 				5,
 				&service.OverrideSpec{},
 			)
@@ -193,7 +191,6 @@ func ExposeEndpoints(
 						ServiceName:    endpointName,
 						TargetPortName: endpointName,
 					}),
-					exportLabels,
 					timeout,
 					data.RouteOverride,
 				)

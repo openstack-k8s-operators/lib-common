@@ -37,7 +37,6 @@ import (
 // NewRoute returns an initialized Route.
 func NewRoute(
 	route *routev1.Route,
-	labels map[string]string,
 	timeout time.Duration,
 	override *OverrideSpec,
 ) (*Route, error) {

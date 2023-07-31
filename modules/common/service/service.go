@@ -39,7 +39,6 @@ import (
 // NewService returns an initialized Service.
 func NewService(
 	service *corev1.Service,
-	labels map[string]string,
 	timeout time.Duration,
 	override *OverrideSpec,
 ) (*Service, error) {
