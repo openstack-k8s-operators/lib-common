@@ -32,6 +32,7 @@ type User struct {
 	Name      string
 	Password  string
 	ProjectID string
+	DomainID  string
 }
 
 // CreateUser - creates user with userName, password and default project projectID
@@ -44,6 +45,7 @@ func (o *OpenStack) CreateUser(
 	user, err := o.GetUser(
 		log,
 		u.Name,
+		u.DomainID,
 	)
 	// If the user is not found, don't count that as an error here
 	if err != nil && !strings.Contains(err.Error(), UserNotFound) {
@@ -56,10 +58,14 @@ func (o *OpenStack) CreateUser(
 		userID = user.ID
 	} else {
 		createOpts := users.CreateOpts{
-			Name:             u.Name,
-			DefaultProjectID: u.ProjectID,
-			Password:         u.Password,
+			Name:     u.Name,
+			Password: u.Password,
+			DomainID: u.DomainID,
 		}
+		if u.ProjectID != "" {
+			createOpts.DefaultProjectID = u.ProjectID
+		}
+
 		user, err := users.Create(o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return userID, err
@@ -76,8 +82,9 @@ func (o *OpenStack) CreateUser(
 func (o *OpenStack) GetUser(
 	log logr.Logger,
 	userName string,
+	domainID string,
 ) (*users.User, error) {
-	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName}).AllPages()
+	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName, DomainID: domainID}).AllPages()
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +95,8 @@ func (o *OpenStack) GetUser(
 
 	if len(allUsers) == 0 {
 		return nil, fmt.Errorf(fmt.Sprintf("%s %s", userName, UserNotFound))
+	} else if len(allUsers) > 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("multiple users named \"%s\" found", userName))
 	}
 
 	return &allUsers[0], nil
@@ -97,10 +106,12 @@ func (o *OpenStack) GetUser(
 func (o *OpenStack) DeleteUser(
 	log logr.Logger,
 	userName string,
+	domainID string,
 ) error {
 	user, err := o.GetUser(
 		log,
 		userName,
+		domainID,
 	)
 	// If the user is not found, don't count that as an error here
 	if err != nil && !strings.Contains(err.Error(), "user not found in keystone") {
@@ -108,7 +119,7 @@ func (o *OpenStack) DeleteUser(
 	}
 
 	if user != nil {
-		log.Info(fmt.Sprintf("Deleting user %s", user.Name))
+		log.Info(fmt.Sprintf("Deleting user %s in %s", user.Name, user.DomainID))
 		err = users.Delete(o.GetOSClient(), user.ID).ExtractErr()
 		if err != nil {
 			return err
