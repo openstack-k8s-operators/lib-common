@@ -313,9 +313,11 @@ func (d *Database) DeleteFinalizer(
 	ctx context.Context,
 	h *helper.Helper,
 ) error {
-	controllerutil.RemoveFinalizer(d.database, h.GetFinalizer())
-	if err := h.GetClient().Update(ctx, d.database); err != nil && !k8s_errors.IsNotFound(err) {
-		return err
+	if controllerutil.RemoveFinalizer(d.database, h.GetFinalizer()) {
+		err := h.GetClient().Update(ctx, d.database)
+		if err != nil && !k8s_errors.IsNotFound(err) {
+			return err
+		}
 	}
 	return nil
 }
