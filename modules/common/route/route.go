@@ -88,6 +88,11 @@ func (r *Route) GetHostname() string {
 	return r.hostname
 }
 
+// GetRoute - returns the route object
+func (r *Route) GetRoute() *routev1.Route {
+	return r.route
+}
+
 // GenericRoute func
 func GenericRoute(routeInfo *GenericRouteDetails) *routev1.Route {
 	serviceRef := routev1.RouteTargetReference{
