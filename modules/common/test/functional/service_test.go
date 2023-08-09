@@ -24,6 +24,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,7 +117,7 @@ var _ = Describe("service package", func() {
 		Expect(hostname).To(Equal(fmt.Sprintf("test-svc.%s.svc", namespace)))
 		Expect(port).To(Equal("80"))
 		// HTTP endpoint with no port
-		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTP), "")
+		endpointURL, err := s.GetAPIEndpoint(nil, ptr.To(service.ProtocolHTTP), "")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(endpointURL).To(Equal(fmt.Sprintf("http://test-svc.%s.svc", namespace)))
 
@@ -171,7 +172,7 @@ var _ = Describe("service package", func() {
 		Expect(rv1.Labels["replace"]).To(Equal("b"))
 
 		// HTTPS endpoint with port
-		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTPS), "")
+		endpointURL, err := s.GetAPIEndpoint(nil, ptr.To(service.ProtocolHTTPS), "")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(endpointURL).To(Equal(fmt.Sprintf("https://test-svc.%s.svc:5000", namespace)))
 	})
@@ -202,7 +203,7 @@ var _ = Describe("service package", func() {
 		Expect(rv1.Annotations["replace"]).To(Equal("b"))
 
 		// HTTPS endpoint with no port
-		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolHTTPS), "")
+		endpointURL, err := s.GetAPIEndpoint(nil, ptr.To(service.ProtocolHTTPS), "")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(endpointURL).To(Equal(fmt.Sprintf("https://test-svc.%s.svc", namespace)))
 	})
@@ -225,7 +226,7 @@ var _ = Describe("service package", func() {
 		Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeLoadBalancer))
 
 		// NONE endpoint with port
-		endpointURL, err := s.GetAPIEndpoint(nil, service.PtrProtocol(service.ProtocolNone), "")
+		endpointURL, err := s.GetAPIEndpoint(nil, ptr.To(service.ProtocolNone), "")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(endpointURL).To(Equal(fmt.Sprintf("test-svc.%s.svc:80", namespace)))
 	})

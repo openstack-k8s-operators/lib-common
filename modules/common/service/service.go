@@ -147,11 +147,11 @@ func (s *Service) AddAnnotation(anno map[string]string) {
 }
 
 // GetAPIEndpoint - returns the API endpoint URL for the service to register in keystone.
-func (s *Service) GetAPIEndpoint(svcOverride *OverrideSpec, protocol *Protocol, path string) (string, error) {
+func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path string) (string, error) {
 	var apiEndpoint *url.URL
 	var err error
-	if svcOverride != nil && svcOverride.EndpointURL != nil {
-		apiEndpoint, err = url.Parse(*svcOverride.EndpointURL)
+	if endpointURL != nil {
+		apiEndpoint, err = url.Parse(*endpointURL)
 		if err != nil {
 			return "", err
 		}
@@ -176,6 +176,26 @@ func (s *Service) GetAPIEndpoint(svcOverride *OverrideSpec, protocol *Protocol, 
 	}
 
 	return apiEndpoint.String() + path, nil
+}
+
+// ToOverrideServiceSpec - convert corev1.ServiceSpec to OverrideServiceSpec
+func (s *Service) ToOverrideServiceSpec() (*OverrideServiceSpec, error) {
+	overrideServiceSpec := &OverrideServiceSpec{}
+
+	serviceSpec := s.GetSpec()
+	if serviceSpec != nil {
+		serviceSpecBytes, err := json.Marshal(serviceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling Service Spec: %w", err)
+		}
+
+		err = json.Unmarshal(serviceSpecBytes, overrideServiceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling service OverrideSpec: %w", err)
+		}
+	}
+
+	return overrideServiceSpec, nil
 }
 
 // GenericService func

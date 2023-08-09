@@ -76,6 +76,7 @@ type GenericServiceDetails struct {
 
 // GenericServicePort -
 // +kubebuilder:object:generate:=false
+// NOTE: (mschuppert) deprecated, can be removed when service operators moved to Ports
 type GenericServicePort struct {
 	Name     string
 	Port     int32
