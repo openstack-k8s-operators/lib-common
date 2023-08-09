@@ -73,6 +73,7 @@ type GenericServiceDetails struct {
 }
 
 // GenericServicePort -
+// NOTE: (mschuppert) deprecated, can be removed when service operators moved to Ports
 type GenericServicePort struct {
 	Name     string
 	Port     int32

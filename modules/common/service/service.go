@@ -178,6 +178,26 @@ func (s *Service) GetAPIEndpoint(svcOverride *OverrideSpec, protocol *Protocol, 
 	return apiEndpoint.String() + path, nil
 }
 
+// ToOverrideServiceSpec - convert corev1.ServiceSpec to OverrideServiceSpec
+func (s *Service) ToOverrideServiceSpec() (*OverrideServiceSpec, error) {
+	overrideServiceSpec := &OverrideServiceSpec{}
+
+	serviceSpec := s.GetSpec()
+	if serviceSpec != nil {
+		serviceSpecBytes, err := json.Marshal(serviceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling Service Spec: %w", err)
+		}
+
+		err = json.Unmarshal(serviceSpecBytes, overrideServiceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling service OverrideSpec: %w", err)
+		}
+	}
+
+	return overrideServiceSpec, nil
+}
+
 // GenericService func
 func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 	ports := svcInfo.Ports
