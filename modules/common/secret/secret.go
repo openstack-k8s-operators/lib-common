@@ -57,7 +57,7 @@ func Hash(secret *corev1.Secret) (string, error) {
 	return util.ObjectHash(data)
 }
 
-// GetSecret -
+// GetSecret - get secret by name and namespace
 func GetSecret(
 	ctx context.Context,
 	h *helper.Helper,
@@ -78,7 +78,7 @@ func GetSecret(
 	return secret, secretHash, nil
 }
 
-// GetSecrets -
+// GetSecrets - get secrets by namespace and label selectors
 func GetSecrets(
 	ctx context.Context,
 	h *helper.Helper,
@@ -98,7 +98,8 @@ func GetSecrets(
 	return secrets, nil
 }
 
-// CreateOrPatchSecret -
+// CreateOrPatchSecret - create custom secret or patch it, if one already exists
+// finally return configuration hash
 func CreateOrPatchSecret(
 	ctx context.Context,
 	h *helper.Helper,
@@ -127,7 +128,8 @@ func CreateOrPatchSecret(
 	return secretHash, op, err
 }
 
-// createOrUpdateSecret -
+// createOrUpdateSecret - create or update existing secrte if it already exists
+// finally return configuration hash
 func createOrUpdateSecret(
 	ctx context.Context,
 	h *helper.Helper,
@@ -207,7 +209,8 @@ func createOrUpdateSecret(
 	return secretHash, op, nil
 }
 
-// createOrGetCustomSecret -
+// createOrGetCustomSecret - create custom secret or retrieve it, if one already exists
+// finally return configuration hash
 func createOrGetCustomSecret(
 	ctx context.Context,
 	h *helper.Helper,
