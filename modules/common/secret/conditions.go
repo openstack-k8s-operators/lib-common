@@ -23,7 +23,7 @@ import condition "github.com/openstack-k8s-operators/lib-common/modules/common/c
 // Conditions for status in web console
 const (
 	//
-	// condition reasones
+	// condition reasons
 	//
 
 	// ReasonSecretMissing - secret does not exist
