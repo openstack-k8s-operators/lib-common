@@ -99,7 +99,11 @@ func createOrPatchConfigMap(
 		return nil
 	})
 	if err != nil {
+		h.GetRecorder().Event(obj, corev1.EventTypeWarning, "Error", fmt.Sprintf("error create/updating configmap: %s", cm.Name))
 		return "", op, fmt.Errorf("error create/updating configmap: %w", err)
+	}
+	if op != controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(obj, corev1.EventTypeNormal, "Created", fmt.Sprintf("configmap %s created", cm.Name))
 	}
 
 	configMapHash, err := Hash(configMap)
