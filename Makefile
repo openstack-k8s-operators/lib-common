@@ -27,6 +27,10 @@ ENVTEST_K8S_VERSION = 1.25
 .PHONY: all
 all: build
 
+.PHONY: help
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
 .PHONY: fmt
 fmt: gowork ## Run go fmt against code.
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
@@ -60,11 +64,10 @@ test: gowork generate fmt vet envtest ginkgo ## Run tests.
 build: fmt vet ## Build a test lib-common binary.
 	go build -o lib-common
 
-# CI tools repo for running tests
 CI_TOOLS_REPO := https://github.com/openstack-k8s-operators/openstack-k8s-operators-ci
 CI_TOOLS_REPO_DIR = $(shell pwd)/CI_TOOLS_REPO
 .PHONY: get-ci-tools
-get-ci-tools:
+get-ci-tools: ## Retrieve CI tools repo for running tests
 	if [ -d  "$(CI_TOOLS_REPO_DIR)" ]; then \
 		echo "Ci tools exists"; \
 		pushd "$(CI_TOOLS_REPO_DIR)"; \
@@ -95,48 +98,43 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 		$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./$$mod/..." ; \
 	done
 
-# Run go fmt via ci-tools script against code
 .PHONY: gofmt
-gofmt: get-ci-tools
+gofmt: get-ci-tools ## Run go fmt via ci-tools script against code
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gofmt.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go vet via ci-tools script against code
 .PHONY: govet
-govet: get-ci-tools
+govet: get-ci-tools ## Run go vet via ci-tools script against code
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/govet.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go test via ci-tools script against code
 .PHONY: gotest
-gotest: get-ci-tools envtest
+gotest: get-ci-tools envtest ## Run go test via ci-tools script against code
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/gotest.sh ./$$mod || exit 1 ; \
 	done
 
-# Run golangci-lint test via ci-tools script against code
 .PHONY: golangci
-golangci: get-ci-tools
+golangci: get-ci-tools ## Run golangci-lint test via ci-tools script against code
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod || exit 1 ; \
 	done
 
-# Run go lint via ci-tools script against code
 .PHONY: golint
-golint: get-ci-tools
+golint: get-ci-tools ## Run go lint via ci-tools script against code
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		PATH=$(GOBIN):$(PATH); GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golint.sh $$mod || exit 1; \
 	done
 
 .PHONY: gowork
-gowork:
+gowork: ## Initiate go work
 	test -f go.work || go work init
 	go work use -r modules
 	go work sync
 
-.PHONY: tidy
+.PHONY: tidy ## Run go tidy sequentially on all modules
 tidy:
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		set -x; \
