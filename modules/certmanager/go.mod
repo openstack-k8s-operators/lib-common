@@ -11,9 +11,9 @@ require (
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.1.0
 	github.com/openstack-k8s-operators/lib-common/modules/test v0.0.0-20230612101529-af40f24b2b62
 	go.uber.org/zap v1.24.0
-	k8s.io/api v0.26.6
-	k8s.io/apimachinery v0.26.6
-	k8s.io/client-go v0.26.6
+	k8s.io/api v0.26.7
+	k8s.io/apimachinery v0.26.7
+	k8s.io/client-go v0.26.7
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
@@ -42,10 +42,10 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
-	github.com/openstack-k8s-operators/infra-operator/apis v0.0.0-20230720153501-076b82bb4427 // indirect
-	github.com/openstack-k8s-operators/keystone-operator/api v0.0.0-20230612072624-8ebcfc19377a // indirect
-	github.com/openstack-k8s-operators/lib-common/modules/openstack v0.0.0-20230606033311-3b01713e4d45 // indirect
-	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230717141726-1bd909777952 // indirect
+	github.com/openstack-k8s-operators/infra-operator/apis v0.1.0 // indirect
+	github.com/openstack-k8s-operators/keystone-operator/api v0.1.0 // indirect
+	github.com/openstack-k8s-operators/lib-common/modules/openstack v0.1.0 // indirect
+	github.com/openstack-k8s-operators/mariadb-operator/api v0.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
@@ -64,8 +64,8 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.26.6 // indirect
-	k8s.io/component-base v0.26.6 // indirect
+	k8s.io/apiextensions-apiserver v0.26.7 // indirect
+	k8s.io/component-base v0.26.7 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
 	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
