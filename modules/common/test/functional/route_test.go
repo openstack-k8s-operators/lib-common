@@ -22,7 +22,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/route"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	routev1 "github.com/openshift/api/route/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,7 +50,7 @@ func getExampleRoute(namespace string) *routev1.Route {
 			To: routev1.RouteTargetReference{
 				Kind:   "Service",
 				Name:   "my-service",
-				Weight: pointer.Int32(100),
+				Weight: ptr.To[int32](100),
 			},
 		},
 	}
@@ -214,7 +214,7 @@ var _ = Describe("route package", func() {
 				Spec: &route.Spec{
 					To: route.TargetReference{
 						Name:   "my-custom-service",
-						Weight: pointer.Int32(10),
+						Weight: ptr.To[int32](10),
 					},
 				},
 			},
@@ -240,7 +240,7 @@ var _ = Describe("route package", func() {
 						{
 							Kind:   "Service",
 							Name:   "my-alternate-service",
-							Weight: pointer.Int32(200),
+							Weight: ptr.To[int32](200),
 						},
 					},
 				},
