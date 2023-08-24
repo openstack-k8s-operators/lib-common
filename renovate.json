@@ -5,6 +5,13 @@
   "constraints": {
     "go": "1.19"
   },
+  "packageRules": [
+    {
+      "matchPackageNames": ["github.com/cert-manager/cert-manager"],
+      "allowedVersions": "< 1.12.0",
+      "enabled": true
+    }
+  ],
   "postUpgradeTasks": {
     "commands": ["make gowork", "make tidy"],
     "fileFilters": ["**/go.mod", "**/go.sum", "**/*.go", "**/*.yaml"],
