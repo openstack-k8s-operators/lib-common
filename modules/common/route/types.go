@@ -26,6 +26,7 @@ import (
 )
 
 // Route -
+// +kubebuilder:object:generate:=false
 type Route struct {
 	route           *routev1.Route
 	timeout         time.Duration
@@ -34,6 +35,7 @@ type Route struct {
 }
 
 // GenericRouteDetails -
+// +kubebuilder:object:generate:=false
 type GenericRouteDetails struct {
 	Name           string
 	Namespace      string
