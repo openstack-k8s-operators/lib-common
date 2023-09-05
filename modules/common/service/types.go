@@ -40,6 +40,8 @@ const (
 	EndpointInternal Endpoint = "internal"
 	// EndpointPublic - public endpoint
 	EndpointPublic Endpoint = "public"
+	// AnnotationEndpointKey -
+	AnnotationEndpointKey = "endpoint"
 	// AnnotationHostnameKey -
 	AnnotationHostnameKey = "dnsmasq.network.openstack.org/hostname"
 	// ProtocolHTTP -
