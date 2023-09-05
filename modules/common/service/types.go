@@ -40,6 +40,8 @@ const (
 	EndpointInternal Endpoint = "internal"
 	// EndpointPublic - public endpoint
 	EndpointPublic Endpoint = "public"
+	// AnnotationIngressCreateKey -
+	AnnotationIngressCreateKey = "core.openstack.org/ingress_create"
 	// AnnotationEndpointKey -
 	AnnotationEndpointKey = "endpoint"
 	// AnnotationHostnameKey -
