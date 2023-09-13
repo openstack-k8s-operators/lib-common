@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.4
-	github.com/gophercloud/gophercloud v1.5.0
+	github.com/gophercloud/gophercloud v1.6.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.1.1-0.20230913072156-d5fa2f779dd1
 )
 
