@@ -6,7 +6,7 @@ require (
 	github.com/cert-manager/cert-manager v1.11.5
 	github.com/go-logr/logr v1.2.4
 	github.com/google/uuid v1.3.1
-	github.com/gophercloud/gophercloud v1.5.0
+	github.com/gophercloud/gophercloud v1.6.0
 	github.com/onsi/gomega v1.27.10
 	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20230912155600-f499a87918a7
 	github.com/openstack-k8s-operators/keystone-operator/api v0.1.1-0.20230830083045-d73d07cca617
