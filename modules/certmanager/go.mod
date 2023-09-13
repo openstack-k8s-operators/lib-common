@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/certmanager
 go 1.19
 
 require (
-	github.com/cert-manager/cert-manager v1.11.4
+	github.com/cert-manager/cert-manager v1.11.5
 	github.com/go-logr/logr v1.2.4
 	github.com/google/uuid v1.3.0
 	github.com/onsi/ginkgo/v2 v2.11.0
