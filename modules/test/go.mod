@@ -8,12 +8,12 @@ require (
 	github.com/google/uuid v1.3.1
 	github.com/gophercloud/gophercloud v1.5.0
 	github.com/onsi/gomega v1.27.10
-	github.com/openstack-k8s-operators/infra-operator/apis v0.0.0-20230720153501-076b82bb4427
-	github.com/openstack-k8s-operators/keystone-operator/api v0.0.0-20230612072624-8ebcfc19377a
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.0.0-20230707063813-c894bf75835d
-	github.com/openstack-k8s-operators/mariadb-operator/api v0.0.0-20230717141726-1bd909777952
+	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20230912155600-f499a87918a7
+	github.com/openstack-k8s-operators/keystone-operator/api v0.1.1-0.20230830083045-d73d07cca617
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.1.1-0.20230824094610-976b18ca2875
+	github.com/openstack-k8s-operators/mariadb-operator/api v0.1.1-0.20230912174650-9fb4c4a76e55
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
-	golang.org/x/mod v0.10.0
+	golang.org/x/mod v0.12.0
 	k8s.io/api v0.26.8
 	k8s.io/apimachinery v0.26.8
 	sigs.k8s.io/controller-runtime v0.14.6
@@ -49,18 +49,18 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
-	github.com/openstack-k8s-operators/lib-common/modules/openstack v0.0.0-20230606033311-3b01713e4d45 // indirect; indirect // indirect // indirect
+	github.com/openstack-k8s-operators/lib-common/modules/openstack v0.1.1-0.20230824094610-976b18ca2875 // indirect; indirect // indirect // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
