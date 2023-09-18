@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	k8s.io/api v0.26.9
 	k8s.io/apimachinery v0.26.9
 	k8s.io/client-go v0.26.9
