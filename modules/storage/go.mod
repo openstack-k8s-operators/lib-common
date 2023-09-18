@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/onsi/gomega v1.27.10
-	k8s.io/api v0.26.8
+	k8s.io/api v0.26.9
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apimachinery v0.26.8 // indirect; indirect // indirect
+	k8s.io/apimachinery v0.26.9 // indirect; indirect // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // indirect; indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
