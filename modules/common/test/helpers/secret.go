@@ -96,3 +96,13 @@ func (tc *TestHelper) AssertSecretDoesNotExist(name types.NamespacedName) {
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
+
+// UpdateSecret adds a new key or updates an existing key in the given Secret with a new value
+func (tc *TestHelper) UpdateSecret(secretName types.NamespacedName, key string, newValue []byte) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		secret := tc.GetSecret(secretName)
+		secret.Data[key] = newValue
+		g.Expect(tc.K8sClient.Update(tc.Ctx, &secret)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+	tc.Logger.Info("Secret updated", "secret", secretName, "key", key)
+}
