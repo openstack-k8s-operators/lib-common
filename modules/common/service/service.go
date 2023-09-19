@@ -18,7 +18,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -37,14 +41,51 @@ import (
 // NewService returns an initialized Service.
 func NewService(
 	service *corev1.Service,
-	labels map[string]string,
 	timeout time.Duration,
-) *Service {
-	return &Service{
+	override *OverrideSpec,
+) (*Service, error) {
+	svc := &Service{
 		service:         service,
 		serviceHostname: fmt.Sprintf("%s.%s.svc", service.Name, service.GetNamespace()),
 		timeout:         timeout,
 	}
+
+	// patch service with possible overrides of Labels, Annotations and Spec
+	if override != nil {
+		if override.EmbeddedLabelsAnnotations != nil {
+			if override.Labels != nil {
+				svc.service.Labels = util.MergeStringMaps(override.Labels, service.Labels)
+			}
+			if override.Annotations != nil {
+				svc.service.Annotations = util.MergeStringMaps(override.Annotations, service.Annotations)
+			}
+		}
+		if override.Spec != nil {
+			originalSpec, err := json.Marshal(service.Spec)
+			if err != nil {
+				return svc, fmt.Errorf("error marshalling Service Spec: %w", err)
+			}
+
+			patch, err := json.Marshal(override.Spec)
+			if err != nil {
+				return svc, fmt.Errorf("error marshalling Service Spec override: %w", err)
+			}
+
+			patchedJSON, err := strategicpatch.StrategicMergePatch(originalSpec, patch, corev1.ServiceSpec{})
+			if err != nil {
+				return svc, fmt.Errorf("error patching Service Spec: %w", err)
+			}
+
+			patchedSpec := corev1.ServiceSpec{}
+			err = json.Unmarshal(patchedJSON, &patchedSpec)
+			if err != nil {
+				return svc, fmt.Errorf("error unmarshalling patched Service Spec: %w", err)
+			}
+			svc.service.Spec = patchedSpec
+		}
+	}
+
+	return svc, nil
 }
 
 // GetClusterIPs - returns the cluster IPs of the created service
@@ -67,9 +108,37 @@ func (s *Service) GetServiceHostname() string {
 	return s.serviceHostname
 }
 
-// GetServiceHostnamePort - returns the service hostname with port
-func (s *Service) GetServiceHostnamePort() string {
-	return fmt.Sprintf("%s:%d", s.GetServiceHostname(), GetServicesPortDetails(s.service, s.service.Name).Port)
+// GetServiceHostnamePort - returns the service hostname with port if service port
+// is not nil, otherwise returns GetServiceHostname()
+func (s *Service) GetServiceHostnamePort() (string, string) {
+	servicePort := GetServicesPortDetails(s.service, s.service.Name)
+	if servicePort != nil {
+		return s.GetServiceHostname(),
+			strconv.FormatInt(int64(servicePort.Port), 10)
+	}
+
+	return s.GetServiceHostname(), ""
+}
+
+// GetLabels - returns labels of the service
+func (s *Service) GetLabels() map[string]string {
+	return s.service.Labels
+}
+
+// GetAnnotations - returns annotations of the service
+func (s *Service) GetAnnotations() map[string]string {
+	return s.service.Annotations
+}
+
+// GetSpec - returns the spec of the service
+func (s *Service) GetSpec() *corev1.ServiceSpec {
+	spec := s.service.Spec
+	return &spec
+}
+
+// GetServiceType - returns type of the service spec
+func (s *Service) GetServiceType() corev1.ServiceType {
+	return s.service.Spec.Type
 }
 
 // AddAnnotation - Adds annotation and merges it with the current set
@@ -77,8 +146,73 @@ func (s *Service) AddAnnotation(anno map[string]string) {
 	s.service.Annotations = util.MergeStringMaps(s.service.Annotations, anno)
 }
 
+// GetAPIEndpoint - returns the API endpoint URL for the service to register in keystone.
+func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path string) (string, error) {
+	var apiEndpoint *url.URL
+	var err error
+	if endpointURL != nil {
+		apiEndpoint, err = url.Parse(*endpointURL)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		hostname, port := s.GetServiceHostnamePort()
+
+		var endptURL string
+		if protocol != nil &&
+			((*protocol == ProtocolHTTP && port == "80") ||
+				(*protocol == ProtocolHTTPS && port == "443")) {
+			endptURL = fmt.Sprintf("%s%s", EndptProtocol(protocol), hostname)
+		} else {
+			endptURL = fmt.Sprintf("%s%s:%s", EndptProtocol(protocol), hostname, port)
+		}
+
+		// Do not include the path in parsing check because %(project_id)s
+		// is invalid without being encoded, but they should not be encoded in the actual endpoint
+		apiEndpoint, err = url.Parse(endptURL)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return apiEndpoint.String() + path, nil
+}
+
+// ToOverrideServiceSpec - convert corev1.ServiceSpec to OverrideServiceSpec
+func (s *Service) ToOverrideServiceSpec() (*OverrideServiceSpec, error) {
+	overrideServiceSpec := &OverrideServiceSpec{}
+
+	serviceSpec := s.GetSpec()
+	if serviceSpec != nil {
+		serviceSpecBytes, err := json.Marshal(serviceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error marshalling Service Spec: %w", err)
+		}
+
+		err = json.Unmarshal(serviceSpecBytes, overrideServiceSpec)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling service OverrideSpec: %w", err)
+		}
+	}
+
+	return overrideServiceSpec, nil
+}
+
 // GenericService func
 func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
+	ports := svcInfo.Ports
+	if len(svcInfo.Ports) == 0 {
+		ports = []corev1.ServicePort{
+			{
+				Name: svcInfo.Port.Name,
+				Port: svcInfo.Port.Port,
+				// corev1.ProtocolTCP/ corev1.ProtocolUDP/ corev1.ProtocolSCTP
+				// - https://pkg.go.dev/k8s.io/api@v0.23.6/core/v1#Protocol
+				Protocol: svcInfo.Port.Protocol,
+			},
+		}
+
+	}
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      svcInfo.Name,
@@ -86,23 +220,31 @@ func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 			Labels:    svcInfo.Labels,
 		},
 		Spec: corev1.ServiceSpec{
-			Selector: svcInfo.Selector,
-			Ports: []corev1.ServicePort{
-				{
-					Name: svcInfo.Port.Name,
-					Port: svcInfo.Port.Port,
-					// corev1.ProtocolTCP/ corev1.ProtocolUDP/ corev1.ProtocolSCTP
-					// - https://pkg.go.dev/k8s.io/api@v0.23.6/core/v1#Protocol
-					Protocol: svcInfo.Port.Protocol,
-				},
-			},
+			Selector:  svcInfo.Selector,
+			Ports:     ports,
 			ClusterIP: svcInfo.ClusterIP,
+			Type:      corev1.ServiceTypeClusterIP,
 		},
 	}
 }
 
 // MetalLBService func
+// NOTE: (mschuppert) deprecated, can be removed when external endpoint creation moved to openstack-operator
 func MetalLBService(svcInfo *MetalLBServiceDetails) *corev1.Service {
+	ports := svcInfo.Ports
+	if len(svcInfo.Ports) == 0 {
+		ports = []corev1.ServicePort{
+			{
+				Name: svcInfo.Port.Name,
+				Port: svcInfo.Port.Port,
+				// corev1.ProtocolTCP/ corev1.ProtocolUDP/ corev1.ProtocolSCTP
+				// - https://pkg.go.dev/k8s.io/api@v0.23.6/core/v1#Protocol
+				Protocol: svcInfo.Port.Protocol,
+			},
+		}
+
+	}
+
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        svcInfo.Name,
@@ -112,16 +254,8 @@ func MetalLBService(svcInfo *MetalLBServiceDetails) *corev1.Service {
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: svcInfo.Selector,
-			Ports: []corev1.ServicePort{
-				{
-					Name: svcInfo.Port.Name,
-					Port: svcInfo.Port.Port,
-					// corev1.ProtocolTCP/ corev1.ProtocolUDP/ corev1.ProtocolSCTP
-					// - https://pkg.go.dev/k8s.io/api@v0.23.6/core/v1#Protocol
-					Protocol: svcInfo.Port.Protocol,
-				},
-			},
-			Type: corev1.ServiceTypeLoadBalancer,
+			Ports:    ports,
+			Type:     corev1.ServiceTypeLoadBalancer,
 		},
 	}
 }
@@ -139,8 +273,8 @@ func (s *Service) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
-		service.Labels = util.MergeStringMaps(service.Labels, s.service.Labels)
-		service.Annotations = util.MergeStringMaps(service.Annotations, s.service.Annotations)
+		service.Labels = s.service.Labels
+		service.Annotations = s.service.Annotations
 		service.Spec = s.service.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())
@@ -279,4 +413,16 @@ func GetServicesPortDetails(
 	}
 
 	return nil
+}
+
+// EndptProtocol returns the protocol for the endpoint if proto is nil http is considered
+func EndptProtocol(proto *Protocol) string {
+	if proto == nil {
+		return string(ProtocolHTTP) + "://"
+	}
+	if *proto == ProtocolNone {
+		return ""
+	}
+
+	return string(*proto) + "://"
 }

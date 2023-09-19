@@ -37,7 +37,6 @@ import (
 // NewRoute returns an initialized Route.
 func NewRoute(
 	route *routev1.Route,
-	labels map[string]string,
 	timeout time.Duration,
 	override *OverrideSpec,
 ) (*Route, error) {
@@ -87,6 +86,11 @@ func NewRoute(
 // GetHostname - returns the hostname of the created route
 func (r *Route) GetHostname() string {
 	return r.hostname
+}
+
+// GetRoute - returns the route object
+func (r *Route) GetRoute() *routev1.Route {
+	return r.route
 }
 
 // GenericRoute func
@@ -139,6 +143,18 @@ func (r *Route) CreateOrPatch(
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), route, h.GetScheme())
 		if err != nil {
 			return err
+		}
+
+		// Add the service CR to the ownerRef list of the route to prevent the route being deleted
+		// before the service is deleted. Otherwise this can result cleanup issues which require
+		// the endpoint to be reachable.
+		// If ALL objects in the list have been deleted, this object will be garbage collected.
+		// https://github.com/kubernetes/apimachinery/blob/15d95c0b2af3f4fcf46dce24105e5fbb9379af5a/pkg/apis/meta/v1/types.go#L240-L247
+		for _, owner := range r.OwnerReferences {
+			err := controllerutil.SetOwnerReference(owner, route, h.GetScheme())
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

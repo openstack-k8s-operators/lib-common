@@ -22,16 +22,20 @@ import (
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Route -
+// +kubebuilder:object:generate:=false
 type Route struct {
-	route    *routev1.Route
-	timeout  time.Duration
-	hostname string
+	route           *routev1.Route
+	timeout         time.Duration
+	hostname        string
+	OwnerReferences []metav1.Object
 }
 
 // GenericRouteDetails -
+// +kubebuilder:object:generate:=false
 type GenericRouteDetails struct {
 	Name           string
 	Namespace      string

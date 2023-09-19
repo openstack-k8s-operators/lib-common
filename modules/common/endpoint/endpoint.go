@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -50,13 +51,21 @@ type Data struct {
 	Port int32
 	// An optional path suffix to append to route hostname when forming Keystone endpoint URLs
 	Path string
+	// protocol of the endpoint (http/https/none)
+	Protocol *service.Protocol
 	// details for metallb service generation
+	// NOTE: (mschuppert) deprecated, can be removed when external endpoint creation moved to openstack-operator
+	// and ExposeEndpoints() can be removed
 	MetalLB *MetalLBData
 	// possible overrides for Route
+	// NOTE: (mschuppert) deprecated, can be removed when external endpoint creation moved to openstack-operator
+	// and ExposeEndpoints() can be removed
 	RouteOverride *route.OverrideSpec
 }
 
 // MetalLBData - information specific to creating the MetalLB service
+// NOTE: (mschuppert) deprecated, can be removed when external endpoint creation moved to openstack-operator
+// and ExposeEndpoints() can be removed
 type MetalLBData struct {
 	// Name of the metallb IpAddressPool
 	IPAddressPool string
@@ -73,12 +82,14 @@ type MetalLBData struct {
 }
 
 // ExposeEndpoints - creates services, routes and returns a map of created openstack endpoint
+// NOTE: (mschuppert) deprecated, can be removed when external endpoint creation moved to openstack-operator
+// and ExposeEndpoints() can be removed
 func ExposeEndpoints(
 	ctx context.Context,
 	h *helper.Helper,
 	serviceName string,
 	endpointSelector map[string]string,
-	endpoints map[Endpoint]Data,
+	endpoints map[service.Endpoint]Data,
 	timeout time.Duration,
 ) (map[string]string, ctrl.Result, error) {
 	endpointMap := make(map[string]string)
@@ -95,6 +106,7 @@ func ExposeEndpoints(
 
 		// Create metallb service if specified, otherwise create a route
 		var hostname string
+		var port string
 		if data.MetalLB != nil {
 			var protocol corev1.Protocol
 			if data.MetalLB.Protocol != nil {
@@ -105,7 +117,7 @@ func ExposeEndpoints(
 			}
 
 			// Create the service
-			svc := service.NewService(
+			svc, err := service.NewService(
 				service.MetalLBService(&service.MetalLBServiceDetails{
 					Name:      endpointName,
 					Namespace: h.GetBeforeObject().GetNamespace(),
@@ -117,12 +129,15 @@ func ExposeEndpoints(
 						Protocol: protocol,
 					},
 				}),
-				exportLabels,
 				timeout,
+				&service.OverrideSpec{},
 			)
+			if err != nil {
+				return endpointMap, ctrl.Result{}, err
+			}
 			annotations := map[string]string{
 				service.MetalLBAddressPoolAnnotation: data.MetalLB.IPAddressPool,
-				AnnotationHostnameKey:                svc.GetServiceHostname(), // add annotation to register service name in dnsmasq
+				service.AnnotationHostnameKey:        svc.GetServiceHostname(), // add annotation to register service name in dnsmasq
 			}
 			if len(data.MetalLB.LoadBalancerIPs) > 0 {
 				annotations[service.MetalLBLoadBalancerIPs] = strings.Join(data.MetalLB.LoadBalancerIPs, ",")
@@ -144,11 +159,11 @@ func ExposeEndpoints(
 			}
 			// create service - end
 
-			hostname = svc.GetServiceHostnamePort()
+			hostname, port = svc.GetServiceHostnamePort()
 		} else {
 
 			// Create the service
-			svc := service.NewService(
+			svc, err := service.NewService(
 				service.GenericService(&service.GenericServiceDetails{
 					Name:      endpointName,
 					Namespace: h.GetBeforeObject().GetNamespace(),
@@ -159,9 +174,13 @@ func ExposeEndpoints(
 						Port:     data.Port,
 						Protocol: corev1.ProtocolTCP,
 					}}),
-				exportLabels,
 				5,
+				&service.OverrideSpec{},
 			)
+			if err != nil {
+				return endpointMap, ctrl.Result{}, err
+			}
+
 			ctrlResult, err := svc.CreateOrPatch(ctx, h)
 			if err != nil {
 				return endpointMap, ctrlResult, err
@@ -170,10 +189,10 @@ func ExposeEndpoints(
 			}
 			// create service - end
 
-			hostname = svc.GetServiceHostnamePort()
+			hostname, port = svc.GetServiceHostnamePort()
 
 			// Create the route if it is public endpoint
-			if endpointType == EndpointPublic {
+			if endpointType == service.EndpointPublic {
 				// Create the route
 				// TODO TLS
 				route, err := route.NewRoute(
@@ -184,7 +203,6 @@ func ExposeEndpoints(
 						ServiceName:    endpointName,
 						TargetPortName: endpointName,
 					}),
-					exportLabels,
 					timeout,
 					data.RouteOverride,
 				)
@@ -216,7 +234,8 @@ func ExposeEndpoints(
 
 		// Do not include data.Path in parsing check because %(project_id)s
 		// is invalid without being encoded, but they should not be encoded in the actual endpoint
-		apiEndpoint, err := url.Parse(protocol + hostname)
+		endptURL := fmt.Sprintf("%s://%s:%s", protocol, hostname, port)
+		apiEndpoint, err := url.Parse(endptURL)
 		if err != nil {
 			return endpointMap, ctrl.Result{}, err
 		}
