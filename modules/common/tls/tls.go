@@ -21,6 +21,7 @@ package tls
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
@@ -124,4 +125,28 @@ func (t *TLS) CreateVolumes() []corev1.Volume {
 	}
 
 	return volumes
+}
+
+// CreateDatabaseClientConfig - connection flags for the MySQL client
+// Configures TLS connections for clients that use TLS certificates
+// returns a string of mysql config statements
+func (t *TLS) CreateDatabaseClientConfig() string {
+	conn := []string{}
+	// This assumes certificates are always injected in
+	// a common directory for all services
+	if t.Service.SecretName != "" {
+		conn = append(conn,
+			"ssl-cert=/etc/pki/tls/certs/tls.crt",
+			"ssl-key=/etc/pki/tls/private/tls.key")
+	}
+	// Client uses a CA certificate that gets merged
+	// into the pod's CA bundle by kolla_start
+	if t.Ca.CaSecretName != "" {
+		conn = append(conn,
+			"ssl-ca=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem")
+	}
+	if len(conn) > 0 {
+		conn = append([]string{"ssl=1"}, conn...)
+	}
+	return strings.Join(conn, "\n")
 }
