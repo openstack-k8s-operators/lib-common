@@ -19,11 +19,13 @@ package database
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/tls"
 	mariadbv1 "github.com/openstack-k8s-operators/mariadb-operator/api/v1beta1"
 
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -107,7 +109,8 @@ func (d *Database) setDatabaseHostname(
 			err,
 		)
 	}
-	d.databaseHostname = serviceList.Items[0].GetName()
+	svc := serviceList.Items[0]
+	d.databaseHostname = svc.GetName() + "." + svc.GetNamespace() + ".svc"
 
 	return nil
 }
@@ -320,4 +323,35 @@ func (d *Database) DeleteFinalizer(
 		}
 	}
 	return nil
+}
+
+// GenerateTLSConnectionConfig - connection flags for the MySQL client
+//   - configure TLS connections if the client uses TLS certificates
+//
+// returns a string of mysql config statements
+func GenerateTLSConnectionConfig(
+	tls *tls.TLS,
+) string {
+	if tls != nil {
+		conn := []string{}
+		// This assumes certificates are always injected in
+		// a common directory for all services
+		if tls.Service.SecretName != "" {
+			conn = append(conn,
+				"ssl-cert=/etc/tls-certs/tls.crt",
+				"ssl-key=/etc/tls-certs/tls.key")
+		}
+		// Client uses a CA certificate that will get merged
+		// into the pod's CA bundle by the pod's init container
+		if tls.Ca.CaSecretName != "" {
+			conn = append(conn,
+				"ssl-ca=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem")
+		}
+
+		if len(conn)>0 {
+			conn = append([]string{"ssl=1"}, conn...)
+		}
+		return strings.Join(conn, "\n")
+	}
+	return ""
 }
