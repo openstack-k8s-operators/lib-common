@@ -43,6 +43,12 @@ func (s *FakeAPIServer) Setup(log logr.Logger) {
 	s.mux.HandleFunc("/", s.fallbackHandler)
 }
 
+// AddHandler adds a function to be called if a request is received for the URL
+// matching the pattern
+func (s *FakeAPIServer) AddHandler(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	s.mux.HandleFunc(pattern, handler)
+}
+
 func (s *FakeAPIServer) fallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if r == nil {
 		s.log.Info("Unexpected OpenStackAPI nil request")

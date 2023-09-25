@@ -68,7 +68,7 @@ func NewKeystoneAPIFixtureWithServer(log logr.Logger) *KeystoneAPIFixture {
 	server := &FakeAPIServer{}
 	server.Setup(log)
 	fixture := AddKeystoneAPIFixture(log, server)
-	fixture.ownsServer = true
+	fixture.OwnsServer = true
 	return fixture
 }
 
@@ -78,10 +78,10 @@ func NewKeystoneAPIFixtureWithServer(log logr.Logger) *KeystoneAPIFixture {
 func AddKeystoneAPIFixture(log logr.Logger, server *FakeAPIServer) *KeystoneAPIFixture {
 	fixture := &KeystoneAPIFixture{
 		APIFixture: APIFixture{
-			server:     server,
-			log:        log,
-			urlBase:    "/identity",
-			ownsServer: false,
+			Server:     server,
+			Log:        log,
+			URLBase:    "/identity",
+			OwnsServer: false,
 		},
 		Users:   map[string]users.User{},
 		Domains: map[string]domains.Domain{},
@@ -111,16 +111,16 @@ func (f *KeystoneAPIFixture) registerNormalHandlers() {
 }
 
 func (f *KeystoneAPIFixture) registerHandler(handler Handler) {
-	f.server.mux.HandleFunc(f.urlBase+handler.Pattern, handler.Func)
+	f.Server.AddHandler(f.URLBase+handler.Pattern, handler.Func)
 }
 
 // HandleVersion responds with a valid keystone version response
 func (f *KeystoneAPIFixture) HandleVersion(w http.ResponseWriter, r *http.Request) {
-	f.logRequest(r)
+	f.LogRequest(r)
 	// The /identity URL matches to every request if no handle registered with a more
 	// specific URL pattern
-	if r.RequestURI != f.urlBase+"/" {
-		f.unexpectedRequest(w, r)
+	if r.RequestURI != f.URLBase+"/" {
+		f.UnexpectedRequest(w, r)
 		return
 	}
 
@@ -149,14 +149,14 @@ func (f *KeystoneAPIFixture) HandleVersion(w http.ResponseWriter, r *http.Reques
 			 }
 			 `, f.Endpoint())
 	default:
-		f.unexpectedRequest(w, r)
+		f.UnexpectedRequest(w, r)
 		return
 	}
 }
 
 // HandleToken responds with a valid keystone token
 func (f *KeystoneAPIFixture) HandleToken(w http.ResponseWriter, r *http.Request) {
-	f.logRequest(r)
+	f.LogRequest(r)
 	switch r.Method {
 	case "POST":
 		w.Header().Add("Content-Type", "application/json")
@@ -185,21 +185,21 @@ func (f *KeystoneAPIFixture) HandleToken(w http.ResponseWriter, r *http.Request)
 			 }
 			`, f.Endpoint())
 	default:
-		f.unexpectedRequest(w, r)
+		f.UnexpectedRequest(w, r)
 		return
 	}
 }
 
 // HandleUsers handles the happy path of GET /v3/users and POST /v3/users API
 func (f *KeystoneAPIFixture) HandleUsers(w http.ResponseWriter, r *http.Request) {
-	f.logRequest(r)
+	f.LogRequest(r)
 	switch r.Method {
 	case "GET":
 		f.GetUsers(w, r)
 	case "POST":
 		f.CreateUser(w, r)
 	default:
-		f.unexpectedRequest(w, r)
+		f.UnexpectedRequest(w, r)
 		return
 	}
 }
@@ -225,7 +225,7 @@ func (f *KeystoneAPIFixture) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := json.Marshal(&s)
 	if err != nil {
-		f.internalError(err, "Error during marshalling response", w, r)
+		f.InternalError(err, "Error during marshalling response", w, r)
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")
@@ -237,7 +237,7 @@ func (f *KeystoneAPIFixture) GetUsers(w http.ResponseWriter, r *http.Request) {
 func (f *KeystoneAPIFixture) CreateUser(w http.ResponseWriter, r *http.Request) {
 	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		f.internalError(err, "Error reading request body", w, r)
+		f.InternalError(err, "Error reading request body", w, r)
 		return
 	}
 	var s struct {
@@ -245,7 +245,7 @@ func (f *KeystoneAPIFixture) CreateUser(w http.ResponseWriter, r *http.Request) 
 	}
 	err = json.Unmarshal(bytes, &s)
 	if err != nil {
-		f.internalError(err, "Error during unmarshalling request", w, r)
+		f.InternalError(err, "Error during unmarshalling request", w, r)
 		return
 	}
 	if s.User.ID == "" {
@@ -256,7 +256,7 @@ func (f *KeystoneAPIFixture) CreateUser(w http.ResponseWriter, r *http.Request) 
 
 	bytes, err = json.Marshal(&s)
 	if err != nil {
-		f.internalError(err, "Error during marshalling response", w, r)
+		f.InternalError(err, "Error during marshalling response", w, r)
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")
@@ -266,14 +266,14 @@ func (f *KeystoneAPIFixture) CreateUser(w http.ResponseWriter, r *http.Request) 
 
 // HandleDomains handles the happy path of GET /v3/domains and POST /v3/domains API
 func (f *KeystoneAPIFixture) HandleDomains(w http.ResponseWriter, r *http.Request) {
-	f.logRequest(r)
+	f.LogRequest(r)
 	switch r.Method {
 	case "GET":
 		f.GetDomains(w, r)
 	case "POST":
 		f.CreateDomain(w, r)
 	default:
-		f.unexpectedRequest(w, r)
+		f.UnexpectedRequest(w, r)
 		return
 	}
 }
@@ -299,7 +299,7 @@ func (f *KeystoneAPIFixture) GetDomains(w http.ResponseWriter, r *http.Request) 
 
 	bytes, err := json.Marshal(&s)
 	if err != nil {
-		f.internalError(err, "Error during marshalling response", w, r)
+		f.InternalError(err, "Error during marshalling response", w, r)
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")
@@ -311,7 +311,7 @@ func (f *KeystoneAPIFixture) GetDomains(w http.ResponseWriter, r *http.Request) 
 func (f *KeystoneAPIFixture) CreateDomain(w http.ResponseWriter, r *http.Request) {
 	bytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		f.internalError(err, "Error reading request body", w, r)
+		f.InternalError(err, "Error reading request body", w, r)
 		return
 	}
 	var s struct {
@@ -319,7 +319,7 @@ func (f *KeystoneAPIFixture) CreateDomain(w http.ResponseWriter, r *http.Request
 	}
 	err = json.Unmarshal(bytes, &s)
 	if err != nil {
-		f.internalError(err, "Error during unmarshalling request", w, r)
+		f.InternalError(err, "Error during unmarshalling request", w, r)
 		return
 	}
 	if s.Domain.ID == "" {
@@ -330,7 +330,7 @@ func (f *KeystoneAPIFixture) CreateDomain(w http.ResponseWriter, r *http.Request
 
 	bytes, err = json.Marshal(&s)
 	if err != nil {
-		f.internalError(err, "Error during marshalling response", w, r)
+		f.InternalError(err, "Error during marshalling response", w, r)
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")

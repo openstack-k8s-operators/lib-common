@@ -33,37 +33,42 @@ type Handler struct {
 // APIFixture is a base struct to implement OpenStack API simulators for the
 // EnvTest.
 type APIFixture struct {
-	log        logr.Logger
-	server     *FakeAPIServer
-	ownsServer bool
-	urlBase    string
+	Log        logr.Logger
+	Server     *FakeAPIServer
+	OwnsServer bool
+	URLBase    string
 }
 
-func (f *APIFixture) logRequest(r *http.Request) {
-	f.log.Info("OpenStack API request", "method", r.Method, "URI", r.RequestURI)
+// LogRequest logs details of the http.Request
+func (f *APIFixture) LogRequest(r *http.Request) {
+	f.Log.Info("OpenStack API request", "method", r.Method, "URI", r.RequestURI)
 }
 
 // Cleanup stops the embedded http server if it was created by the fixture
 // during setup
 func (f *APIFixture) Cleanup() {
-	if f.ownsServer {
-		f.server.Cleanup()
+	if f.OwnsServer {
+		f.Server.Cleanup()
 	}
 }
 
 // Endpoint is the URL the fixture's embedded http server listening on
 func (f *APIFixture) Endpoint() string {
-	return f.server.Endpoint() + f.urlBase
+	return f.Server.Endpoint() + f.URLBase
 }
 
-func (f *APIFixture) unexpectedRequest(w http.ResponseWriter, r *http.Request) {
-	f.log.Info("Unexpected OpenStackAPI request", "method", r.Method, "URI", r.RequestURI)
+// UnexpectedRequest sends a HTTP 500 response. Use it if the request is
+// understood but not implemented by the fixture
+func (f *APIFixture) UnexpectedRequest(w http.ResponseWriter, r *http.Request) {
+	f.Log.Info("Unexpected OpenStackAPI request", "method", r.Method, "URI", r.RequestURI)
 	w.WriteHeader(500)
 	fmt.Fprintf(w, "Unexpected OpenStackAPI request %s %s", r.Method, r.RequestURI)
 }
 
-func (f *APIFixture) internalError(err error, msg string, w http.ResponseWriter, r *http.Request) {
-	f.log.Info("Internal error", "method", r.Method, "URI", r.RequestURI, "error", err, "message", msg)
+// InternalError sends a HTTP 500 response Use it if there was an unexpected
+// error during the request processing
+func (f *APIFixture) InternalError(err error, msg string, w http.ResponseWriter, r *http.Request) {
+	f.Log.Info("Internal error", "method", r.Method, "URI", r.RequestURI, "error", err, "message", msg)
 	w.WriteHeader(500)
 	fmt.Fprintf(w, "Internal error in %s %s: %s: %v", r.Method, r.RequestURI, msg, err)
 }
