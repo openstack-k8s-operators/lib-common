@@ -194,6 +194,10 @@ func ExposeEndpoints(
 			// Create the route if it is public endpoint
 			if endpointType == service.EndpointPublic {
 				// Create the route
+				routeOverride := []route.OverrideSpec{}
+				if data.RouteOverride != nil {
+					routeOverride = append(routeOverride, *data.RouteOverride)
+				}
 				// TODO TLS
 				route, err := route.NewRoute(
 					route.GenericRoute(&route.GenericRouteDetails{
@@ -204,7 +208,7 @@ func ExposeEndpoints(
 						TargetPortName: endpointName,
 					}),
 					timeout,
-					data.RouteOverride,
+					routeOverride,
 				)
 				if err != nil {
 					return endpointMap, ctrl.Result{}, err
