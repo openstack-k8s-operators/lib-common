@@ -8,7 +8,7 @@ require (
 )
 
 require (
-	github.com/onsi/ginkgo/v2 v2.12.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.12.1 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 )
