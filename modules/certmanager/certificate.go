@@ -91,7 +91,7 @@ func (c *Certificate) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), cert, func() error {
 		cert.Labels = util.MergeStringMaps(cert.Labels, c.certificate.Labels)
-		cert.Annotations = c.certificate.Annotations
+		cert.Annotations = util.MergeStringMaps(cert.Annotations, c.certificate.Annotations)
 		cert.Spec = c.certificate.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), cert, h.GetScheme())

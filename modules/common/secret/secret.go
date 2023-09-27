@@ -153,7 +153,7 @@ func createOrUpdateSecret(
 
 	// create or update the CM
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
-		secret.Labels = st.Labels
+		secret.Labels = util.MergeStringMaps(secret.Labels, st.Labels)
 		// add data from templates
 		renderedTemplateData, err := util.GetTemplateData(st)
 		if err != nil {
