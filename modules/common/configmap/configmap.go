@@ -74,7 +74,7 @@ func createOrPatchConfigMap(
 	// create or update the CM
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), configMap, func() error {
 
-		configMap.Labels = cm.Labels
+		configMap.Labels = util.MergeStringMaps(configMap.Labels, cm.Labels)
 		// add data from templates
 		renderedTemplateData, err := util.GetTemplateData(cm)
 		if err != nil {

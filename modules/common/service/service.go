@@ -273,8 +273,8 @@ func (s *Service) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
-		service.Labels = s.service.Labels
-		service.Annotations = s.service.Annotations
+		service.Labels = util.MergeStringMaps(service.Labels, s.service.Labels)
+		service.Annotations = util.MergeStringMaps(service.Annotations, s.service.Annotations)
 		service.Spec = s.service.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())

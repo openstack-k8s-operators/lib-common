@@ -104,7 +104,7 @@ func (i *Issuer) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), issuer, func() error {
 		issuer.Labels = util.MergeStringMaps(issuer.Labels, i.issuer.Labels)
-		issuer.Annotations = i.issuer.Annotations
+		issuer.Annotations = util.MergeStringMaps(issuer.Annotations, i.issuer.Annotations)
 		issuer.Spec = i.issuer.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), issuer, h.GetScheme())
