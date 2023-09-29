@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// +kubebuilder:object:generate:=true
+
 package tls
 
 // Service contains server-specific TLS secret
