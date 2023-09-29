@@ -27,9 +27,12 @@ func TestGetCRDDirFromModule(t *testing.T) {
 	t.Run("with an existing module in go.mod", func(t *testing.T) {
 		g := NewWithT(t)
 
-		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/mariadb-operator/api", "../database/go.mod", "bases")
+		// NOTE(gibi): this is not a good use case as k8s.io does not have
+		// CRDs stored. But in lib-common we have no go.mod deps on a repo
+		// that has such CRDs to test on.
+		path, err := GetCRDDirFromModule("k8s.io/api", "go.mod", "bases")
 		g.Expect(err).ShouldNot(HaveOccurred())
-		g.Expect(path).Should(MatchRegexp("/.*/github.com/openstack-k8s-operators/mariadb-operator/api@v.*/bases"))
+		g.Expect(path).Should(MatchRegexp("/.*/k8s.io/api@v.*/bases"))
 	})
 	t.Run("with a wrong go.mod path", func(t *testing.T) {
 		g := NewWithT(t)
