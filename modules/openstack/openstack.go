@@ -17,12 +17,21 @@ limitations under the License.
 package openstack
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/go-logr/logr"
 	gophercloud "github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	service "github.com/openstack-k8s-operators/lib-common/modules/common/service"
+)
+
+const (
+	// defaultRequestTimeout is the default timeout duration for requests
+	defaultRequestTimeout = 10 * time.Second
 )
 
 // OpenStack -
@@ -41,6 +50,15 @@ type AuthOpts struct {
 	DomainName string
 	Region     string
 	Scope      *gophercloud.AuthScope
+	TLS        *TLSConfig
+}
+
+// TLSConfig - settings
+type TLSConfig struct {
+	CACerts    []string
+	Insecure   bool
+	ClientCert string
+	ClientKey  string
 }
 
 // NewOpenStack creates a new new instance of the openstack struct from a config struct
@@ -60,12 +78,62 @@ func NewOpenStack(
 		opts.Scope = cfg.Scope
 	}
 
-	provider, err := openstack.AuthenticatedClient(opts)
+	// define http client for setting timeout, proxy and tls settings
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+		},
+		Timeout: defaultRequestTimeout,
+	}
+
+	// create tls config
+	tlsConfig := &tls.Config{}
+	if cfg.TLS != nil {
+		if len(cfg.TLS.CACerts) > 0 {
+			caCertPool := x509.NewCertPool()
+			for _, caCert := range cfg.TLS.CACerts {
+				caCertPool.AppendCertsFromPEM([]byte(caCert))
+			}
+			tlsConfig.RootCAs = caCertPool
+		}
+		if cfg.TLS.Insecure {
+			tlsConfig.InsecureSkipVerify = true
+		}
+
+		if cfg.TLS.ClientCert != "" && cfg.TLS.ClientKey != "" {
+			cert, err := tls.LoadX509KeyPair(cfg.TLS.ClientCert, cfg.TLS.ClientKey)
+			if err != nil {
+				return nil, err
+			}
+
+			tlsConfig.Certificates = []tls.Certificate{cert}
+		}
+	}
+
+	transport := &http.Transport{Proxy: http.ProxyFromEnvironment, TLSClientConfig: tlsConfig}
+
+	// create provider client and add inject customized http client
+	providerClient, err := openstack.NewClient(opts.IdentityEndpoint)
 	if err != nil {
 		return nil, err
 	}
-	endpointOpts := gophercloud.EndpointOpts{Type: "identity", Region: cfg.Region}
-	identityClient, err := openstack.NewIdentityV3(provider, endpointOpts)
+
+	providerClient.HTTPClient = httpClient
+	providerClient.HTTPClient.Transport = transport
+
+	// authenticate the client
+	err = openstack.Authenticate(providerClient, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// create the identity client using previous providerClient
+	endpointOpts := gophercloud.EndpointOpts{
+		Type:         "identity",
+		Region:       cfg.Region,
+		Availability: gophercloud.AvailabilityInternal,
+	}
+	identityClient, err := openstack.NewIdentityV3(providerClient, endpointOpts)
 	if err != nil {
 		return nil, err
 	}
