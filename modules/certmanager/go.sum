@@ -236,8 +236,6 @@ github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7 h1:rncLxJBpFGqBztyxC
 github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7/go.mod h1:ctXNyWanKEjGj8sss1KjjHQ3ENKFm33FFnS5BKaIPh4=
 github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20230920125017-2c76cd203b44 h1:W2HZy+uk5fnVwvw3+/Jd/k7sNiVXCOd8SiV0dMvmjys=
 github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20230920125017-2c76cd203b44/go.mod h1:fOJ95wMSymtfoellY/TFKcrzW6bu/nTCTzEnFEgCGCc=
-github.com/openstack-k8s-operators/mariadb-operator/api v0.1.1-0.20230918111825-8999b3b2dc3c h1:9R8T1WRwuPS5KMfsQWxAMSGPuJrGMJ7bODKK9dirhHA=
-github.com/openstack-k8s-operators/mariadb-operator/api v0.1.1-0.20230918111825-8999b3b2dc3c/go.mod h1:xXHF/R/L0XamRHR/UkzlgzSTocBQ6GSQ2U16Q9Mf/bA=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
