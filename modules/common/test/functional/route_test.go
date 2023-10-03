@@ -75,7 +75,7 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{},
+			nil,
 		)
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -97,11 +97,13 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
-					Labels: map[string]string{
-						"foo":     "b",
-						"replace": "b",
+			[]route.OverrideSpec{
+				{
+					EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
+						Labels: map[string]string{
+							"foo":     "b",
+							"replace": "b",
+						},
 					},
 				},
 			},
@@ -123,11 +125,13 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
-					Annotations: map[string]string{
-						"foo":     "b",
-						"replace": "b",
+			[]route.OverrideSpec{
+				{
+					EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{
+							"foo":     "b",
+							"replace": "b",
+						},
 					},
 				},
 			},
@@ -149,9 +153,11 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					Host: "custom.host.domain",
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						Host: "custom.host.domain",
+					},
 				},
 			},
 		)
@@ -167,9 +173,11 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					Subdomain: "subdomain",
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						Subdomain: "subdomain",
+					},
 				},
 			},
 		)
@@ -185,9 +193,11 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					Path: "/some/path",
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						Path: "/some/path",
+					},
 				},
 			},
 		)
@@ -203,11 +213,13 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					To: route.TargetReference{
-						Name:   "my-custom-service",
-						Weight: ptr.To[int32](10),
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						To: route.TargetReference{
+							Name:   "my-custom-service",
+							Weight: ptr.To[int32](10),
+						},
 					},
 				},
 			},
@@ -226,13 +238,15 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					AlternateBackends: []route.TargetReference{
-						{
-							Kind:   "Service",
-							Name:   "my-alternate-service",
-							Weight: ptr.To[int32](200),
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						AlternateBackends: []route.TargetReference{
+							{
+								Kind:   "Service",
+								Name:   "my-alternate-service",
+								Weight: ptr.To[int32](200),
+							},
 						},
 					},
 				},
@@ -251,10 +265,12 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					Port: &routev1.RoutePort{
-						TargetPort: intstr.FromInt(8080),
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						Port: &routev1.RoutePort{
+							TargetPort: intstr.FromInt(8080),
+						},
 					},
 				},
 			},
@@ -271,13 +287,15 @@ var _ = Describe("route package", func() {
 		r, err := route.NewRoute(
 			getExampleRoute(namespace),
 			timeout,
-			&route.OverrideSpec{
-				Spec: &route.Spec{
-					TLS: &routev1.TLSConfig{
-						Termination:   routev1.TLSTerminationEdge,
-						Certificate:   "cert",
-						Key:           "key",
-						CACertificate: "cacert",
+			[]route.OverrideSpec{
+				{
+					Spec: &route.Spec{
+						TLS: &routev1.TLSConfig{
+							Termination:   routev1.TLSTerminationEdge,
+							Certificate:   "cert",
+							Key:           "key",
+							CACertificate: "cacert",
+						},
 					},
 				},
 			},
@@ -291,5 +309,90 @@ var _ = Describe("route package", func() {
 		Expect(rv1.Spec.TLS.Certificate).To(Equal("cert"))
 		Expect(rv1.Spec.TLS.Key).To(Equal("key"))
 		Expect(rv1.Spec.TLS.CACertificate).To(Equal("cacert"))
+	})
+
+	It("merges multipe overrides different parameters", func() {
+		r, err := route.NewRoute(
+			getExampleRoute(namespace),
+			timeout,
+			[]route.OverrideSpec{
+				{
+					EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
+						Labels: map[string]string{
+							"foo":     "b",
+							"replace": "b",
+						},
+					},
+				},
+				{
+					Spec: &route.Spec{
+						Host: "custom.host.domain",
+					},
+				},
+				{
+					Spec: &route.Spec{
+						TLS: &routev1.TLSConfig{
+							Termination:   routev1.TLSTerminationEdge,
+							Certificate:   "cert",
+							Key:           "key",
+							CACertificate: "cacert",
+						},
+					},
+				},
+			},
+		)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		_, err = r.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		rv1 := th.AssertRouteExists(types.NamespacedName{Namespace: namespace, Name: "test-route"})
+		// non overridden label exists
+		Expect(rv1.Labels["label"]).To(Equal("a"))
+		// adds new label
+		Expect(rv1.Labels["foo"]).To(Equal("b"))
+		// override replaces existing label
+		Expect(rv1.Labels["replace"]).To(Equal("b"))
+
+		Expect(rv1.Spec.Host).To(Equal("custom.host.domain"))
+
+		Expect(rv1.Spec.TLS.Termination).To(Equal(routev1.TLSTerminationEdge))
+		Expect(rv1.Spec.TLS.Certificate).To(Equal("cert"))
+		Expect(rv1.Spec.TLS.Key).To(Equal("key"))
+		Expect(rv1.Spec.TLS.CACertificate).To(Equal("cacert"))
+	})
+
+	It("merges multipe overrides same parameters, last wins", func() {
+		r, err := route.NewRoute(
+			getExampleRoute(namespace),
+			timeout,
+			[]route.OverrideSpec{
+				{
+					EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
+						Labels: map[string]string{
+							"foo":     "b",
+							"replace": "b",
+						},
+					},
+				},
+				{
+					EmbeddedLabelsAnnotations: &route.EmbeddedLabelsAnnotations{
+						Labels: map[string]string{
+							"replace": "2ndoverridewins",
+						},
+					},
+				},
+			},
+		)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		_, err = r.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		rv1 := th.AssertRouteExists(types.NamespacedName{Namespace: namespace, Name: "test-route"})
+		// non overridden label exists
+		Expect(rv1.Labels["label"]).To(Equal("a"))
+		// adds new label
+		Expect(rv1.Labels["foo"]).To(Equal("b"))
+		// override replaces existing label
+		Expect(rv1.Labels["replace"]).To(Equal("2ndoverridewins"))
 	})
 })

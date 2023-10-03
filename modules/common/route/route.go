@@ -38,7 +38,7 @@ import (
 func NewRoute(
 	route *routev1.Route,
 	timeout time.Duration,
-	override *OverrideSpec,
+	overrides []OverrideSpec,
 ) (*Route, error) {
 	r := &Route{
 		route:   route,
@@ -46,7 +46,7 @@ func NewRoute(
 	}
 
 	// patch route with possible overrides of Labels, Annotations and Spec
-	if override != nil {
+	for _, override := range overrides {
 		if override.EmbeddedLabelsAnnotations != nil {
 			if override.Labels != nil {
 				r.route.Labels = util.MergeStringMaps(override.Labels, r.route.Labels)
