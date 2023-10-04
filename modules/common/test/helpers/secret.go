@@ -65,6 +65,15 @@ func (tc *TestHelper) CreateEmptySecret(name types.NamespacedName) *corev1.Secre
 	return tc.CreateSecret(name, map[string][]byte{})
 }
 
+// CreateSSHSecret creates new secret containing mock "ssh-privatekey"
+//
+// Example usage:
+//
+// sshSecret := th.CreateSSHSecret(types.NamespacedName{Name: "test-ssh-secret", Namespace: "test-namespace"})
+func (tc *TestHelper) CreateSSHSecret(name types.NamespacedName) *corev1.Secret {
+	return tc.CreateSecret(name, map[string][]byte{"ssh-privatekey": []byte("foo")})
+}
+
 // DeleteSecret deletes a Secret resource
 //
 // Example usage:
