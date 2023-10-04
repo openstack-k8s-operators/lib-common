@@ -1,5 +1,5 @@
 /*
-Copyright 2022 Red Hat
+Copyright 2023 Red Hat
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,17 +18,27 @@ limitations under the License.
 
 package tls
 
+import (
+	"context"
+	"fmt"
+
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
+	corev1 "k8s.io/api/core/v1"
+)
+
 // Service contains server-specific TLS secret
 type Service struct {
-	// Server-specific settings
-	SecretName             string `json:"secretName,omitempty"`
-	DisableNonTLSListeners bool   `json:"disableNonTLSListeners,omitempty"`
+	// +kubebuilder:validation:Optional
+	SecretName string `json:"secretName,omitempty"`
+	// +kubebuilder:validation:Optional
+	DisableNonTLSListeners bool `json:"disableNonTLSListeners,omitempty"`
 }
 
 // Ca contains CA-specific settings, which could be used both by services (to define their own CA certificates)
 // and by clients (to verify the server's certificate)
 type Ca struct {
-	// CA-specific settings
+	// +kubebuilder:validation:Optional
 	CaSecretName string `json:"caSecretName,omitempty"`
 }
 
@@ -36,4 +46,82 @@ type Ca struct {
 type TLS struct {
 	Service *Service `json:"service"`
 	Ca      *Ca      `json:"ca"`
+}
+
+// NewTLS - initialize and return a TLS struct
+func NewTLS(ctx context.Context, h *helper.Helper, namespace string, service *Service, ca *Ca) (*TLS, error) {
+
+	// Ensure service SecretName exists or return an error
+	if service != nil && service.SecretName != "" {
+		secretData, _, err := secret.GetSecret(ctx, h, service.SecretName, namespace)
+		if err != nil {
+			return nil, fmt.Errorf("error ensuring secret %s exists: %w", service.SecretName, err)
+		}
+
+		_, keyOk := secretData.Data["tls.key"]
+		_, certOk := secretData.Data["tls.crt"]
+		if !keyOk || !certOk {
+			return nil, fmt.Errorf("secret %s does not contain both tls.key and tls.crt", service.SecretName)
+		}
+	}
+
+	return &TLS{
+		Service: service,
+		Ca:      ca,
+	}, nil
+}
+
+// CreateVolumeMounts - add volume mount for TLS certificate and CA certificates, this counts on openstack-operator providing CA certs with unique names
+func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
+	var volumeMounts []corev1.VolumeMount
+
+	if t.Service != nil && t.Service.SecretName != "" {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "tls-certs",
+			MountPath: "/var/lib/config-data/tls-certificates",
+			ReadOnly:  true,
+		})
+	}
+
+	if t.Ca != nil && t.Ca.CaSecretName != "" {
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "ca-certs",
+			MountPath: "/var/lib/config-data/ca-certificates",
+			ReadOnly:  true,
+		})
+	}
+
+	return volumeMounts
+}
+
+// CreateVolumes - add volume for TLS certificate and CA certificates
+func (t *TLS) CreateVolumes() []corev1.Volume {
+	var volumes []corev1.Volume
+	mode := int32(0400)
+
+	if t.Service != nil && t.Service.SecretName != "" {
+		volumes = append(volumes, corev1.Volume{
+			Name: "tls-certs",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName:  t.Service.SecretName,
+					DefaultMode: &mode,
+				},
+			},
+		})
+	}
+
+	if t.Ca != nil && t.Ca.CaSecretName != "" {
+		volumes = append(volumes, corev1.Volume{
+			Name: "ca-certs",
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName:  t.Ca.CaSecretName,
+					DefaultMode: &mode,
+				},
+			},
+		})
+	}
+
+	return volumes
 }
