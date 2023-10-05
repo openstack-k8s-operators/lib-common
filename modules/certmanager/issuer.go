@@ -30,6 +30,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	// RootCAIssuerInternalLabel for internal RootCA to issue internal TLS Certs
+	RootCAIssuerInternalLabel = "osp-rootca-issuer-internal"
+)
+
 // Issuer -
 type Issuer struct {
 	issuer  *certmgrv1.Issuer
