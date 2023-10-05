@@ -141,6 +141,7 @@ func EnsureCert(
 	certName string,
 	duration *time.Duration,
 	hostnames []string,
+	annotations map[string]string,
 	labels map[string]string,
 ) (*k8s_corev1.Secret, ctrl.Result, error) {
 	// get issuer
@@ -176,6 +177,10 @@ func EnsureCert(
 				Group: issuer.GroupVersionKind().Group,
 			},
 			SecretName: certSecretName,
+			SecretTemplate: &certmgrv1.CertificateSecretTemplate{
+				Annotations: annotations,
+				Labels:      labels,
+			},
 			// TODO Usages, e.g. for client cert
 		},
 	)
