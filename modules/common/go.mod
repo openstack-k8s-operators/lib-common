@@ -10,6 +10,7 @@ require (
 	github.com/onsi/gomega v1.28.0
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
+	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.26.0
 	k8s.io/api v0.26.9
 	k8s.io/apimachinery v0.26.9
@@ -76,6 +77,7 @@ require (
 
 require (
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 )
 

@@ -78,6 +78,7 @@ func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
 	var volumeMounts []corev1.VolumeMount
 
 	if t.Service != nil && t.Service.SecretName != "" {
+		fmt.Println("Creating tls-certs volume for:", t.Service.SecretName)
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      "tls-crt",
 			MountPath: "/etc/pki/tls/certs/tls.crt",
@@ -93,6 +94,7 @@ func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
 	}
 
 	if t.Ca != nil && t.Ca.CaSecretName != "" {
+		fmt.Println("Creating ca-certs volume for:", t.Ca.CaSecretName)
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      "ca-certs",
 			MountPath: "/etc/pki/ca-trust/extracted/pem",
@@ -108,6 +110,7 @@ func (t *TLS) CreateVolumes() []corev1.Volume {
 	var volumes []corev1.Volume
 
 	if t.Service != nil && t.Service.SecretName != "" {
+		fmt.Println("Creating tls-certs volume mount for:", t.Service.SecretName)
 		volumes = append(volumes, corev1.Volume{
 			Name: "tls-certs",
 			VolumeSource: corev1.VolumeSource{
@@ -120,6 +123,8 @@ func (t *TLS) CreateVolumes() []corev1.Volume {
 	}
 
 	if t.Ca != nil && t.Ca.CaSecretName != "" {
+		fmt.Println("Creating ca-certs volume mount for:", t.Ca.CaSecretName)
+
 		volumes = append(volumes, corev1.Volume{
 			Name: "ca-certs",
 			VolumeSource: corev1.VolumeSource{

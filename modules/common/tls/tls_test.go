@@ -17,9 +17,37 @@ limitations under the License.
 package tls
 
 import (
+	"os"
 	"strings"
 	"testing"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
+
+var (
+	k8sClient client.Client
+)
+
+func TestMain(m *testing.M) {
+	t := &envtest.Environment{}
+
+	cfg, err := t.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	k8sClient, err = client.New(cfg, client.Options{})
+	if err != nil {
+		panic(err)
+	}
+
+	code := m.Run()
+
+	t.Stop()
+
+	os.Exit(code)
+}
 
 func TestCreateVolumeMounts(t *testing.T) {
 	tests := []struct {
