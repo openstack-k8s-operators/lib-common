@@ -53,9 +53,8 @@ test: gowork generate fmt vet envtest ginkgo ## Run tests.
 		pushd ./$$mod ; \
 		if [ -f test/functional/suite_test.go ]; then \
 			KUBEBUILDER_ASSETS="$(shell $(ENVTEST) -v debug --bin-dir $(LOCALBIN) use $(ENVTEST_K8S_VERSION) -p path)" $(GINKGO) --trace --cover --coverprofile cover.out --covermode=atomic ${PROC_CMD} $(GINKGO_ARGS) ./test/... || exit 1; \
-		else \
-			KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out || exit 1; \
 		fi; \
+		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out || exit 1; \
 		popd ; \
 	done
 ##@ Build
