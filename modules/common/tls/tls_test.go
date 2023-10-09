@@ -37,7 +37,7 @@ func TestCreateVolumeMounts(t *testing.T) {
 			name:          "Only TLS Secret",
 			service:       &Service{SecretName: "test-tls-secret"},
 			ca:            &Ca{},
-			wantMountsLen: 1,
+			wantMountsLen: 2,
 		},
 		{
 			name:          "Only CA Secret",
@@ -49,7 +49,7 @@ func TestCreateVolumeMounts(t *testing.T) {
 			name:          "TLS and CA Secrets",
 			service:       &Service{SecretName: "test-tls-secret"},
 			ca:            &Ca{CaSecretName: "test-ca1"},
-			wantMountsLen: 2,
+			wantMountsLen: 3,
 		},
 	}
 
