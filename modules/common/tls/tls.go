@@ -25,6 +25,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 )
 
 // Service contains server-specific TLS secret
@@ -77,8 +78,15 @@ func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
 
 	if t.Service != nil && t.Service.SecretName != "" {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
-			Name:      "tls-certs",
-			MountPath: "/var/lib/config-data/tls-certificates",
+			Name:      "tls-crt",
+			MountPath: "/etc/pki/tls/certs/tls.crt",
+			SubPath:   "tls.crt",
+			ReadOnly:  true,
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMount{
+			Name:      "tls-key",
+			MountPath: "/etc/pki/tls/certs/tls.key",
+			SubPath:   "tls.key",
 			ReadOnly:  true,
 		})
 	}
@@ -86,7 +94,7 @@ func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
 	if t.Ca != nil && t.Ca.CaSecretName != "" {
 		volumeMounts = append(volumeMounts, corev1.VolumeMount{
 			Name:      "ca-certs",
-			MountPath: "/var/lib/config-data/ca-certificates",
+			MountPath: "/etc/pki/ca-trust/extracted/pem",
 			ReadOnly:  true,
 		})
 	}
@@ -97,7 +105,6 @@ func (t *TLS) CreateVolumeMounts() []corev1.VolumeMount {
 // CreateVolumes - add volume for TLS certificate and CA certificates
 func (t *TLS) CreateVolumes() []corev1.Volume {
 	var volumes []corev1.Volume
-	mode := int32(0400)
 
 	if t.Service != nil && t.Service.SecretName != "" {
 		volumes = append(volumes, corev1.Volume{
@@ -105,7 +112,7 @@ func (t *TLS) CreateVolumes() []corev1.Volume {
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName:  t.Service.SecretName,
-					DefaultMode: &mode,
+					DefaultMode: ptr.To[int32](0440),
 				},
 			},
 		})
@@ -117,7 +124,7 @@ func (t *TLS) CreateVolumes() []corev1.Volume {
 			VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName:  t.Ca.CaSecretName,
-					DefaultMode: &mode,
+					DefaultMode: ptr.To[int32](0444),
 				},
 			},
 		})
