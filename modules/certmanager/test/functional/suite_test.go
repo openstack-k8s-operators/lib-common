@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -40,8 +41,9 @@ import (
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	certmanager_test "github.com/openstack-k8s-operators/lib-common/modules/certmanager/test/helpers"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
-	. "github.com/openstack-k8s-operators/lib-common/modules/test/helpers"
+	common_test "github.com/openstack-k8s-operators/lib-common/modules/test/helpers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -59,14 +61,17 @@ const (
 )
 
 var (
-	cfg     *rest.Config
-	cClient client.Client
-	testEnv *envtest.Environment
-	ctx     context.Context
-	cancel  context.CancelFunc
-	logger  logr.Logger
-	h       *helper.Helper
-	th      *TestHelper
+	cfg           *rest.Config
+	k8sClient     client.Client
+	testEnv       *envtest.Environment
+	ctx           context.Context
+	cancel        context.CancelFunc
+	logger        logr.Logger
+	h             *helper.Helper
+	th            *common_test.TestHelper
+	thCertmanager *certmanager_test.TestHelper
+	namespace     string
+	names         Names
 )
 
 func TestCommon(t *testing.T) {
@@ -90,6 +95,7 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "..", "test", "openshift_crds", "cert-manager", "v1"),
 		},
+
 		ErrorIfCRDPathMissing: true,
 	}
 	var err error
@@ -107,23 +113,23 @@ var _ = BeforeSuite(func() {
 
 	logger = ctrl.Log.WithName("---Test---")
 
-	cClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cClient).NotTo(BeNil())
-
-	client, err := kubernetes.NewForConfig(cfg)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(client).NotTo(BeNil())
-
-	th = NewTestHelper(ctx, cClient, timeout, interval, logger)
+	Expect(k8sClient).NotTo(BeNil())
+	th = common_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
 	Expect(th).NotTo(BeNil())
+	thCertmanager = certmanager_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
+	Expect(thCertmanager).NotTo(BeNil())
+
+	kclient, err := kubernetes.NewForConfig(cfg)
+	Expect(err).ToNot(HaveOccurred(), "failed to create kclient")
 
 	// NOTE(gibi): helper.Helper needs an object that is being reconciled
 	// we are not really doing reconciliation in this test but still we need to
 	// provide a valid object. It is used as controller reference for certain
 	// objects created in the test. So we provide a simple one, a Namespace.
 	genericObject := th.CreateNamespace("generic-object")
-	h, err = helper.NewHelper(genericObject, cClient, client, testEnv.Scheme, ctrl.Log)
+	h, err = helper.NewHelper(genericObject, k8sClient, kclient, testEnv.Scheme, ctrl.Log)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(h).NotTo(BeNil())
 
@@ -138,4 +144,17 @@ var _ = AfterSuite(func() {
 	cancel()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = BeforeEach(func() {
+	// NOTE(gibi): We need to create a unique namespace for each test run
+	// as namespaces cannot be deleted in a locally running envtest. See
+	// https://book.kubebuilder.io/reference/envtest.html#namespace-usage-limitation
+	namespace = uuid.New().String()
+	th.CreateNamespace(namespace)
+	// We still request the delete of the Namespace to properly cleanup if
+	// we run the test in an existing cluster.
+	DeferCleanup(th.DeleteNamespace, namespace)
+
+	names = CreateNames(namespace)
 })

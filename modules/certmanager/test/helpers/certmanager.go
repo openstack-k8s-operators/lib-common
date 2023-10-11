@@ -14,12 +14,38 @@ limitations under the License.
 package helpers
 
 import (
+	"context"
+	"time"
+
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/onsi/gomega"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+
+	base "github.com/openstack-k8s-operators/lib-common/modules/common/test/helpers"
 )
+
+// TestHelper is a collection of helpers for testing operators. It extends the
+// generic TestHelper from modules/test.
+type TestHelper struct {
+	*base.TestHelper
+}
+
+// NewTestHelper returns a TestHelper
+func NewTestHelper(
+	ctx context.Context,
+	k8sClient client.Client,
+	timeout time.Duration,
+	interval time.Duration,
+	logger logr.Logger,
+) *TestHelper {
+	helper := &TestHelper{}
+	helper.TestHelper = base.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
+	return helper
+}
 
 // GetIssuer waits for and retrieves a Issuer resource from the Kubernetes cluster
 //

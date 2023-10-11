@@ -3,19 +3,14 @@ module github.com/openstack-k8s-operators/lib-common/modules/test
 go 1.19
 
 require (
-	github.com/cert-manager/cert-manager v1.11.5
 	github.com/go-logr/logr v1.2.4
 	github.com/onsi/gomega v1.28.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.1.1-0.20230919113507-d74c2f31d216
 	golang.org/x/mod v0.12.0
-	k8s.io/apimachinery v0.26.9
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
-require (
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect
-	sigs.k8s.io/gateway-api v0.6.0 // indirect
-)
+require github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.4.0 // indirect
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -50,7 +45,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.26.9 // indirect
-	k8s.io/apiextensions-apiserver v0.26.9 // indirect
+	k8s.io/apimachinery v0.26.9 // indirect
 	k8s.io/client-go v0.26.9 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
