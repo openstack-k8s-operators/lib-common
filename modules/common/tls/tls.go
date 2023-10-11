@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/deployment"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 	corev1 "k8s.io/api/core/v1"
@@ -161,4 +162,29 @@ func (t *TLS) CreateDatabaseClientConfig() string {
 		conn = append([]string{"ssl=1"}, conn...)
 	}
 	return strings.Join(conn, "\n")
+}
+
+// UpdateDeploymentWithTLS updates a given deployment with the necessary volumes and volume mounts to support TLS configurations.
+func (t *TLS) UpdateDeploymentWithTLS(ctx context.Context, d *deployment.Deployment, h *helper.Helper) error {
+	// Debug
+	if t.Service != nil {
+		fmt.Println("Service SecretName:", t.Service.SecretName)
+	} else {
+		fmt.Println("Service is nil")
+	}
+
+	tlsVolumes := t.CreateVolumes()
+	fmt.Println("Generated TLS Volumes:", tlsVolumes) // Debug
+
+	tlsVolumeMounts := t.CreateVolumeMounts()
+	fmt.Println("Generated TLS VolumeMounts:", tlsVolumeMounts) // Debug
+
+	currentDeployment := d.GetDeployment()
+	currentDeployment.Spec.Template.Spec.Volumes = append(currentDeployment.Spec.Template.Spec.Volumes, tlsVolumes...)
+	for idx := range currentDeployment.Spec.Template.Spec.Containers {
+		currentDeployment.Spec.Template.Spec.Containers[idx].VolumeMounts = append(currentDeployment.Spec.Template.Spec.Containers[idx].VolumeMounts, tlsVolumeMounts...)
+	}
+
+	_, err := d.CreateOrPatch(ctx, h)
+	return err
 }

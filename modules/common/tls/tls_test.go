@@ -17,12 +17,20 @@ limitations under the License.
 package tls
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/deployment"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/stretchr/testify/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -198,4 +206,42 @@ func TestGenerateTLSConnectionConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateDeploymentWithTLS(t *testing.T) {
+	assert := assert.New(t)
+
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-deployment",
+			Namespace: "default",
+		},
+	}
+
+	customDeployment := deployment.NewDeployment(dep, time.Second*30)
+
+	tlsObj := &TLS{
+		Service: &Service{
+			SecretName: "tls-secret-name",
+		},
+		Ca: &Ca{
+			CaSecretName: "ca-secret-name",
+		},
+	}
+
+	logger := log.Log.WithName("test-logger")
+
+	helperObj, err := helper.NewHelper(dep, k8sClient, nil, k8sClient.Scheme(), logger)
+	if err != nil {
+		t.Fatalf("failed to create helper: %v", err)
+	}
+
+	err = tlsObj.UpdateDeploymentWithTLS(context.Background(), customDeployment, helperObj)
+	assert.Nil(err, "failed to update deployment with TLS")
+
+	updatedDep := &appsv1.Deployment{}
+	err = k8sClient.Get(context.Background(), client.ObjectKey{Name: "test-deployment", Namespace: "default"}, updatedDep)
+	assert.Nil(err, "failed to get updated deployment")
+
+	assert.NotZero(len(updatedDep.Spec.Template.Spec.Volumes), "expected TLS volumes to be added but found none")
 }
