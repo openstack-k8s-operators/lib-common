@@ -17,6 +17,7 @@ limitations under the License.
 package tls
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -103,6 +104,69 @@ func TestCreateVolumes(t *testing.T) {
 			volumes := tlsInstance.CreateVolumes()
 			if len(volumes) != tt.wantVolLen {
 				t.Errorf("CreateVolumes() got = %v volumes, want %v volumes", len(volumes), tt.wantVolLen)
+			}
+		})
+	}
+}
+
+func TestGenerateTLSConnectionConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		service      *Service
+		ca           *Ca
+		wantStmts    []string
+		excludeStmts []string
+	}{
+		{
+			name:         "No Secrets",
+			service:      &Service{},
+			ca:           &Ca{},
+			wantStmts:    []string{},
+			excludeStmts: []string{"ssl=1", "ssl-cert=", "ssl-key=", "ssl-ca="},
+		},
+		{
+			name:         "Only TLS Secret",
+			service:      &Service{SecretName: "test-tls-secret"},
+			ca:           &Ca{},
+			wantStmts:    []string{"ssl=1", "ssl-cert=", "ssl-key="},
+			excludeStmts: []string{"ssl-ca="},
+		},
+		{
+			name:         "Only CA Secret",
+			service:      &Service{},
+			ca:           &Ca{CaSecretName: "test-ca1"},
+			wantStmts:    []string{"ssl=1", "ssl-ca="},
+			excludeStmts: []string{"ssl-cert=", "ssl-key="},
+		},
+		{
+			name:         "TLS and CA Secrets",
+			service:      &Service{SecretName: "test-tls-secret"},
+			ca:           &Ca{CaSecretName: "test-ca1"},
+			wantStmts:    []string{"ssl=1", "ssl-cert=", "ssl-key=", "ssl-ca="},
+			excludeStmts: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tlsInstance := &TLS{Service: tt.service, Ca: tt.ca}
+			configStr := tlsInstance.CreateDatabaseClientConfig()
+			var missingStmts []string
+			for _, stmt := range tt.wantStmts {
+				if !strings.Contains(configStr, stmt) {
+					missingStmts = append(missingStmts, stmt)
+				}
+			}
+			var unexpectedStmts []string
+			for _, stmt := range tt.excludeStmts {
+				if strings.Contains(configStr, stmt) {
+					unexpectedStmts = append(unexpectedStmts, stmt)
+				}
+			}
+			if len(missingStmts) != 0 || len(unexpectedStmts) != 0 {
+				t.Errorf("CreateDatabaseClientConfig() "+
+					"missing statements: %v, unexpected statements: %v",
+					missingStmts, unexpectedStmts)
 			}
 		})
 	}
