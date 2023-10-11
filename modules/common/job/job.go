@@ -145,11 +145,12 @@ func (j *Job) DoJob(
 	// Check if this job already exists
 	//
 	j.actualJob, err = GetJobWithName(ctx, h, j.expectedJob.Name, j.expectedJob.Namespace)
-	if err != nil && !k8s_errors.IsNotFound(err) {
-		return ctrl.Result{}, err
-	}
 
 	exists := !k8s_errors.IsNotFound(err)
+
+	if err != nil && exists {
+		return ctrl.Result{}, fmt.Errorf("error getting existing job %s : %w", j.jobType, err)
+	}
 
 	// If the hash of the job not changed then we don't need to create or wait
 	// for any jobs
@@ -290,10 +291,7 @@ func GetJobWithName(
 	job := &batchv1.Job{}
 	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, job)
 	if err != nil {
-		if k8s_errors.IsNotFound(err) {
-			return job, err
-		}
-		h.GetLogger().Info("GetJobWithName err")
+		h.GetLogger().Info("GetJobWithName %s err: %w", name, err)
 		return job, err
 	}
 
