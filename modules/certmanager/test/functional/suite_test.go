@@ -43,7 +43,6 @@ import (
 
 	certmanager_test "github.com/openstack-k8s-operators/lib-common/modules/certmanager/test/helpers"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
-	common_test "github.com/openstack-k8s-operators/lib-common/modules/test/helpers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -61,17 +60,16 @@ const (
 )
 
 var (
-	cfg           *rest.Config
-	k8sClient     client.Client
-	testEnv       *envtest.Environment
-	ctx           context.Context
-	cancel        context.CancelFunc
-	logger        logr.Logger
-	h             *helper.Helper
-	th            *common_test.TestHelper
-	thCertmanager *certmanager_test.TestHelper
-	namespace     string
-	names         Names
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	ctx       context.Context
+	cancel    context.CancelFunc
+	logger    logr.Logger
+	h         *helper.Helper
+	th        *certmanager_test.TestHelper
+	namespace string
+	names     Names
 )
 
 func TestCommon(t *testing.T) {
@@ -116,10 +114,8 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
-	th = common_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
+	th = certmanager_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
 	Expect(th).NotTo(BeNil())
-	thCertmanager = certmanager_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
-	Expect(thCertmanager).NotTo(BeNil())
 
 	kclient, err := kubernetes.NewForConfig(cfg)
 	Expect(err).ToNot(HaveOccurred(), "failed to create kclient")

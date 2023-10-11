@@ -36,7 +36,7 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := i.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		issuer := thCertmanager.GetIssuer(names.SelfSignedIssuerName)
+		issuer := th.GetIssuer(names.SelfSignedIssuerName)
 		Expect(issuer.Spec.SelfSigned).NotTo(BeNil())
 		Expect(issuer.Labels["f"]).To(Equal("l"))
 
@@ -55,7 +55,7 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := i.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		issuer := thCertmanager.GetIssuer(names.CAName)
+		issuer := th.GetIssuer(names.CAName)
 		Expect(issuer.Spec.CA).NotTo(BeNil())
 		Expect(issuer.Spec.CA.SecretName).To(Equal("secret"))
 		Expect(issuer.Labels["f"]).To(Equal("l"))
@@ -74,11 +74,11 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := i.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		issuer := thCertmanager.GetIssuer(names.IssuerName)
+		issuer := th.GetIssuer(names.IssuerName)
 		Expect(issuer).NotTo(BeNil())
 		err = i.Delete(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		thCertmanager.AssertIssuerDoesNotExist(names.IssuerName)
+		th.AssertIssuerDoesNotExist(names.IssuerName)
 	})
 
 	It("creates certificate", func() {
@@ -105,7 +105,7 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := c.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		cert := thCertmanager.GetCert(names.CertName)
+		cert := th.GetCert(names.CertName)
 		Expect(cert.Spec.CommonName).To(Equal("keystone-public-openstack.apps-crc.testing"))
 		Expect(cert.Spec.SecretName).To(Equal("secret"))
 		Expect(cert.Labels["f"]).To(Equal("l"))
@@ -135,10 +135,10 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := c.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		cert := thCertmanager.GetCert(names.CertName)
+		cert := th.GetCert(names.CertName)
 		Expect(cert).NotTo(BeNil())
 		err = c.Delete(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		thCertmanager.AssertIssuerDoesNotExist(names.CertName)
+		th.AssertIssuerDoesNotExist(names.CertName)
 	})
 })

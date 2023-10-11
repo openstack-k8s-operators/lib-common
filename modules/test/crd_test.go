@@ -30,7 +30,7 @@ func TestGetCRDDirFromModule(t *testing.T) {
 		// NOTE(gibi): this is not a good use case as k8s.io does not have
 		// CRDs stored. But in lib-common we have no go.mod deps on a repo
 		// that has such CRDs to test on.
-		path, err := GetCRDDirFromModule("k8s.io/api", "go.mod", "bases")
+		path, err := GetCRDDirFromModule("k8s.io/api", "../common/go.mod", "bases")
 		g.Expect(err).ShouldNot(HaveOccurred())
 		g.Expect(path).Should(MatchRegexp("/.*/k8s.io/api@v.*/bases"))
 	})
