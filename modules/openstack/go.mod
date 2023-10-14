@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/go-logr/logr v1.2.4
 	github.com/gophercloud/gophercloud v1.7.0
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231009135225-e0907a2df5d8
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231011150636-e8a0540a3c32
 )
 
 require (
