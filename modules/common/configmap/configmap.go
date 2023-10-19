@@ -85,7 +85,13 @@ func createOrPatchConfigMap(
 		// Note: this can overwrite data rendered from GetTemplateData() if key is same
 		if len(cm.CustomData) > 0 {
 			for k, v := range cm.CustomData {
-				configMap.Data[k] = v
+				vExpanded, err := util.ExecuteTemplateData(v, cm.ConfigOptions)
+				if err == nil {
+					configMap.Data[k] = vExpanded
+				} else {
+					h.GetLogger().Info(fmt.Sprintf("Skipped customData expansion due to: %s", err))
+					configMap.Data[k] = v
+				}
 			}
 		}
 

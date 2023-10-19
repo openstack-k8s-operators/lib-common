@@ -165,7 +165,13 @@ func createOrUpdateSecret(
 		// Note: this can overwrite data rendered from GetTemplateData() if key is same
 		if len(st.CustomData) > 0 {
 			for k, v := range st.CustomData {
-				dataString[k] = v
+				vExpanded, err := util.ExecuteTemplateData(v, st.ConfigOptions)
+				if err == nil {
+					dataString[k] = vExpanded
+				} else {
+					h.GetLogger().Info(fmt.Sprintf("Skipped customData expansion due to: %s", err))
+					dataString[k] = v
+				}
 			}
 		}
 
