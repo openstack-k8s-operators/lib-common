@@ -127,7 +127,7 @@ func (i *Issuer) CreateOrPatch(
 		return ctrl.Result{}, err
 	}
 	if op != controllerutil.OperationResultNone {
-		h.GetLogger().Info(fmt.Sprintf("Route %s - %s", issuer.Name, op))
+		h.GetLogger().Info(fmt.Sprintf("Issuer %s - %s", issuer.Name, op))
 	}
 
 	return ctrl.Result{}, nil
