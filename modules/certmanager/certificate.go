@@ -57,9 +57,7 @@ func NewCertificate(
 // minimal spec should be:
 // Spec:
 //
-//	commonName: keystone-public-openstack.apps-crc.testing
 //	dnsNames:
-//	- keystone-public-openstack
 //	- keystone-public-openstack.apps-crc.testing
 //	issuerRef:
 //	   kind: Issuer
@@ -166,8 +164,7 @@ func EnsureCert(
 		namespace,
 		labels,
 		certmgrv1.CertificateSpec{
-			CommonName: hostnames[0],
-			DNSNames:   hostnames,
+			DNSNames: hostnames,
 			Duration: &metav1.Duration{
 				Duration: *duration,
 			},
