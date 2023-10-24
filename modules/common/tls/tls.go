@@ -29,6 +29,11 @@ import (
 	"k8s.io/utils/ptr"
 )
 
+const (
+	// CABundleLabel added to the CA bundle secret for the namespace
+	CABundleLabel = "combined-ca-bundle"
+)
+
 // Service contains server-specific TLS secret
 type Service struct {
 	// +kubebuilder:validation:Optional
