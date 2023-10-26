@@ -73,6 +73,9 @@ const (
 
 	// RoleBindingReadyCondition Status=True condition
 	RoleBindingReadyCondition Type = "RoleBindingReady"
+
+	// TLSInputReadyCondition Status=True condition when required TLS sources are ready
+	TLSInputReadyCondition Type = "TLSInputReady"
 )
 
 // Common Reasons used by API objects.
@@ -292,6 +295,9 @@ const (
 
 	// AnsibleEEReadyErrorMessage
 	AnsibleEEReadyErrorMessage = "AnsibleEE error occurred %s"
+
+	// TLSInputErrorMessage - Provides the message when there's error in provision of TLS sources
+	TLSInputErrorMessage = "TLSInput error occured in TLS sources %s"
 )
 
 // Common Messages used for service accounts, roles, role bindings
