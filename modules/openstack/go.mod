@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/openstack
 go 1.19
 
 require (
-	github.com/go-logr/logr v1.2.4
+	github.com/go-logr/logr v1.3.0
 	github.com/gophercloud/gophercloud v1.7.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231011150636-e8a0540a3c32
 )
