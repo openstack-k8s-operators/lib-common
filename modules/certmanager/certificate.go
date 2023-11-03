@@ -42,6 +42,18 @@ type Certificate struct {
 	timeout     time.Duration
 }
 
+// CertificateRequest -
+type CertificateRequest struct {
+	IssuerName  string
+	CertName    string
+	Duration    *time.Duration
+	Hostnames   []string
+	Ips         []string
+	Annotations map[string]string
+	Labels      map[string]string
+	Usages      []certmgrv1.KeyUsage
+}
+
 // NewCertificate returns an initialized Certificate.
 func NewCertificate(
 	certificate *certmgrv1.Certificate,
@@ -131,55 +143,68 @@ func (c *Certificate) Delete(
 	return nil
 }
 
-// EnsureCert - creates a certificate for hostnames, ensures the sercret has the required key/cert and return the secret
+// EnsureCert - creates a certificate, ensures the sercret has the required key/cert and return the secret
 func EnsureCert(
 	ctx context.Context,
 	helper *helper.Helper,
-	issuerName string,
-	certName string,
-	duration *time.Duration,
-	hostnames []string,
-	annotations map[string]string,
-	labels map[string]string,
+	request CertificateRequest,
 ) (*k8s_corev1.Secret, ctrl.Result, error) {
 	// get issuer
 	issuer := &certmgrv1.Issuer{}
 	namespace := helper.GetBeforeObject().GetNamespace()
 
-	err := helper.GetClient().Get(ctx, types.NamespacedName{Name: issuerName, Namespace: namespace}, issuer)
+	err := helper.GetClient().Get(ctx, types.NamespacedName{Name: request.IssuerName, Namespace: namespace}, issuer)
 	if err != nil {
-		err = fmt.Errorf("Error getting issuer %s/%s - %w", issuerName, namespace, err)
+		err = fmt.Errorf("Error getting issuer %s/%s - %w", request.IssuerName, namespace, err)
 
 		return nil, ctrl.Result{}, err
 	}
 
 	// default the cert duration to one year (default is 90days)
-	if duration == nil {
-		duration = ptr.To(time.Hour * 24 * 365)
+	if request.Duration == nil {
+		request.Duration = ptr.To(time.Hour * 24 * 365)
 	}
 
-	certSecretName := "cert-" + certName
-	certReq := Cert(
-		certName,
-		namespace,
-		labels,
-		certmgrv1.CertificateSpec{
-			DNSNames: hostnames,
-			Duration: &metav1.Duration{
-				Duration: *duration,
-			},
-			IssuerRef: certmgrmetav1.ObjectReference{
-				Name:  issuer.Name,
-				Kind:  issuer.Kind,
-				Group: issuer.GroupVersionKind().Group,
-			},
-			SecretName: certSecretName,
-			SecretTemplate: &certmgrv1.CertificateSecretTemplate{
-				Annotations: annotations,
-				Labels:      labels,
-			},
-			// TODO Usages, e.g. for client cert
+	// default to serverAuth
+	if request.Usages == nil {
+		request.Usages = []certmgrv1.KeyUsage{
+			certmgrv1.UsageKeyEncipherment,
+			certmgrv1.UsageDigitalSignature,
+			certmgrv1.UsageServerAuth,
+		}
+	}
+
+	certSecretName := "cert-" + request.CertName
+	certSpec := certmgrv1.CertificateSpec{
+		Duration: &metav1.Duration{
+			Duration: *request.Duration,
 		},
+		IssuerRef: certmgrmetav1.ObjectReference{
+			Name:  issuer.Name,
+			Kind:  issuer.Kind,
+			Group: issuer.GroupVersionKind().Group,
+		},
+		SecretName: certSecretName,
+		SecretTemplate: &certmgrv1.CertificateSecretTemplate{
+			Annotations: request.Annotations,
+			Labels:      request.Labels,
+		},
+		Usages: request.Usages,
+	}
+
+	if request.Hostnames != nil {
+		certSpec.DNSNames = request.Hostnames
+	}
+
+	if request.Ips != nil {
+		certSpec.IPAddresses = request.Ips
+	}
+
+	certReq := Cert(
+		request.CertName,
+		namespace,
+		request.Labels,
+		certSpec,
 	)
 
 	cert := NewCertificate(certReq, 5)
