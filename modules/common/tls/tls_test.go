@@ -17,156 +17,407 @@ limitations under the License.
 package tls
 
 import (
-	"strings"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
+
+	. "github.com/onsi/gomega"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 )
 
-func TestCreateVolumeMounts(t *testing.T) {
+func TestAPIEnabled(t *testing.T) {
+	tests := []struct {
+		name  string
+		endpt service.Endpoint
+		api   *APIService
+		want  bool
+	}{
+		{
+			name:  "empty API",
+			endpt: service.EndpointInternal,
+			api:   &APIService{},
+			want:  false,
+		},
+		{
+			name:  "Internal SecretName nil",
+			endpt: service.EndpointInternal,
+			api: &APIService{
+				Internal: GenericService{SecretName: nil},
+				Public:   GenericService{SecretName: nil},
+			},
+			want: false,
+		},
+		{
+			name:  "Internal SecretName defined",
+			endpt: service.EndpointInternal,
+			api: &APIService{
+				Internal: GenericService{SecretName: ptr.To("foo")},
+				Public:   GenericService{SecretName: nil},
+			},
+			want: true,
+		},
+		{
+			name:  "Public SecretName nil",
+			endpt: service.EndpointPublic,
+			api: &APIService{
+				Internal: GenericService{SecretName: nil},
+				Public:   GenericService{SecretName: nil},
+			},
+			want: false,
+		},
+		{
+			name:  "Public SecretName defined",
+			endpt: service.EndpointPublic,
+			api: &APIService{
+				Internal: GenericService{SecretName: nil},
+				Public:   GenericService{SecretName: ptr.To("foo")},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			g.Expect(tt.api.Enabled(tt.endpt)).To(BeEquivalentTo(tt.want))
+		})
+	}
+}
+
+func TestGenericServiceToService(t *testing.T) {
+	tests := []struct {
+		name    string
+		service *GenericService
+		want    Service
+	}{
+		{
+			name:    "empty APIService",
+			service: &GenericService{},
+			want:    Service{},
+		},
+		{
+			name: "APIService SecretName specified",
+			service: &GenericService{
+				SecretName: ptr.To("foo"),
+			},
+			want: Service{
+				SecretName: "foo",
+			},
+		},
+		{
+			name: "APIService SecretName nil",
+			service: &GenericService{
+				SecretName: nil,
+			},
+			want: Service{
+				SecretName: "",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			s, err := tt.service.ToService()
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(s).NotTo(BeNil())
+		})
+	}
+}
+
+func TestServiceCreateVolumeMounts(t *testing.T) {
+	tests := []struct {
+		name    string
+		service *Service
+		id      string
+		want    []corev1.VolumeMount
+	}{
+		{
+			name:    "No TLS Secret",
+			service: &Service{},
+			id:      "foo",
+			want:    []corev1.VolumeMount{},
+		},
+		{
+			name:    "Only TLS Secret",
+			service: &Service{SecretName: "cert-secret"},
+			id:      "foo",
+			want: []corev1.VolumeMount{
+				{
+					MountPath: "/etc/pki/tls/certs/foo.crt",
+					Name:      "foo-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.crt",
+				},
+				{
+					MountPath: "/etc/pki/tls/private/foo.key",
+					Name:      "foo-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.key",
+				},
+			},
+		},
+		{
+			name:    "Only TLS Secret no serviceID",
+			service: &Service{SecretName: "cert-secret"},
+			want: []corev1.VolumeMount{
+				{
+					MountPath: "/etc/pki/tls/certs/default.crt",
+					Name:      "default-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.crt",
+				},
+				{
+					MountPath: "/etc/pki/tls/private/default.key",
+					Name:      "default-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.key",
+				},
+			},
+		},
+		{
+			name: "TLS and CA Secrets",
+			service: &Service{
+				SecretName: "cert-secret",
+				CaMount:    ptr.To("/mount/my/ca.crt"),
+			},
+			id: "foo",
+			want: []corev1.VolumeMount{
+				{
+					MountPath: "/etc/pki/tls/certs/foo.crt",
+					Name:      "foo-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.crt",
+				},
+				{
+					MountPath: "/etc/pki/tls/private/foo.key",
+					Name:      "foo-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "tls.key",
+				},
+				{
+					MountPath: "/mount/my/ca.crt",
+					Name:      "foo-tls-certs",
+					ReadOnly:  true,
+					SubPath:   "ca.crt",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			mounts := tt.service.CreateVolumeMounts(tt.id)
+			g.Expect(mounts).To(HaveLen(len(tt.want)))
+			g.Expect(mounts).To(Equal(tt.want))
+		})
+	}
+}
+
+func TestServiceCreateVolume(t *testing.T) {
+	tests := []struct {
+		name    string
+		service *Service
+		id      string
+		want    corev1.Volume
+	}{
+		{
+			name:    "No Secrets",
+			service: &Service{},
+			want:    corev1.Volume{},
+		},
+		{
+			name:    "Only TLS Secret",
+			service: &Service{SecretName: "cert-secret"},
+			id:      "foo",
+			want: corev1.Volume{
+				Name: "foo-tls-certs",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  "cert-secret",
+						DefaultMode: ptr.To[int32](0440),
+					},
+				},
+			},
+		},
+		{
+			name:    "Only TLS Secret no serviceID",
+			service: &Service{SecretName: "cert-secret"},
+			want: corev1.Volume{
+				Name: "default-tls-certs",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  "cert-secret",
+						DefaultMode: ptr.To[int32](0440),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			volume := tt.service.CreateVolume(tt.id)
+			g.Expect(volume).To(Equal(tt.want))
+		})
+	}
+}
+
+func TestCACreateVolumeMounts(t *testing.T) {
 	tests := []struct {
 		name          string
-		service       *Service
 		ca            *Ca
-		wantMountsLen int
+		caBundleMount *string
+		want          []corev1.VolumeMount
 	}{
 		{
-			name:          "No Secrets",
-			service:       &Service{},
-			ca:            &Ca{},
-			wantMountsLen: 0,
+			name: "Empty Ca",
+			ca:   &Ca{},
+			want: []corev1.VolumeMount{},
 		},
 		{
-			name:          "Only TLS Secret",
-			service:       &Service{SecretName: "test-tls-secret"},
-			ca:            &Ca{},
-			wantMountsLen: 2,
+			name: "Only CaBundleSecretName no caBundleMount",
+			ca: &Ca{
+				CaBundleSecretName: "ca-secret",
+			},
+			want: []corev1.VolumeMount{
+				{
+					MountPath: "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
+					Name:      "combined-ca-bundle",
+					ReadOnly:  true,
+					SubPath:   "tls-ca-bundle.pem",
+				},
+			},
 		},
 		{
-			name:          "Only CA Secret",
-			service:       &Service{},
-			ca:            &Ca{CaSecretName: "test-ca1"},
-			wantMountsLen: 1,
-		},
-		{
-			name:          "TLS and CA Secrets",
-			service:       &Service{SecretName: "test-tls-secret"},
-			ca:            &Ca{CaSecretName: "test-ca1"},
-			wantMountsLen: 3,
+			name: "CaBundleSecretName and caBundleMount",
+			ca: &Ca{
+				CaBundleSecretName: "ca-secret",
+			},
+			caBundleMount: ptr.To("/mount/my/ca.crt"),
+			want: []corev1.VolumeMount{
+				{
+					MountPath: "/mount/my/ca.crt",
+					Name:      "combined-ca-bundle",
+					ReadOnly:  true,
+					SubPath:   "tls-ca-bundle.pem",
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tlsInstance := &TLS{Service: tt.service, Ca: tt.ca}
-			mounts := tlsInstance.CreateVolumeMounts()
-			if len(mounts) != tt.wantMountsLen {
-				t.Errorf("CreateVolumeMounts() got = %v mounts, want %v mounts", len(mounts), tt.wantMountsLen)
-			}
+			g := NewWithT(t)
+
+			mounts := tt.ca.CreateVolumeMounts(tt.caBundleMount)
+			g.Expect(mounts).To(HaveLen(len(tt.want)))
+			g.Expect(mounts).To(Equal(tt.want))
 		})
 	}
 }
 
-func TestCreateVolumes(t *testing.T) {
+func TestCaCreateVolume(t *testing.T) {
 	tests := []struct {
-		name       string
-		service    *Service
-		ca         *Ca
-		wantVolLen int
+		name string
+		ca   *Ca
+		want corev1.Volume
 	}{
 		{
-			name:       "No Secrets",
-			service:    &Service{},
-			ca:         &Ca{},
-			wantVolLen: 0,
+			name: "Empty Ca",
+			ca:   &Ca{},
+			want: corev1.Volume{},
 		},
 		{
-			name:       "Only TLS Secret",
-			service:    &Service{SecretName: "test-tls-secret"},
-			ca:         &Ca{},
-			wantVolLen: 1,
-		},
-		{
-			name:       "Only CA Secret",
-			service:    &Service{},
-			ca:         &Ca{CaSecretName: "test-ca1"},
-			wantVolLen: 1,
-		},
-		{
-			name:       "TLS and CA Secrets",
-			service:    &Service{SecretName: "test-tls-secret"},
-			ca:         &Ca{CaSecretName: "test-ca1"},
-			wantVolLen: 2,
+			name: "Set CaBundleSecretName",
+			ca: &Ca{
+				CaBundleSecretName: "ca-secret",
+			},
+			want: corev1.Volume{
+				Name: "combined-ca-bundle",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName:  "ca-secret",
+						DefaultMode: ptr.To[int32](0444),
+					},
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tlsInstance := &TLS{Service: tt.service, Ca: tt.ca}
-			volumes := tlsInstance.CreateVolumes()
-			if len(volumes) != tt.wantVolLen {
-				t.Errorf("CreateVolumes() got = %v volumes, want %v volumes", len(volumes), tt.wantVolLen)
-			}
+			g := NewWithT(t)
+
+			volume := tt.ca.CreateVolume()
+			g.Expect(volume).To(Equal(tt.want))
 		})
 	}
 }
 
-func TestGenerateTLSConnectionConfig(t *testing.T) {
+func TestCreateDatabaseClientConfig(t *testing.T) {
 	tests := []struct {
 		name         string
-		service      *Service
-		ca           *Ca
+		service      Service
+		serviceID    string
 		wantStmts    []string
 		excludeStmts []string
 	}{
 		{
-			name:         "No Secrets",
-			service:      &Service{},
-			ca:           &Ca{},
-			wantStmts:    []string{},
-			excludeStmts: []string{"ssl=1", "ssl-cert=", "ssl-key=", "ssl-ca="},
-		},
-		{
-			name:         "Only TLS Secret",
-			service:      &Service{SecretName: "test-tls-secret"},
-			ca:           &Ca{},
-			wantStmts:    []string{"ssl=1", "ssl-cert=", "ssl-key="},
-			excludeStmts: []string{"ssl-ca="},
-		},
-		{
 			name:         "Only CA Secret",
-			service:      &Service{},
-			ca:           &Ca{CaSecretName: "test-ca1"},
-			wantStmts:    []string{"ssl=1", "ssl-ca="},
+			service:      Service{},
+			serviceID:    "",
+			wantStmts:    []string{"ssl=1", "ssl-ca=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"},
 			excludeStmts: []string{"ssl-cert=", "ssl-key="},
 		},
 		{
-			name:         "TLS and CA Secrets",
-			service:      &Service{SecretName: "test-tls-secret"},
-			ca:           &Ca{CaSecretName: "test-ca1"},
-			wantStmts:    []string{"ssl=1", "ssl-cert=", "ssl-key=", "ssl-ca="},
+			name:         "TLS Secret specified",
+			service:      Service{SecretName: "test-tls-secret"},
+			serviceID:    "foo",
+			wantStmts:    []string{"ssl=1", "ssl-cert=/etc/pki/tls/certs/foo.crt", "ssl-key=/etc/pki/tls/private/foo.key", "ssl-ca=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"},
+			excludeStmts: []string{},
+		},
+		{
+			name:         "TLS and CA custom mount",
+			service:      Service{SecretName: "test-tls-secret", CaMount: ptr.To("/some/path/ca.crt")},
+			serviceID:    "foo",
+			wantStmts:    []string{"ssl=1", "ssl-cert=/etc/pki/tls/certs/foo.crt", "ssl-key=/etc/pki/tls/private/foo.key", "ssl-ca=/some/path/ca.crt"},
+			excludeStmts: []string{},
+		},
+		{
+			name:         "TLS custom mount",
+			service:      Service{SecretName: "test-tls-secret", CertMount: ptr.To("/some/path/cert.crt"), KeyMount: ptr.To("/some/path/cert.key")},
+			serviceID:    "",
+			wantStmts:    []string{"ssl=1", "ssl-cert=/some/path/cert.crt", "ssl-key=/some/path/cert.key", "ssl-ca=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"},
+			excludeStmts: []string{},
+		},
+		{
+			name:         "TLS custom mount AND CA custom mount",
+			service:      Service{SecretName: "test-tls-secret", CertMount: ptr.To("/some/path/cert.crt"), KeyMount: ptr.To("/some/path/cert.key"), CaMount: ptr.To("/some/path/ca.crt")},
+			serviceID:    "",
+			wantStmts:    []string{"ssl=1", "ssl-cert=/some/path/cert.crt", "ssl-key=/some/path/cert.key", "ssl-ca=/some/path/ca.crt"},
 			excludeStmts: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tlsInstance := &TLS{Service: tt.service, Ca: tt.ca}
-			configStr := tlsInstance.CreateDatabaseClientConfig()
-			var missingStmts []string
+			g := NewWithT(t)
+
+			configStr := tt.service.CreateDatabaseClientConfig(tt.serviceID)
+
 			for _, stmt := range tt.wantStmts {
-				if !strings.Contains(configStr, stmt) {
-					missingStmts = append(missingStmts, stmt)
-				}
+				g.Expect(configStr).To(ContainSubstring(stmt))
 			}
-			var unexpectedStmts []string
 			for _, stmt := range tt.excludeStmts {
-				if strings.Contains(configStr, stmt) {
-					unexpectedStmts = append(unexpectedStmts, stmt)
-				}
-			}
-			if len(missingStmts) != 0 || len(unexpectedStmts) != 0 {
-				t.Errorf("CreateDatabaseClientConfig() "+
-					"missing statements: %v, unexpected statements: %v",
-					missingStmts, unexpectedStmts)
+				g.Expect(configStr).ToNot(ContainSubstring(stmt))
 			}
 		})
 	}
