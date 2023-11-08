@@ -23,6 +23,9 @@ CONTROLLER_TOOLS_VERSION ?= v0.10.0
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.25
 
+# Number of CPUs to be allocacted for testing
+PROCS?=$(shell expr $(shell nproc --ignore 2) / 2)
+PROC_CMD = --procs $(PROCS)
 
 .PHONY: all
 all: build
@@ -54,9 +57,10 @@ test: gowork generate fmt vet envtest ginkgo ## Run tests.
 		if [ -f test/functional/suite_test.go ]; then \
 			KUBEBUILDER_ASSETS="$(shell $(ENVTEST) -v debug --bin-dir $(LOCALBIN) use $(ENVTEST_K8S_VERSION) -p path)" $(GINKGO) --trace --cover --coverprofile cover.out --covermode=atomic ${PROC_CMD} $(GINKGO_ARGS) ./test/... || exit 1; \
 		fi; \
-		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out || exit 1; \
+		KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... --cover --coverprofile cover.out --covermode=atomic || exit 1; \
 		popd ; \
 	done
+
 ##@ Build
 
 .PHONY: build
