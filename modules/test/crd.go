@@ -18,6 +18,7 @@ import (
 	"go/build"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/mod/modfile"
 )
@@ -53,7 +54,13 @@ func getDependencyVersion(moduleName string, goModPath string) (string, string, 
 		}
 	}
 
+	// replacement points to a URI + version
 	if version != "" {
+		return name, version, nil
+	}
+
+	// replacement points to a local path
+	if version == "" && strings.HasPrefix(name, ".") {
 		return name, version, nil
 	}
 
@@ -68,6 +75,15 @@ func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath st
 	if err != nil {
 		return "", err
 	}
+
+	// for a local replacement, assume the CRDs are available in the
+	// standard Operator SDK's layout
+	if version == "" && strings.HasPrefix(moduleName, ".") {
+		goModDir := filepath.Dir(goModPath)
+		path := filepath.Join(goModDir, moduleName, "..", "config", "crd", relativeCRDPath)
+		return path, nil
+	}
+
 	versionedModule := fmt.Sprintf("%s@%s", moduleName, version)
 	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
 	return path, nil

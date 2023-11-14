@@ -48,6 +48,26 @@ func TestGetCRDDirFromModule(t *testing.T) {
 		g.Expect(err).Should(HaveOccurred())
 		g.Expect(err).Should(MatchError("cannot find foobar in go.mod file"))
 	})
+	t.Run("with a module in go.mod having a local replacement", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Generate a go.mod with a relative path replace statement
+		dir := t.TempDir()
+		mod := []byte(`module foo
+go 1.19
+require (
+	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
+)
+replace github.com/openstack-k8s-operators/infra-operator/apis => ../../infra-operator/apis
+		`)
+		modPath := filepath.Join(dir, "go.mod")
+		err := os.WriteFile(modPath, mod, 0644)
+		g.Expect(err).ShouldNot(HaveOccurred())
+
+		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
+		g.Expect(err).ShouldNot(HaveOccurred())
+		g.Expect(path).Should(MatchRegexp(".*/infra-operator/config/crd/bases$"))
+	})
 }
 
 func TestGetOpenShiftCRDDir(t *testing.T) {
