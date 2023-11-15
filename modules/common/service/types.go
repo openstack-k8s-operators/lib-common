@@ -54,6 +54,14 @@ const (
 	ProtocolNone Protocol = ""
 )
 
+func (e *Endpoint) String() string {
+	return string(*e)
+}
+
+func (p *Protocol) String() string {
+	return string(*p)
+}
+
 // Service -
 // +kubebuilder:object:generate:=false
 type Service struct {
