@@ -36,10 +36,16 @@ var _ = Describe("certmanager module", func() {
 
 		_, err := i.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		issuer := th.GetIssuer(names.SelfSignedIssuerName)
-		Expect(issuer.Spec.SelfSigned).NotTo(BeNil())
-		Expect(issuer.Labels["f"]).To(Equal("l"))
-
+		Eventually(func(g Gomega) {
+			issuer, err := certmanager.GetIssuerByName(
+				th.Ctx,
+				h,
+				names.SelfSignedIssuerName.Name,
+				names.SelfSignedIssuerName.Namespace)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(issuer.Spec.SelfSigned).NotTo(BeNil())
+			g.Expect(issuer.ObjectMeta.Labels["f"]).To(Equal("l"))
+		}, timeout, interval).Should(Succeed())
 	})
 
 	It("creates CA issuer", func() {

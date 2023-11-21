@@ -26,6 +26,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -145,4 +146,22 @@ func (i *Issuer) Delete(
 	}
 
 	return nil
+}
+
+// GetIssuerByName - get certmanager issuer by name
+func GetIssuerByName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) (*certmgrv1.Issuer, error) {
+
+	issuer := &certmgrv1.Issuer{}
+
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, issuer)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting issuer %s: %w", issuer.Name, err)
+	}
+
+	return issuer, nil
 }
