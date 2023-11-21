@@ -110,6 +110,9 @@ func (tc *TestHelper) AssertSecretDoesNotExist(name types.NamespacedName) {
 func (tc *TestHelper) UpdateSecret(secretName types.NamespacedName, key string, newValue []byte) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		secret := tc.GetSecret(secretName)
+		if secret.Data == nil {
+			secret.Data = map[string][]byte{}
+		}
 		secret.Data[key] = newValue
 		g.Expect(tc.K8sClient.Update(tc.Ctx, &secret)).Should(gomega.Succeed())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
