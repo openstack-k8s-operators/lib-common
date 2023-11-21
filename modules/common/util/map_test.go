@@ -92,3 +92,44 @@ func TestSortStringMapByValue(t *testing.T) {
 		g.Expect(l[1]).To(HaveField("Value", "b"))
 	})
 }
+
+func TestMergeMaps(t *testing.T) {
+	t.Run("Merge maps", func(t *testing.T) {
+		g := NewWithT(t)
+
+		m1 := map[string]string{
+			"a": "a",
+		}
+		m2 := map[string]string{
+			"b": "b",
+			"c": "c",
+		}
+
+		mergedIntMap := MergeMaps(m1, m2)
+
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("a", "a"))
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("b", "b"))
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("c", "c"))
+	})
+
+	t.Run("Merge maps with existing key, the value in the first map is preserved", func(t *testing.T) {
+		g := NewWithT(t)
+
+		m1 := map[string]int{
+			"a": 2,
+			"b": 2,
+		}
+
+		m2 := map[string]int{
+			"a": 2,
+			"c": 3,
+			"b": 4,
+		}
+
+		mergedIntMap := MergeMaps(m1, m2)
+
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("a", 2))
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("b", 2))
+		g.Expect(mergedIntMap).To(HaveKeyWithValue("c", 3))
+	})
+}

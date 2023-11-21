@@ -80,3 +80,22 @@ func SortStringMapByValue(in map[string]string) List {
 
 	return sorted
 }
+
+// MergeMaps - merge two or more maps
+// NOTE: In case a key exists, the value in the first map is preserved.
+func MergeMaps[K comparable, V any](baseMap map[K]V, extraMaps ...map[K]V) map[K]V {
+	mergedMap := make(map[K]V)
+	for key, value := range baseMap {
+		mergedMap[key] = value
+	}
+
+	for _, extraMap := range extraMaps {
+		for key, value := range extraMap {
+			if _, ok := mergedMap[key]; !ok {
+				mergedMap[key] = value
+			}
+		}
+	}
+
+	return mergedMap
+}
