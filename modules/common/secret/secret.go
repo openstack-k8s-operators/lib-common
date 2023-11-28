@@ -107,9 +107,21 @@ func CreateOrPatchSecret(
 	secret *corev1.Secret,
 ) (string, controllerutil.OperationResult, error) {
 
-	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+		},
+	}
 
-		err := controllerutil.SetControllerReference(obj, secret, h.GetScheme())
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), s, func() error {
+		s.Annotations = util.MergeStringMaps(s.Annotations, secret.Annotations)
+		s.Labels = util.MergeStringMaps(s.Labels, secret.Labels)
+		s.Immutable = secret.Immutable
+		s.Data = secret.Data
+		s.StringData = secret.StringData
+
+		err := controllerutil.SetControllerReference(obj, s, h.GetScheme())
 		if err != nil {
 			return err
 		}
@@ -120,7 +132,7 @@ func CreateOrPatchSecret(
 		return "", op, fmt.Errorf("error create/updating secret: %w", err)
 	}
 
-	secretHash, err := Hash(secret)
+	secretHash, err := Hash(s)
 	if err != nil {
 		return "", "", fmt.Errorf("error calculating configuration hash: %w", err)
 	}
