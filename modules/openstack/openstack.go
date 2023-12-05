@@ -61,12 +61,10 @@ type TLSConfig struct {
 	ClientKey  string
 }
 
-// NewOpenStack creates a new new instance of the openstack struct from a config struct
-func NewOpenStack(
-	log logr.Logger,
+// GetOpenStackProvider creates a new instance of the openstack struct from a config struct
+func GetOpenStackProvider(
 	cfg AuthOpts,
-) (*OpenStack, error) {
-
+) (*gophercloud.ProviderClient, error) {
 	opts := gophercloud.AuthOptions{
 		IdentityEndpoint: cfg.AuthURL,
 		Username:         cfg.Username,
@@ -127,12 +125,54 @@ func NewOpenStack(
 		return nil, err
 	}
 
+	return providerClient, nil
+}
+
+// GetNovaOpenStackClient creates a new instance of the openstack compute struct from a config struct
+func GetNovaOpenStackClient(
+	log logr.Logger,
+	cfg AuthOpts,
+) (*OpenStack, error) {
+
+	providerClient, err := GetOpenStackProvider(cfg)
+	if err != nil {
+		return nil, err
+	}
+	// create the compute client using previous providerClient
+	endpointOpts := gophercloud.EndpointOpts{
+		Region: cfg.Region,
+	}
+	computeClient, err := openstack.NewComputeV2(providerClient, endpointOpts)
+	if err != nil {
+		return nil, err
+	}
+	os := OpenStack{
+		osclient: computeClient,
+		region:   cfg.Region,
+		authURL:  cfg.AuthURL,
+	}
+
+	return &os, nil
+}
+
+// NewOpenStack creates a new new instance of the openstack identity struct from a config struct
+func NewOpenStack(
+	log logr.Logger,
+	cfg AuthOpts,
+) (*OpenStack, error) {
+
+	providerClient, err := GetOpenStackProvider(cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	// create the identity client using previous providerClient
 	endpointOpts := gophercloud.EndpointOpts{
 		Type:         "identity",
 		Region:       cfg.Region,
 		Availability: gophercloud.AvailabilityInternal,
 	}
+
 	identityClient, err := openstack.NewIdentityV3(providerClient, endpointOpts)
 	if err != nil {
 		return nil, err
