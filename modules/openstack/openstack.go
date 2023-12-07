@@ -132,16 +132,14 @@ func GetOpenStackProvider(
 func GetNovaOpenStackClient(
 	log logr.Logger,
 	cfg AuthOpts,
+	endpointOpts gophercloud.EndpointOpts,
 ) (*OpenStack, error) {
 
 	providerClient, err := GetOpenStackProvider(cfg)
 	if err != nil {
 		return nil, err
 	}
-	// create the compute client using previous providerClient
-	endpointOpts := gophercloud.EndpointOpts{
-		Region: cfg.Region,
-	}
+
 	computeClient, err := openstack.NewComputeV2(providerClient, endpointOpts)
 	if err != nil {
 		return nil, err
