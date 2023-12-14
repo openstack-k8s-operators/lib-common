@@ -146,6 +146,39 @@ func (s *Service) AddAnnotation(anno map[string]string) {
 	s.service.Annotations = util.MergeStringMaps(s.service.Annotations, anno)
 }
 
+// AddAnnotation - Adds annotation and merges it with the current set
+func (s *RoutedOverrideSpec) AddAnnotation(anno map[string]string) {
+	if s.EmbeddedLabelsAnnotations == nil {
+		s.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+	s.Annotations = util.MergeMaps(s.Annotations, anno)
+}
+
+// AddLabel - Adds label and merges it with the current set
+func (s *RoutedOverrideSpec) AddLabel(label map[string]string) {
+	if s.EmbeddedLabelsAnnotations == nil {
+		s.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+
+	s.Labels = util.MergeMaps(s.Labels, label)
+}
+
+// AddAnnotation - Adds annotation and merges it with the current set
+func (s *OverrideSpec) AddAnnotation(anno map[string]string) {
+	if s.EmbeddedLabelsAnnotations == nil {
+		s.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+	s.Annotations = util.MergeMaps(s.Annotations, anno)
+}
+
+// AddLabel - Adds label and merges it with the current set
+func (s *OverrideSpec) AddLabel(label map[string]string) {
+	if s.EmbeddedLabelsAnnotations == nil {
+		s.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+	s.Labels = util.MergeMaps(s.Labels, label)
+}
+
 // GetAPIEndpoint - returns the API endpoint URL for the service to register in keystone.
 func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path string) (string, error) {
 	var apiEndpoint *url.URL

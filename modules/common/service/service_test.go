@@ -424,3 +424,161 @@ func TestToOverrideServiceSpec(t *testing.T) {
 		})
 	}
 }
+
+func TestOverrideSpecAddAnnotation(t *testing.T) {
+	tests := []struct {
+		name       string
+		override   OverrideSpec
+		annotation map[string]string
+		want       OverrideSpec
+	}{
+		{
+			name:       "No override, no custom annotation",
+			override:   OverrideSpec{},
+			annotation: map[string]string{},
+			want: OverrideSpec{
+				EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+					Annotations: map[string]string{},
+				},
+			},
+		},
+		{
+			name: "override, no custom annotation",
+			override: OverrideSpec{EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+				Annotations: map[string]string{"key": "val"},
+			}},
+			annotation: map[string]string{},
+			want: OverrideSpec{
+				EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+					Annotations: map[string]string{"key": "val"},
+				},
+			},
+		},
+		{
+			name: "override, additional custom annotation",
+			override: OverrideSpec{EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+				Annotations: map[string]string{"key": "val"},
+			}},
+			annotation: map[string]string{"custom": "val"},
+			want: OverrideSpec{
+				EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+					Annotations: map[string]string{
+						"key":    "val",
+						"custom": "val",
+					},
+				},
+			},
+		},
+		{
+			name: "override, additional custom same annotation",
+			override: OverrideSpec{EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+				Annotations: map[string]string{"key": "val"},
+			}},
+			annotation: map[string]string{"key": "custom"},
+			want: OverrideSpec{
+				EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+					Annotations: map[string]string{
+						"key": "val",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			tt.override.AddAnnotation(tt.annotation)
+			g.Expect(tt.override.Annotations).To(Equal(tt.want.Annotations))
+		})
+	}
+}
+
+func TestRoutedOverrideSpecAddAnnotation(t *testing.T) {
+	tests := []struct {
+		name       string
+		override   RoutedOverrideSpec
+		annotation map[string]string
+		want       RoutedOverrideSpec
+	}{
+		{
+			name:       "No override, no custom annotation",
+			override:   RoutedOverrideSpec{},
+			annotation: map[string]string{},
+			want: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{},
+					},
+				},
+			},
+		},
+		{
+			name: "override, no custom annotation",
+			override: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{"key": "val"},
+					},
+				}},
+			annotation: map[string]string{},
+			want: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{"key": "val"},
+					},
+				},
+			},
+		},
+		{
+			name: "override, additional custom annotation",
+			override: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{"key": "val"},
+					},
+				}},
+			annotation: map[string]string{"custom": "val"},
+			want: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{
+							"key":    "val",
+							"custom": "val",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "override, additional custom same annotation",
+			override: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{"key": "val"},
+					},
+				}},
+			annotation: map[string]string{"key": "custom"},
+			want: RoutedOverrideSpec{
+				OverrideSpec: OverrideSpec{
+					EmbeddedLabelsAnnotations: &EmbeddedLabelsAnnotations{
+						Annotations: map[string]string{
+							"key": "val",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			tt.override.AddAnnotation(tt.annotation)
+			g.Expect(tt.override.Annotations).To(Equal(tt.want.Annotations))
+		})
+	}
+}
