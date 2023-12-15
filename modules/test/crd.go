@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/mod/modfile"
 )
@@ -67,6 +68,42 @@ func getDependencyVersion(moduleName string, goModPath string) (string, string, 
 	return name, "", fmt.Errorf("cannot find %s in %s file", moduleName, goModPath)
 }
 
+// EncodePath returns the safe encoding of the given module path.
+// NOTE(gibi): This is copied from
+// https://github.com/golang/go/blob/c54bc3448390d4ae4495d6d2c03c9dd4111b08f1/src/cmd/go/internal/module/module.go#L421
+// to do the same as golang does when downloads a package where the package
+// path has upper case letters (e.g. a mixed case github ID).
+// The CheckPath() call is removed to limit the amount we copy and therefore
+// need to maintain.
+func encodePath(path string) (encoding string, err error) {
+
+	haveUpper := false
+	for _, r := range path {
+		if r == '!' || r >= utf8.RuneSelf {
+			// This should be disallowed by CheckPath, but diagnose anyway.
+			// The correctness of the encoding loop below depends on it.
+			return "", fmt.Errorf("internal error: inconsistency in EncodePath")
+		}
+		if 'A' <= r && r <= 'Z' {
+			haveUpper = true
+		}
+	}
+
+	if !haveUpper {
+		return path, nil
+	}
+
+	var buf []byte
+	for _, r := range path {
+		if 'A' <= r && r <= 'Z' {
+			buf = append(buf, '!', byte(r+'a'-'A'))
+		} else {
+			buf = append(buf, byte(r))
+		}
+	}
+	return string(buf), nil
+}
+
 // GetCRDDirFromModule returns the absolute path of the directory that holds the
 // custom resource definitions for the given module name. It will use the
 // version of the module specified in the go.mod file.
@@ -76,16 +113,21 @@ func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath st
 		return "", err
 	}
 
+	path := ""
 	// for a local replacement, assume the CRDs are available in the
 	// standard Operator SDK's layout
 	if version == "" && strings.HasPrefix(moduleName, ".") {
 		goModDir := filepath.Dir(goModPath)
-		path := filepath.Join(goModDir, moduleName, "..", "config", "crd", relativeCRDPath)
-		return path, nil
+		path = filepath.Join(goModDir, moduleName, "..", "config", "crd", relativeCRDPath)
+	} else {
+		versionedModule := fmt.Sprintf("%s@%s", moduleName, version)
+		path = filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
 	}
 
-	versionedModule := fmt.Sprintf("%s@%s", moduleName, version)
-	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
+	path, err = encodePath(path)
+	if err != nil {
+		return path, err
+	}
 	return path, nil
 }
 
@@ -103,5 +145,10 @@ func GetOpenShiftCRDDir(crdName string, goModPath string) (string, error) {
 	}
 	versionedModule := fmt.Sprintf("%s@%s", libCommon, version)
 	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, "openshift_crds", crdName)
+	path, err = encodePath(path)
+	if err != nil {
+		return path, err
+	}
+
 	return path, nil
 }

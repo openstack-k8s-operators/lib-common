@@ -68,6 +68,48 @@ replace github.com/openstack-k8s-operators/infra-operator/apis => ../../infra-op
 		g.Expect(err).ShouldNot(HaveOccurred())
 		g.Expect(path).Should(MatchRegexp(".*/infra-operator/config/crd/bases$"))
 	})
+
+	t.Run("with a module in go.mod having a local replacement with mixed case", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Generate a go.mod with replacement pointing to a mixed case github ID
+		dir := t.TempDir()
+		mod := []byte(`module foo
+go 1.19
+require (
+	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
+)
+replace github.com/openstack-k8s-operators/infra-operator/apis => ../../Infra-Operator/apis
+		`)
+		modPath := filepath.Join(dir, "go.mod")
+		err := os.WriteFile(modPath, mod, 0644)
+		g.Expect(err).ShouldNot(HaveOccurred())
+
+		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
+		g.Expect(err).ShouldNot(HaveOccurred())
+		g.Expect(path).Should(MatchRegexp(".*/!infra-!operator/config/crd/bases$"))
+	})
+
+	t.Run("with a module in go.mod having a remote replacement with mixed case", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Generate a go.mod with replacement pointing to a mixed case github ID
+		dir := t.TempDir()
+		mod := []byte(`module foo
+go 1.19
+require (
+	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
+)
+replace github.com/openstack-k8s-operators/infra-operator/apis => github.com/MixedUser/infra-operator/apis v0.1.1-0.20231001103054-fffa88ed4971
+		`)
+		modPath := filepath.Join(dir, "go.mod")
+		err := os.WriteFile(modPath, mod, 0644)
+		g.Expect(err).ShouldNot(HaveOccurred())
+
+		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
+		g.Expect(err).ShouldNot(HaveOccurred())
+		g.Expect(path).Should(MatchRegexp("github.com/!mixed!user/infra-operator/apis@v0.1.1-0.20231001103054-fffa88ed4971/bases$"))
+	})
 }
 
 func TestGetOpenShiftCRDDir(t *testing.T) {
