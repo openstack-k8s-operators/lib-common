@@ -30,8 +30,21 @@ import (
 )
 
 const (
+	// CABundleSecret -
+	CABundleSecret = "combined-ca-bundle"
 	// CABundleLabel added to the CA bundle secret for the namespace
 	CABundleLabel = "combined-ca-bundle"
+	// CABundleKey - key in CaBundleSecret holding a full CA bundle
+	CABundleKey = "tls-ca-bundle.pem"
+	// InternalCABundleKey - key in CABundleSecret only holding the internal CA
+	InternalCABundleKey = "internal-ca-bundle.pem"
+
+	// DefaultCAPrefix -
+	DefaultCAPrefix = "rootca-"
+	// DownstreamTLSCABundlePath -
+	DownstreamTLSCABundlePath = "/etc/pki/ca-trust/extracted/pem/" + CABundleKey
+	// UpstreamTLSCABundlePath -
+	UpstreamTLSCABundlePath = "/etc/ssl/certs/ca-certificates.crt"
 )
 
 // Service contains server-specific TLS secret
