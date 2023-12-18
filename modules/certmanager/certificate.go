@@ -25,7 +25,9 @@ import (
 	certmgrmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	"golang.org/x/exp/maps"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -230,4 +232,85 @@ func EnsureCert(
 	}
 
 	return certSecret, ctrl.Result{}, nil
+}
+
+// EnsureCertForServicesWithSelector - creates certificate for k8s services identified
+// by a label selector
+func EnsureCertForServicesWithSelector(
+	ctx context.Context,
+	helper *helper.Helper,
+	namespace string,
+	selector map[string]string,
+	issuer string,
+) (map[string]string, ctrl.Result, error) {
+	certs := map[string]string{}
+	svcs, err := service.GetServicesListWithLabel(
+		ctx,
+		helper,
+		namespace,
+		selector,
+	)
+	if err != nil {
+		return certs, ctrl.Result{}, err
+	}
+
+	for _, svc := range svcs.Items {
+		hostname := fmt.Sprintf("%s.%s.svc", svc.Name, namespace)
+		// create cert for the service
+		certRequest := CertificateRequest{
+			IssuerName: issuer,
+			CertName:   fmt.Sprintf("%s-svc", svc.Name),
+			Hostnames:  []string{hostname},
+			Labels:     svc.Labels,
+		}
+		certSecret, ctrlResult, err := EnsureCert(
+			ctx,
+			helper,
+			certRequest)
+		if err != nil {
+			return certs, ctrlResult, err
+		} else if (ctrlResult != ctrl.Result{}) {
+			return certs, ctrlResult, nil
+		}
+
+		certs[hostname] = certSecret.Name
+	}
+
+	return certs, ctrl.Result{}, nil
+}
+
+// EnsureCertForServiceWithSelector - creates certificate for a k8s service identified
+// by a label selector. The label selector must match a single service
+func EnsureCertForServiceWithSelector(
+	ctx context.Context,
+	helper *helper.Helper,
+	namespace string,
+	selector map[string]string,
+	issuer string,
+) (string, ctrl.Result, error) {
+	var cert string
+	svcs, err := service.GetServicesListWithLabel(
+		ctx,
+		helper,
+		namespace,
+		selector,
+	)
+	if err != nil {
+		return cert, ctrl.Result{}, err
+	}
+	if len(svcs.Items) != 1 {
+		return cert, ctrl.Result{}, fmt.Errorf("%d services identified by selector: %+v", len(svcs.Items), selector)
+	}
+
+	certs, ctrlResult, err := EnsureCertForServicesWithSelector(
+		ctx, helper, namespace, selector, issuer)
+	if err != nil {
+		return cert, ctrlResult, err
+	} else if (ctrlResult != ctrl.Result{}) {
+		return cert, ctrlResult, nil
+	}
+
+	hostname := maps.Keys(certs)
+
+	return certs[hostname[0]], ctrl.Result{}, nil
 }

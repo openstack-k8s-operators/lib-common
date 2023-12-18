@@ -29,6 +29,7 @@ import (
 
 	"go.uber.org/zap/zapcore"
 
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -117,18 +118,6 @@ var _ = BeforeSuite(func() {
 	th = certmanager_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
 	Expect(th).NotTo(BeNil())
 
-	kclient, err := kubernetes.NewForConfig(cfg)
-	Expect(err).ToNot(HaveOccurred(), "failed to create kclient")
-
-	// NOTE(gibi): helper.Helper needs an object that is being reconciled
-	// we are not really doing reconciliation in this test but still we need to
-	// provide a valid object. It is used as controller reference for certain
-	// objects created in the test. So we provide a simple one, a Namespace.
-	genericObject := th.CreateNamespace("generic-object")
-	h, err = helper.NewHelper(genericObject, k8sClient, kclient, testEnv.Scheme, ctrl.Log)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(h).NotTo(BeNil())
-
 	go func() {
 		defer GinkgoRecover()
 	}()
@@ -148,6 +137,21 @@ var _ = BeforeEach(func() {
 	// https://book.kubebuilder.io/reference/envtest.html#namespace-usage-limitation
 	namespace = uuid.New().String()
 	th.CreateNamespace(namespace)
+
+	kclient, err := kubernetes.NewForConfig(cfg)
+	Expect(err).ToNot(HaveOccurred(), "failed to create kclient")
+
+	// NOTE(gibi): helper.Helper needs an object that is being reconciled
+	// we are not really doing reconciliation in this test but still we need to
+	// provide a valid object. It is used as controller reference for certain
+	// objects created in the test. So we provide a simple one, a Namespace.
+	// Note(mschuppert) using a Secret as a Namespace object does not have
+	// metadata with namespace and some functions use the BeforeObject.GetNamespace()
+	genericObject := th.CreateSecret(types.NamespacedName{Name: "generic", Namespace: namespace}, map[string][]byte{})
+	h, err = helper.NewHelper(genericObject, k8sClient, kclient, testEnv.Scheme, ctrl.Log)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(h).NotTo(BeNil())
+
 	// We still request the delete of the Namespace to properly cleanup if
 	// we run the test in an existing cluster.
 	DeferCleanup(th.DeleteNamespace, namespace)
