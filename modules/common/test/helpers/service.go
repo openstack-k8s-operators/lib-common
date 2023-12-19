@@ -18,6 +18,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -33,6 +34,27 @@ func (tc *TestHelper) GetService(name types.NamespacedName) *corev1.Service {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return instance
+}
+
+// CreateService creates a new k8s service resource with provided data.
+//
+// Example usage:
+//
+//	secret := th.CreateService(types.NamespacedName{Name: "test-secret", Namespace: "test-namespace"}, map[string]string{}, corev1.ServiceSpec{...})
+func (tc *TestHelper) CreateService(name types.NamespacedName, labels map[string]string, svcSpec corev1.ServiceSpec) *corev1.Service {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name.Name,
+			Namespace: name.Namespace,
+			Labels:    labels,
+		},
+		Spec: svcSpec,
+	}
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.Create(tc.Ctx, svc)).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	return svc
 }
 
 // AssertServiceExists - asserts the existence of a Service resource in the Kubernetes cluster.

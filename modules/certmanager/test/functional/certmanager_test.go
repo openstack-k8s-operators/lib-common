@@ -15,9 +15,13 @@ limitations under the License.
 package functional
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/openstack-k8s-operators/lib-common/modules/certmanager"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmgrmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -146,5 +150,171 @@ var _ = Describe("certmanager module", func() {
 		err = c.Delete(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
 		th.AssertIssuerDoesNotExist(names.CertName)
+	})
+
+	It("creates certificates for k8s services with label selector", func() {
+		i := certmanager.NewIssuer(
+			certmanager.CAIssuer(
+				"ca",
+				names.Namespace,
+				map[string]string{"f": "l"},
+				"secret",
+			),
+			timeout,
+		)
+
+		_, err := i.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		issuer := th.GetIssuer(names.CAName)
+		Expect(issuer.Spec.CA).NotTo(BeNil())
+
+		svc1Name := types.NamespacedName{Name: "svc1", Namespace: names.Namespace}
+		svc2Name := types.NamespacedName{Name: "svc2", Namespace: names.Namespace}
+		svc3Name := types.NamespacedName{Name: "svc3", Namespace: names.Namespace}
+		th.CreateService(svc1Name, map[string]string{"foo": ""}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc1Name.Name,
+					Port:     int32(1111),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc2Name, map[string]string{"foo": ""}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(2222),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc3Name, map[string]string{}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(3333),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		// simulate underlying cert secrets exist
+		th.CreateCertSecret(types.NamespacedName{Name: "cert-svc1-svc", Namespace: names.Namespace})
+		th.CreateCertSecret(types.NamespacedName{Name: "cert-svc2-svc", Namespace: names.Namespace})
+
+		certs, _, err := certmanager.EnsureCertForServicesWithSelector(
+			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(certs).To(HaveLen(2))
+		Expect(certs).To(HaveKey(fmt.Sprintf("svc1.%s.svc", names.Namespace)))
+		Expect(certs).To(HaveKey(fmt.Sprintf("svc2.%s.svc", names.Namespace)))
+	})
+
+	It("creates a certificate for a specific k8s service matching label selector", func() {
+		i := certmanager.NewIssuer(
+			certmanager.CAIssuer(
+				"ca",
+				names.Namespace,
+				map[string]string{"f": "l"},
+				"secret",
+			),
+			timeout,
+		)
+
+		_, err := i.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		issuer := th.GetIssuer(names.CAName)
+		Expect(issuer.Spec.CA).NotTo(BeNil())
+
+		svc1Name := types.NamespacedName{Name: "svc1", Namespace: names.Namespace}
+		svc2Name := types.NamespacedName{Name: "svc2", Namespace: names.Namespace}
+		svc3Name := types.NamespacedName{Name: "svc3", Namespace: names.Namespace}
+		th.CreateService(svc1Name, map[string]string{"foo": "1"}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc1Name.Name,
+					Port:     int32(1111),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc2Name, map[string]string{"foo": "2"}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(2222),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc3Name, map[string]string{}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(3333),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		// simulate underlying cert secret exist
+		th.CreateCertSecret(types.NamespacedName{Name: "cert-svc2-svc", Namespace: names.Namespace})
+
+		cert, _, err := certmanager.EnsureCertForServiceWithSelector(
+			th.Ctx, h, names.Namespace, map[string]string{"foo": "2"}, names.CAName.Name)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(cert).To(Equal("cert-svc2-svc"))
+
+	})
+
+	It("fails to create a certificate for a specific k8s service if the label selector returns not a single service", func() {
+		i := certmanager.NewIssuer(
+			certmanager.CAIssuer(
+				"ca",
+				names.Namespace,
+				map[string]string{"f": "l"},
+				"secret",
+			),
+			timeout,
+		)
+
+		_, err := i.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		issuer := th.GetIssuer(names.CAName)
+		Expect(issuer.Spec.CA).NotTo(BeNil())
+
+		svc1Name := types.NamespacedName{Name: "svc1", Namespace: names.Namespace}
+		svc2Name := types.NamespacedName{Name: "svc2", Namespace: names.Namespace}
+		svc3Name := types.NamespacedName{Name: "svc3", Namespace: names.Namespace}
+		th.CreateService(svc1Name, map[string]string{"foo": ""}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc1Name.Name,
+					Port:     int32(1111),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc2Name, map[string]string{"foo": ""}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(2222),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+		th.CreateService(svc3Name, map[string]string{}, corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:     svc2Name.Name,
+					Port:     int32(3333),
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+		})
+
+		_, _, err = certmanager.EnsureCertForServiceWithSelector(
+			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name)
+		Expect(err).To(HaveOccurred())
 	})
 })
