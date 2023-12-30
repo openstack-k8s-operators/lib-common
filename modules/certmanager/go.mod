@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231215134849-9acca0025036
+	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231230094055-322aefb8478b
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 	k8s.io/api v0.26.12
