@@ -10,7 +10,7 @@ require (
 	github.com/onsi/gomega v1.30.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20231215134849-9acca0025036
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
+	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
 	k8s.io/api v0.26.12
 	k8s.io/apimachinery v0.26.12
 	k8s.io/client-go v0.26.12
