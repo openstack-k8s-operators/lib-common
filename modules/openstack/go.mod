@@ -58,7 +58,7 @@ require (
 	k8s.io/component-base v0.26.12 // indirect; indirect // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect; indirect // indirect
-	k8s.io/utils v0.0.0-20231127182322-b307cd553661 // indirect; indirect // indirect
+	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect; indirect // indirect
 	sigs.k8s.io/controller-runtime v0.14.7 // indirect; indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
