@@ -133,8 +133,8 @@ func (r *Route) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), route, func() error {
-		route.Labels = util.MergeStringMaps(route.Labels, r.route.Labels)
-		route.Annotations = util.MergeStringMaps(route.Annotations, r.route.Annotations)
+		route.Labels = util.MergeStringMaps(r.route.Labels, route.Labels)
+		route.Annotations = util.MergeStringMaps(r.route.Annotations, route.Annotations)
 		route.Spec = r.route.Spec
 		if len(route.Spec.Host) == 0 && len(route.Status.Ingress) > 0 {
 			route.Spec.Host = route.Status.Ingress[0].Host
