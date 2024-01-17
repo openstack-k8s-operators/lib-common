@@ -34,6 +34,7 @@ import (
 	k8s_corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 )
@@ -281,6 +282,7 @@ func EnsureCertForServicesWithSelector(
 
 // EnsureCertForServiceWithSelector - creates certificate for a k8s service identified
 // by a label selector. The label selector must match a single service
+// Note: Returns an NotFound error if <1 or >1 service found using the selector
 func EnsureCertForServiceWithSelector(
 	ctx context.Context,
 	helper *helper.Helper,
@@ -299,7 +301,11 @@ func EnsureCertForServiceWithSelector(
 		return cert, ctrl.Result{}, err
 	}
 	if len(svcs.Items) != 1 {
-		return cert, ctrl.Result{}, fmt.Errorf("%d services identified by selector: %+v", len(svcs.Items), selector)
+		err = k8s_errors.NewNotFound(
+			schema.GroupResource{Group: "", Resource: "services"},
+			fmt.Sprintf("%d services identified by selector: %+v", len(svcs.Items), selector))
+
+		return cert, ctrl.Result{}, err
 	}
 
 	certs, ctrlResult, err := EnsureCertForServicesWithSelector(
