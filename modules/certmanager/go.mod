@@ -11,9 +11,9 @@ require (
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20240115102737-e99c4ccd3205
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
-	k8s.io/api v0.26.12
-	k8s.io/apimachinery v0.26.12
-	k8s.io/client-go v0.26.12
+	k8s.io/api v0.26.13
+	k8s.io/apimachinery v0.26.13
+	k8s.io/client-go v0.26.13
 	sigs.k8s.io/controller-runtime v0.14.7
 )
 
@@ -57,8 +57,8 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.26.12 // indirect
-	k8s.io/component-base v0.26.12 // indirect
+	k8s.io/apiextensions-apiserver v0.26.13 // indirect
+	k8s.io/component-base v0.26.13 // indirect
 	k8s.io/kube-openapi v0.0.0-20230308215209-15aac26d736a // indirect
 	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
