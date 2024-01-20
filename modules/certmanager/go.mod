@@ -6,7 +6,7 @@ require (
 	github.com/cert-manager/cert-manager v1.11.5
 	github.com/go-logr/logr v1.4.1
 	github.com/google/uuid v1.5.0
-	github.com/onsi/ginkgo/v2 v2.14.0
+	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.30.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20240115102737-e99c4ccd3205
 	go.uber.org/zap v1.26.0
