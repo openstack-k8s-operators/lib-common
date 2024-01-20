@@ -3,12 +3,11 @@ module github.com/openstack-k8s-operators/lib-common/modules/storage
 go 1.19
 
 require (
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/gomega v1.31.1
 	k8s.io/api v0.26.12
 )
 
 require (
-	github.com/onsi/ginkgo/v2 v2.14.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 )
