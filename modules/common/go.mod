@@ -11,7 +11,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.26.0
-	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	k8s.io/api v0.26.13
 	k8s.io/apimachinery v0.26.13
 	k8s.io/client-go v0.26.13
