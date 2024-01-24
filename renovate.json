@@ -12,6 +12,10 @@
       "matchPackageNames": ["github.com/cert-manager/cert-manager"],
       "allowedVersions": "< 1.12.0",
       "enabled": true
+    },
+    {
+      "matchPackageNames": ["github.com/openstack-k8s-operators/lib-common/modules/common"],
+      "enabled": false
     }
   ],
   "postUpgradeTasks": {
