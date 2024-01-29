@@ -253,10 +253,11 @@ func GenericService(svcInfo *GenericServiceDetails) *corev1.Service {
 			Labels:    svcInfo.Labels,
 		},
 		Spec: corev1.ServiceSpec{
-			Selector:  svcInfo.Selector,
-			Ports:     ports,
-			ClusterIP: svcInfo.ClusterIP,
-			Type:      corev1.ServiceTypeClusterIP,
+			Selector:                 svcInfo.Selector,
+			Ports:                    ports,
+			ClusterIP:                svcInfo.ClusterIP,
+			Type:                     corev1.ServiceTypeClusterIP,
+			PublishNotReadyAddresses: svcInfo.PublishNotReadyAddresses,
 		},
 	}
 }

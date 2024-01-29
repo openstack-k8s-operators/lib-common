@@ -137,8 +137,9 @@ func TestGenericService(t *testing.T) {
 							NodePort:    0,
 						},
 					},
-					Selector: map[string]string{},
-					Type:     corev1.ServiceTypeClusterIP,
+					Selector:                 map[string]string{},
+					Type:                     corev1.ServiceTypeClusterIP,
+					PublishNotReadyAddresses: false,
 				},
 			},
 		},
@@ -183,7 +184,57 @@ func TestGenericService(t *testing.T) {
 					Selector: map[string]string{
 						"foo": "bar",
 					},
-					Type: corev1.ServiceTypeClusterIP,
+					Type:                     corev1.ServiceTypeClusterIP,
+					PublishNotReadyAddresses: false,
+				},
+			},
+		},
+		{
+			name: "Headless service with not ready addresses",
+			service: GenericServiceDetails{
+				Name:      "foo",
+				Namespace: "namespace",
+				Labels: map[string]string{
+					"foo": "bar",
+				},
+				Selector: map[string]string{
+					"foo": "bar",
+				},
+				Ports: []corev1.ServicePort{
+					{
+						Name:     "port",
+						Port:     int32(80),
+						Protocol: corev1.ProtocolTCP,
+					},
+				},
+				ClusterIP:                "None",
+				PublishNotReadyAddresses: true,
+			},
+			want: corev1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "namespace",
+					Labels: map[string]string{
+						"foo": "bar",
+					},
+				},
+				Spec: corev1.ServiceSpec{
+					Ports: []corev1.ServicePort{
+						{
+							Name:        "port",
+							Protocol:    corev1.ProtocolTCP,
+							AppProtocol: nil,
+							Port:        int32(80),
+							TargetPort:  intstr.FromInt(0),
+							NodePort:    0,
+						},
+					},
+					Selector: map[string]string{
+						"foo": "bar",
+					},
+					Type:                     corev1.ServiceTypeClusterIP,
+					ClusterIP:                "None",
+					PublishNotReadyAddresses: true,
 				},
 			},
 		},

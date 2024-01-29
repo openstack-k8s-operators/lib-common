@@ -81,9 +81,10 @@ type GenericServiceDetails struct {
 	Labels    map[string]string
 	Selector  map[string]string
 	// deprecated, use Ports
-	Port      GenericServicePort
-	Ports     []corev1.ServicePort
-	ClusterIP string
+	Port                     GenericServicePort
+	Ports                    []corev1.ServicePort
+	ClusterIP                string
+	PublishNotReadyAddresses bool
 }
 
 // GenericServicePort -
