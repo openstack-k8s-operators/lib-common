@@ -28,8 +28,6 @@ const (
 	CustomServiceConfigFileName = "custom.conf"
 	// CustomPolicyFileName - file name used to add the policy rule customizations
 	CustomPolicyFileName = "custom.yaml"
-	// DebugCommand - Default debug command for pods
-	DebugCommand = "/usr/local/bin/kolla_set_configs && /bin/sleep infinity"
 	// InputHashName -Name of the hash of hashes of all resources used to indentify an input change
 	InputHashName = "input"
 )
