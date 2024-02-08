@@ -291,8 +291,7 @@ func GetJobWithName(
 	job := &batchv1.Job{}
 	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, job)
 	if err != nil {
-		h.GetLogger().Info("GetJobWithName %s err: %w", name, err)
-		return job, err
+		return job, fmt.Errorf("GetJobWithName %s err: %w", name, err)
 	}
 
 	return job, nil
