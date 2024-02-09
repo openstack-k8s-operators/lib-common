@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/env"
@@ -435,36 +434,4 @@ func (c *Ca) CreateVolume() corev1.Volume {
 	}
 
 	return volume
-}
-
-// CreateDatabaseClientConfig - connection flags for the MySQL client
-// Configures TLS connections for clients that use TLS certificates
-// returns a string of mysql config statements
-// With the serviceID it is possible to control which certificate
-// to be use if there are multiple mounted to the deployment.
-func (s *Service) CreateDatabaseClientConfig(serviceID string) string {
-	conn := []string{}
-
-	if serviceID != "" || (s.CertMount != nil && s.KeyMount != nil) {
-		certPath := s.getCertMountPath(serviceID)
-		keyPath := s.getKeyMountPath(serviceID)
-
-		conn = append(conn,
-			fmt.Sprintf("ssl-cert=%s", certPath),
-			fmt.Sprintf("ssl-key=%s", keyPath),
-		)
-	}
-
-	// Client uses a CA certificate
-	caPath := DownstreamTLSCABundlePath
-	if s.CaMount != nil {
-		caPath = *s.CaMount
-	}
-	conn = append(conn, fmt.Sprintf("ssl-ca=%s", caPath))
-
-	if len(conn) > 0 {
-		conn = append([]string{"ssl=1"}, conn...)
-	}
-
-	return strings.Join(conn, "\n")
 }
