@@ -15,12 +15,11 @@ package test
 
 import (
 	"fmt"
-
-	. "github.com/onsi/gomega"
-
 	"os"
 	"path/filepath"
 	"testing"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestGetCRDDirFromModule(t *testing.T) {
@@ -54,7 +53,7 @@ func TestGetCRDDirFromModule(t *testing.T) {
 		// Generate a go.mod with a relative path replace statement
 		dir := t.TempDir()
 		mod := []byte(`module foo
-go 1.19
+go 1.21
 require (
 	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
 )
@@ -75,7 +74,7 @@ replace github.com/openstack-k8s-operators/infra-operator/apis => ../../infra-op
 		// Generate a go.mod with replacement pointing to a mixed case github ID
 		dir := t.TempDir()
 		mod := []byte(`module foo
-go 1.19
+go 1.21
 require (
 	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
 )
@@ -96,7 +95,7 @@ replace github.com/openstack-k8s-operators/infra-operator/apis => ../../Infra-Op
 		// Generate a go.mod with replacement pointing to a mixed case github ID
 		dir := t.TempDir()
 		mod := []byte(`module foo
-go 1.19
+go 1.21
 require (
 	github.com/openstack-k8s-operators/infra-operator/apis v0.1.1-0.20231001103054-f74a88ed4971
 )
@@ -119,7 +118,7 @@ func TestGetOpenShiftCRDDir(t *testing.T) {
 		// We need to generate a go.mod that has lib-common dependency in it
 		dir := t.TempDir()
 		mod := []byte(`module foo
-go 1.19
+go 1.21
 require (
 	github.com/openstack-k8s-operators/lib-common/modules/test v0.0.0-20220630111354-9f8383d4a2ea
 )
