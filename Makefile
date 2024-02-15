@@ -21,7 +21,7 @@ GINKGO ?= $(LOCALBIN)/ginkgo
 CONTROLLER_TOOLS_VERSION ?= v0.11.1
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.25
+ENVTEST_K8S_VERSION = 1.28
 
 # Number of CPUs to be allocacted for testing
 PROCS?=$(shell expr $(shell nproc --ignore 2) / 2)
