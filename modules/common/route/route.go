@@ -189,3 +189,39 @@ func (r *Route) Delete(
 
 	return nil
 }
+
+// GetLabels - returns labels of the route
+func (r *Route) GetLabels() map[string]string {
+	return r.route.Labels
+}
+
+// GetAnnotations - returns annotations of the route
+func (r *Route) GetAnnotations() map[string]string {
+	return r.route.Annotations
+}
+
+// AddAnnotation - Adds annotation and merges it with the current set
+func (r *Route) AddAnnotation(anno map[string]string) {
+	r.route.Annotations = util.MergeStringMaps(r.route.Annotations, anno)
+}
+
+// AddLabel - Adds label and merges it with the current set
+func (r *Route) AddLabel(label map[string]string) {
+	r.route.Labels = util.MergeStringMaps(r.route.Labels, label)
+}
+
+// AddAnnotation - Adds annotation and merges it with the current set
+func (r *OverrideSpec) AddAnnotation(anno map[string]string) {
+	if r.EmbeddedLabelsAnnotations == nil {
+		r.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+	r.Annotations = util.MergeMaps(r.Annotations, anno)
+}
+
+// AddLabel - Adds annotation and merges it with the current set
+func (r *OverrideSpec) AddLabel(label map[string]string) {
+	if r.EmbeddedLabelsAnnotations == nil {
+		r.EmbeddedLabelsAnnotations = &EmbeddedLabelsAnnotations{}
+	}
+	r.Labels = util.MergeMaps(r.Labels, label)
+}
