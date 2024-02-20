@@ -47,3 +47,40 @@ func (tc *TestHelper) SimulatePodPhaseRunning(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated pod running phase", "on", name)
 }
+
+// SimulatePodReady retrieves the Pod and simulates
+// a Ready condition for the Pod in a Kubernetes cluster.
+//
+// example usage:
+//
+//	th.SimulatePodReady(types.NamespacedName{Name: "test-pod", Namespace: "test-namespace"})
+func (tc *TestHelper) SimulatePodReady(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		pod := tc.GetPod(name)
+
+		found := false
+
+		for index, condition := range pod.Status.Conditions {
+			if condition.Type == corev1.PodReady {
+				condition.Status = corev1.ConditionTrue
+				pod.Status.Conditions[index] = condition
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			pod.Status.Conditions = append(
+				pod.Status.Conditions,
+				corev1.PodCondition{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionTrue,
+				},
+			)
+		}
+
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, pod)).To(gomega.Succeed())
+
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+	tc.Logger.Info("Simulated pod ready state", "on", name)
+}
