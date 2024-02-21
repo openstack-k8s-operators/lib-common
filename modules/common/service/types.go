@@ -42,6 +42,8 @@ const (
 	EndpointPublic Endpoint = "public"
 	// AnnotationIngressCreateKey -
 	AnnotationIngressCreateKey = "core.openstack.org/ingress_create"
+	// AnnotationIngressTargetPortNameKey -
+	AnnotationIngressTargetPortNameKey = "core.openstack.org/ingress_target_port_name"
 	// AnnotationEndpointKey -
 	AnnotationEndpointKey = "endpoint"
 	// AnnotationHostnameKey -
