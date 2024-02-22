@@ -46,7 +46,11 @@ func (cj *CronJob) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
 ) (ctrl.Result, error) {
+	cronjob := &batchv1.CronJob{}
+	cronjob.ObjectMeta = cj.cronjob.ObjectMeta
+
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), cj.cronjob, func() error {
+		cronjob.Spec = cj.cronjob.Spec
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), cj.cronjob, h.GetScheme())
 		if err != nil {
 			return err
