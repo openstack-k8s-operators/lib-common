@@ -34,6 +34,15 @@ func (tc *TestHelper) DeleteInstance(instance client.Object, opts ...client.Dele
 		"Kind", instance.GetObjectKind(),
 	)
 
+	name := types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}
+	err := tc.K8sClient.Get(tc.Ctx, name, instance)
+	// if it is already gone that is OK
+	if k8s_errors.IsNotFound(err) {
+		return
+	}
+	gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+	uid := instance.GetUID()
+
 	gomega.Eventually(func(g gomega.Gomega) {
 		name := types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}
 		err := tc.K8sClient.Get(tc.Ctx, name, instance)
@@ -42,6 +51,13 @@ func (tc *TestHelper) DeleteInstance(instance client.Object, opts ...client.Dele
 			return
 		}
 		g.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+		if uid != instance.GetUID() {
+			tc.Logger.Info(
+				"The original instance is deleted but there is a new one with"+
+					" a different UID", "requested UID", uid, "actual UID", instance.GetUID())
+			return
+		}
 
 		g.Expect(tc.K8sClient.Delete(tc.Ctx, instance, opts...)).Should(gomega.Succeed())
 
