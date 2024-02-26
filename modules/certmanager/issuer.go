@@ -24,10 +24,12 @@ import (
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -164,4 +166,42 @@ func GetIssuerByName(
 	}
 
 	return issuer, nil
+}
+
+// GetIssuerByLabels - get certmanager issuer by label
+func GetIssuerByLabels(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	labelSelector map[string]string,
+) (*certmgrv1.Issuer, error) {
+
+	issuers := &certmgrv1.IssuerList{}
+
+	listOpts := []client.ListOption{
+		client.InNamespace(namespace),
+	}
+
+	if len(labelSelector) > 0 {
+		labels := client.MatchingLabels(labelSelector)
+		listOpts = append(listOpts, labels)
+	}
+
+	err := h.GetClient().List(ctx, issuers, listOpts...)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting issuer by label: %w", err)
+	}
+
+	if len(issuers.Items) > 1 {
+		return nil, fmt.Errorf("more then one issuer found in namespace %s", namespace)
+	}
+
+	if len(issuers.Items) == 0 {
+		return nil, k8s_errors.NewNotFound(
+			appsv1.Resource("Issuer"),
+			fmt.Sprintf("No Issuer object found in namespace %s", namespace),
+		)
+	}
+
+	return &issuers.Items[0], nil
 }
