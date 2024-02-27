@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openstack-k8s-operators/lib-common/modules/certmanager"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -59,6 +60,37 @@ var _ = Describe("certmanager module", func() {
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(issuer.Spec.SelfSigned).NotTo(BeNil())
 			g.Expect(issuer.ObjectMeta.Labels["f"]).To(Equal("l"))
+		}, timeout, interval).Should(Succeed())
+		Eventually(func(g Gomega) {
+			_, err := certmanager.GetIssuerByLabels(
+				th.Ctx,
+				h,
+				names.SelfSignedIssuerName.Namespace,
+				map[string]string{"not": "exist"})
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(k8s_errors.IsNotFound(err)).To(BeTrue())
+		}, timeout, interval).Should(Succeed())
+
+		// Create another issuer with same labels to test
+		// GetIssuerByLabels retrieving >1 issuers
+		i = certmanager.NewIssuer(
+			certmanager.SelfSignedIssuer(
+				"anotherissuer",
+				namespace,
+				map[string]string{"f": "l"},
+			),
+			timeout,
+		)
+		_, err = i.CreateOrPatch(ctx, h)
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			_, err := certmanager.GetIssuerByLabels(
+				th.Ctx,
+				h,
+				names.SelfSignedIssuerName.Namespace,
+				map[string]string{"f": "l"})
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(err.Error()).Should(ContainSubstring("more then one issuer found in namespace"))
 		}, timeout, interval).Should(Succeed())
 	})
 
