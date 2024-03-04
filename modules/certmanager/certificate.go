@@ -50,6 +50,7 @@ type CertificateRequest struct {
 	IssuerName  string
 	CertName    string
 	Duration    *time.Duration
+	RenewBefore *time.Duration
 	Hostnames   []string
 	Ips         []string
 	Annotations map[string]string
@@ -193,6 +194,12 @@ func EnsureCert(
 			Labels:      request.Labels,
 		},
 		Usages: request.Usages,
+	}
+
+	if request.RenewBefore != nil {
+		certSpec.RenewBefore = &metav1.Duration{
+			Duration: *request.RenewBefore,
+		}
 	}
 
 	if request.Hostnames != nil {
