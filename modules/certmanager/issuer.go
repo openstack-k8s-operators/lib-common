@@ -36,8 +36,8 @@ import (
 const (
 	// RootCAIssuerInternalLabel for internal RootCA to issue internal TLS Certs
 	RootCAIssuerInternalLabel = "osp-rootca-issuer-internal"
-	// RootCAIssuerOvnDBLabel for internal RootCA to issue OVN DB TLS Certs
-	RootCAIssuerOvnDBLabel = "osp-rootca-issuer-ovndb"
+	// RootCAIssuerOvnDBLabel for internal RootCA to issue OVN TLS Certs
+	RootCAIssuerOvnDBLabel = "osp-rootca-issuer-ovn"
 )
 
 // Issuer -
