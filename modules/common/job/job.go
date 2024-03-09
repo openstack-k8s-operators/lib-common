@@ -128,11 +128,12 @@ func (j *Job) DoJob(
 	var ctrlResult ctrl.Result
 	var err error
 
-	// We intentionally only include the PodTemplate to the hash of the Job.
-	// Fields outside of the PodTemplate, like TTL does not define what to run
-	// just how to run it. So changing such field should not trigger the re-run
-	// of the Job
-	j.hash, err = util.ObjectHash(j.expectedJob.Spec.Template)
+	// We intentionally only include the PodTemplate Spec in the hash of the Job.
+	// PodTemplate metadata is excluded as it can be altered by k8s (labels specifically).
+	// Fields outside of the PodTemplate like TTL do not define what to run,
+	// just how to run them, so changing such fields should not trigger the re-run
+	// of the Job.
+	j.hash, err = util.ObjectHash(j.expectedJob.Spec.Template.Spec)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error calculating %s hash: %w", j.jobType, err)
 	}
