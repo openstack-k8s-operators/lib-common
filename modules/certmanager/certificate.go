@@ -29,6 +29,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	"golang.org/x/exp/maps"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	k8s_corev1 "k8s.io/api/core/v1"
@@ -99,7 +100,9 @@ func Cert(
 func (c *Certificate) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
+	owner client.Object,
 ) (ctrl.Result, error) {
+	var err error
 	cert := &certmgrv1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      c.certificate.Name,
@@ -112,7 +115,11 @@ func (c *Certificate) CreateOrPatch(
 		cert.Annotations = util.MergeStringMaps(cert.Annotations, c.certificate.Annotations)
 		cert.Spec = c.certificate.Spec
 
-		err := controllerutil.SetControllerReference(h.GetBeforeObject(), cert, h.GetScheme())
+		if owner != nil {
+			err = controllerutil.SetControllerReference(owner, cert, h.GetScheme())
+		} else {
+			err = controllerutil.SetControllerReference(h.GetBeforeObject(), cert, h.GetScheme())
+		}
 		if err != nil {
 			return err
 		}
@@ -152,6 +159,7 @@ func EnsureCert(
 	ctx context.Context,
 	helper *helper.Helper,
 	request CertificateRequest,
+	owner client.Object,
 ) (*k8s_corev1.Secret, ctrl.Result, error) {
 	// get issuer
 	issuer := &certmgrv1.Issuer{}
@@ -218,7 +226,7 @@ func EnsureCert(
 	)
 
 	cert := NewCertificate(certReq, 5)
-	ctrlResult, err := cert.CreateOrPatch(ctx, helper)
+	ctrlResult, err := cert.CreateOrPatch(ctx, helper, owner)
 	if err != nil {
 		return nil, ctrlResult, err
 	} else if (ctrlResult != ctrl.Result{}) {
@@ -250,6 +258,7 @@ func EnsureCertForServicesWithSelector(
 	namespace string,
 	selector map[string]string,
 	issuer string,
+	owner client.Object,
 ) (map[string]string, ctrl.Result, error) {
 	certs := map[string]string{}
 	svcs, err := service.GetServicesListWithLabel(
@@ -274,7 +283,8 @@ func EnsureCertForServicesWithSelector(
 		certSecret, ctrlResult, err := EnsureCert(
 			ctx,
 			helper,
-			certRequest)
+			certRequest,
+			owner)
 		if err != nil {
 			return certs, ctrlResult, err
 		} else if (ctrlResult != ctrl.Result{}) {
@@ -296,6 +306,7 @@ func EnsureCertForServiceWithSelector(
 	namespace string,
 	selector map[string]string,
 	issuer string,
+	owner client.Object,
 ) (string, ctrl.Result, error) {
 	var cert string
 	svcs, err := service.GetServicesListWithLabel(
@@ -316,7 +327,7 @@ func EnsureCertForServiceWithSelector(
 	}
 
 	certs, ctrlResult, err := EnsureCertForServicesWithSelector(
-		ctx, helper, namespace, selector, issuer)
+		ctx, helper, namespace, selector, issuer, owner)
 	if err != nil {
 		return cert, ctrlResult, err
 	} else if (ctrlResult != ctrl.Result{}) {

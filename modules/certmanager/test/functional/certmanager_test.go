@@ -155,7 +155,7 @@ var _ = Describe("certmanager module", func() {
 			timeout,
 		)
 
-		_, err := c.CreateOrPatch(ctx, h)
+		_, err := c.CreateOrPatch(ctx, h, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		cert := th.GetCert(names.CertName)
 		Expect(cert.Spec.CommonName).To(Equal("keystone-public-openstack.apps-crc.testing"))
@@ -185,7 +185,7 @@ var _ = Describe("certmanager module", func() {
 			timeout,
 		)
 
-		_, err := c.CreateOrPatch(ctx, h)
+		_, err := c.CreateOrPatch(ctx, h, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		cert := th.GetCert(names.CertName)
 		Expect(cert).NotTo(BeNil())
@@ -245,7 +245,7 @@ var _ = Describe("certmanager module", func() {
 		th.CreateCertSecret(types.NamespacedName{Name: "cert-svc2-svc", Namespace: names.Namespace})
 
 		certs, _, err := certmanager.EnsureCertForServicesWithSelector(
-			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name)
+			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(certs).To(HaveLen(2))
 		Expect(certs).To(HaveKey(fmt.Sprintf("svc1.%s.svc", names.Namespace)))
@@ -302,7 +302,7 @@ var _ = Describe("certmanager module", func() {
 		th.CreateCertSecret(types.NamespacedName{Name: "cert-svc2-svc", Namespace: names.Namespace})
 
 		cert, _, err := certmanager.EnsureCertForServiceWithSelector(
-			th.Ctx, h, names.Namespace, map[string]string{"foo": "2"}, names.CAName.Name)
+			th.Ctx, h, names.Namespace, map[string]string{"foo": "2"}, names.CAName.Name, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(cert).To(Equal("cert-svc2-svc"))
 
@@ -356,7 +356,7 @@ var _ = Describe("certmanager module", func() {
 		})
 
 		_, _, err = certmanager.EnsureCertForServiceWithSelector(
-			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name)
+			th.Ctx, h, names.Namespace, map[string]string{"foo": ""}, names.CAName.Name, nil)
 		Expect(err).To(HaveOccurred())
 	})
 })
