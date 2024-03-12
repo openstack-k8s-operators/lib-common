@@ -56,6 +56,9 @@ const (
 	// CronJobReadyCondition Status=True condition when cron jobs created ok.
 	CronJobReadyCondition Type = "CronJobReady"
 
+	// JobReadyCondition Status=True condition when cron jobs created ok.
+	JobReadyCondition Type = "JobReady"
+
 	// MemcachedReadyCondition - Indicates the memcached service is ready to be consumed
 	MemcachedReadyCondition Type = "MemcachedReady"
 
@@ -250,6 +253,21 @@ const (
 
 	// CronJobReadyErrorMessage
 	CronJobReadyErrorMessage = "CronJob error occurred %s"
+
+	//
+	// JobReady condition messages
+	//
+	// JobReadyInitMessage
+	JobReadyInitMessage = "Job not started"
+
+	// JobReadyMessage
+	JobReadyMessage = "Job completed"
+
+	// JobReadyRunningMessage
+	JobReadyRunningMessage = "Job in progress"
+
+	// JobReadyErrorMessage
+	JobReadyErrorMessage = "Job error occurred %s"
 
 	//
 	// MemcachedReady condition messages
