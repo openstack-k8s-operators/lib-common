@@ -26,7 +26,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect; indirect // indirect
+	k8s.io/utils v0.0.0-20240310230437-4693a0247e57 // indirect; indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
