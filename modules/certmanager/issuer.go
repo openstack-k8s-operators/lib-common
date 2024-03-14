@@ -34,10 +34,14 @@ import (
 )
 
 const (
+	// RootCAIssuerPublicLabel for public RootCA to issue public TLS Certs
+	RootCAIssuerPublicLabel = "osp-rootca-issuer-public"
 	// RootCAIssuerInternalLabel for internal RootCA to issue internal TLS Certs
 	RootCAIssuerInternalLabel = "osp-rootca-issuer-internal"
 	// RootCAIssuerOvnDBLabel for internal RootCA to issue OVN TLS Certs
 	RootCAIssuerOvnDBLabel = "osp-rootca-issuer-ovn"
+	// RootCAIssuerLibvirtDBLabel for internal RootCA to issue libvirt TLS Certs
+	RootCAIssuerLibvirtDBLabel = "osp-rootca-issuer-libvirt"
 )
 
 // Issuer -
