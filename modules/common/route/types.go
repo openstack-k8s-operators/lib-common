@@ -185,5 +185,6 @@ type TargetReference struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=256
-	Weight *int32 `json:"weight,omitempty" protobuf:"varint,3,opt,name=weight"`
+	// +kubebuilder:default=100
+	Weight *int32 `json:"weight" protobuf:"varint,3,opt,name=weight"`
 }
