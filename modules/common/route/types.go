@@ -138,7 +138,7 @@ type Spec struct {
 	// to is an object the route should use as the primary backend. Only the Service kind
 	// is allowed, and it will be defaulted to Service. If the weight field (0-256 default 100)
 	// is set to zero, no traffic will be sent to this backend.
-	To TargetReference `json:"to,omitempty" protobuf:"bytes,3,opt,name=to"`
+	To TargetReference `json:"to" protobuf:"bytes,3,opt,name=to"`
 
 	// alternateBackends allows up to 3 additional backends to be assigned to the route.
 	// Only the Service kind is allowed, and it will be defaulted to Service.
