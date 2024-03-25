@@ -233,33 +233,33 @@ func TestHasSameState(t *testing.T) {
 
 	// same condition
 	falseInfo2 := falseInfo.DeepCopy()
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeTrue())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeTrue())
 
 	// different LastTransitionTime does not impact state
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.LastTransitionTime = metav1.NewTime(time.Date(1900, time.November, 10, 23, 0, 0, 0, time.UTC))
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeTrue())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeTrue())
 
 	// different Type, Status, Reason, Severity and Message determine different state
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.Type = "another type"
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeFalse())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeFalse())
 
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.Status = corev1.ConditionTrue
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeFalse())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeFalse())
 
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.Severity = SeverityWarning
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeFalse())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeFalse())
 
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.Reason = "another reason"
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeFalse())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeFalse())
 
 	falseInfo2 = falseInfo.DeepCopy()
 	falseInfo2.Message = "another message"
-	g.Expect(hasSameState(falseInfo, falseInfo2)).To(BeFalse())
+	g.Expect(HasSameState(falseInfo, falseInfo2)).To(BeFalse())
 }
 
 func TestLess(t *testing.T) {
@@ -522,34 +522,34 @@ func TestGetHigherPrioCondition(t *testing.T) {
 	g.Expect(GetHigherPrioCondition(nil, nil)).To(BeNil())
 
 	c := GetHigherPrioCondition(unknownA, nil)
-	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
+	g.Expect(HasSameState(c, unknownA)).To(BeTrue())
 
 	c = GetHigherPrioCondition(nil, unknownA)
-	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
+	g.Expect(HasSameState(c, unknownA)).To(BeTrue())
 
 	// Status Unknown has higher prio then Status True
 	c = GetHigherPrioCondition(unknownA, trueA)
-	g.Expect(hasSameState(c, unknownA)).To(BeTrue())
+	g.Expect(HasSameState(c, unknownA)).To(BeTrue())
 
 	// Status False has higher prio then Status Unknown
 	c = GetHigherPrioCondition(falseA, unknownA)
-	g.Expect(hasSameState(c, falseA)).To(BeTrue())
+	g.Expect(HasSameState(c, falseA)).To(BeTrue())
 
 	// Status False has higher prio then Status True
 	c = GetHigherPrioCondition(falseA, trueA)
-	g.Expect(hasSameState(c, falseA)).To(BeTrue())
+	g.Expect(HasSameState(c, falseA)).To(BeTrue())
 
 	// When both Status=False, Severity Error has higher prio then Info
 	c = GetHigherPrioCondition(falseInfo, falseError)
-	g.Expect(hasSameState(c, falseError)).To(BeTrue())
+	g.Expect(HasSameState(c, falseError)).To(BeTrue())
 
 	// When both Status=False, Severity Error has higher prio then Warning
 	c = GetHigherPrioCondition(falseWarning, falseError)
-	g.Expect(hasSameState(c, falseError)).To(BeTrue())
+	g.Expect(HasSameState(c, falseError)).To(BeTrue())
 
 	// When both Status=False, Severity Warning has higher prio then Info
 	c = GetHigherPrioCondition(falseWarning, falseInfo)
-	g.Expect(hasSameState(c, falseWarning)).To(BeTrue())
+	g.Expect(HasSameState(c, falseWarning)).To(BeTrue())
 
 	// When both Status=False, and same Severity return the one with later
 	// LastTransitionTime.
@@ -564,7 +564,7 @@ func TestGetHigherPrioCondition(t *testing.T) {
 	warning2.Message = "warning2"
 
 	c = GetHigherPrioCondition(warning1, warning2)
-	g.Expect(hasSameState(c, warning2)).To(BeTrue())
+	g.Expect(HasSameState(c, warning2)).To(BeTrue())
 }
 
 // haveSameConditionsOf matches a conditions list to be the same as another.
@@ -589,7 +589,7 @@ func (matcher *conditionsMatcher) Match(actual interface{}) (success bool, err e
 	}
 
 	for i := range actualConditions {
-		if !hasSameState(&actualConditions[i], &matcher.Expected[i]) {
+		if !HasSameState(&actualConditions[i], &matcher.Expected[i]) {
 			return false, nil
 		}
 	}
@@ -621,7 +621,7 @@ func (matcher *conditionMatcher) Match(actual interface{}) (success bool, err er
 		return false, errors.New("value should be a condition")
 	}
 
-	return hasSameState(actualCondition, matcher.Expected), nil
+	return HasSameState(actualCondition, matcher.Expected), nil
 }
 
 func (matcher *conditionMatcher) FailureMessage(actual interface{}) (message string) {
