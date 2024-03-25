@@ -567,6 +567,80 @@ func TestGetHigherPrioCondition(t *testing.T) {
 	g.Expect(HasSameState(c, warning2)).To(BeTrue())
 }
 
+func TestRestoreLastTransitionTimes(t *testing.T) {
+	time1 := metav1.NewTime(time.Date(2022, time.August, 9, 10, 0, 0, 0, time.UTC))
+	time2 := metav1.NewTime(time.Date(2022, time.August, 10, 10, 0, 0, 0, time.UTC))
+
+	tests := []struct {
+		name  string
+		patch func(condition *Condition)
+		want  metav1.Time
+	}{
+		// If the patch function modifies any field that causes HasSameCondition()
+		// to fail, then testCond should retain its LastTransitionTime (time1).
+		{
+			name: "Different condition type",
+			patch: func(condition *Condition) {
+				condition.Type = "X"
+			},
+			want: time1,
+		},
+		{
+			name: "Different condition status",
+			patch: func(condition *Condition) {
+				condition.Status = corev1.ConditionUnknown
+			},
+			want: time1,
+		},
+		{
+			name: "Different condition reason",
+			patch: func(condition *Condition) {
+				condition.Reason = "reason X"
+			},
+			want: time1,
+		},
+		{
+			name: "Different condition severity",
+			patch: func(condition *Condition) {
+				condition.Severity = SeverityWarning
+			},
+			want: time1,
+		},
+		{
+			name: "Different condition message",
+			patch: func(condition *Condition) {
+				condition.Message = "message X"
+			},
+			want: time1,
+		},
+		// LastTransitionTime should change to time2 when HasSameCondition() passes.
+		{
+			name:  "Same condition state",
+			patch: func(condition *Condition) {},
+			want:  time2,
+		},
+	}
+
+	g := NewWithT(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testCond := falseA.DeepCopy()
+			testCond.LastTransitionTime = time1
+			conditions := CreateList(testCond)
+
+			// Patch a copy of testCond and set a different LastTransitionTime
+			savedCond := testCond.DeepCopy()
+			tt.patch(savedCond)
+			savedCond.LastTransitionTime = time2
+			savedConditions := CreateList(savedCond)
+
+			RestoreLastTransitionTimes(&conditions, savedConditions)
+
+			g.Expect(conditions.Get(testCond.Type).LastTransitionTime).To(BeIdenticalTo(tt.want))
+		})
+	}
+}
+
 // haveSameConditionsOf matches a conditions list to be the same as another.
 func haveSameConditionsOf(expected Conditions) types.GomegaMatcher {
 	return &conditionsMatcher{
