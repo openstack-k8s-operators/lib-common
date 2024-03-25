@@ -68,7 +68,7 @@ func (conditions *Conditions) Set(c *Condition) {
 	for i, existingCondition := range *conditions {
 		if existingCondition.Type == c.Type {
 			exists = true
-			if !hasSameState(&existingCondition, c) {
+			if !HasSameState(&existingCondition, c) {
 				(*conditions)[i] = *c
 
 				break
@@ -208,8 +208,8 @@ func lessLastTransitionTime(i, j *Condition) bool {
 	return !i.LastTransitionTime.Before(&j.LastTransitionTime)
 }
 
-// hasSameState returns true if a condition has the same state of another
-func hasSameState(i, j *Condition) bool {
+// HasSameState returns true if a condition has the same state of another
+func HasSameState(i, j *Condition) bool {
 	return i.Type == j.Type &&
 		i.Status == j.Status &&
 		i.Reason == j.Reason &&
