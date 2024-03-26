@@ -380,6 +380,17 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 	return mirrorCondition
 }
 
+// RestoreLastTransitionTimes - Updates each condition's LastTransitionTime when its state
+// matches the one in a list of "saved" conditions.
+func RestoreLastTransitionTimes(conditions *Conditions, savedConditions Conditions) {
+	for idx, cond := range *conditions {
+		savedCond := savedConditions.Get(cond.Type)
+		if savedCond != nil && HasSameState(&cond, savedCond) {
+			(*conditions)[idx].LastTransitionTime = savedCond.LastTransitionTime
+		}
+	}
+}
+
 // getConditionGroups groups a list of conditions according to status, severity values.
 // The groups are sorted by Status and Severity.
 func (conditions *Conditions) getConditionGroups() []conditionGroup {
