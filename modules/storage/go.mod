@@ -4,11 +4,11 @@ go 1.20
 
 require github.com/onsi/gomega v1.31.1
 
-require k8s.io/api v0.28.7
+require k8s.io/api v0.28.8
 
 require (
 	github.com/onsi/ginkgo/v2 v2.16.0 // indirect
-	k8s.io/apimachinery v0.28.7 // indirect
+	k8s.io/apimachinery v0.28.8 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
