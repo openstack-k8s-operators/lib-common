@@ -155,7 +155,7 @@ func (j *Job) DoJob(
 
 	// If the hash of the job not changed then we don't need to create or wait
 	// for any jobs
-	if !j.changed {
+	if !j.changed && !j.preserve {
 		if exists {
 			// but we  still want to allow changing the TTL on a finished job
 			return j.updateTTL(ctx, h)
