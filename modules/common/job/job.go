@@ -258,14 +258,20 @@ func (j *Job) waitOnJob(
 		return ctrl.Result{}, nil
 	} else if j.actualJob.Status.Failed > 0 {
 		if existingJobHash != j.hash {
-			h.GetLogger().Info(
-				"The hash of the job changed but the previous failed job still exists. " +
-					"Deleting old job and requeueing.")
-			err := DeleteJob(ctx, h, j.actualJob.Name, j.actualJob.Namespace)
-			if err != nil {
-				return ctrl.Result{}, err
+			if j.preserve {
+				h.GetLogger().Info(
+					"The hash of the job changed and the previous failed job still exists. " +
+						"Consider deleting the old job and requeue.")
+			} else {
+				h.GetLogger().Info(
+					"The hash of the job changed but the previous failed job still exists. " +
+						"Deleting old job and requeueing.")
+				err := DeleteJob(ctx, h, j.actualJob.Name, j.actualJob.Namespace)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{RequeueAfter: j.timeout}, nil
 			}
-			return ctrl.Result{RequeueAfter: j.timeout}, nil
 		}
 		h.GetLogger().Info("Job Status Failed")
 		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New("Job Failed. Check job logs"))
