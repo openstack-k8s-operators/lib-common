@@ -2,7 +2,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/storage
 
 go 1.20
 
-require github.com/onsi/gomega v1.31.1
+require github.com/onsi/gomega v1.32.0
 
 require k8s.io/api v0.28.8
 
