@@ -7,7 +7,7 @@ require github.com/onsi/gomega v1.32.0
 require k8s.io/api v0.28.8
 
 require (
-	github.com/onsi/ginkgo/v2 v2.16.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.17.1 // indirect
 	k8s.io/apimachinery v0.28.8 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
