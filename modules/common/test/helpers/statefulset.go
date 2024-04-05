@@ -49,6 +49,7 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 		ss := tc.GetStatefulSet(name)
 		ss.Status.Replicas = 1
 		ss.Status.ReadyReplicas = 1
+		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
@@ -109,6 +110,7 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		ss := tc.GetStatefulSet(name)
 		ss.Status.Replicas = 1
 		ss.Status.ReadyReplicas = 1
+		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())

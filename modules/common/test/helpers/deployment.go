@@ -61,6 +61,7 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 
 		deployment.Status.Replicas = 1
 		deployment.Status.ReadyReplicas = 1
+		deployment.Status.ObservedGeneration = deployment.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
@@ -120,6 +121,7 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 		depl := tc.GetDeployment(name)
 		depl.Status.Replicas = 1
 		depl.Status.ReadyReplicas = 1
+		depl.Status.ObservedGeneration = depl.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, depl)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
