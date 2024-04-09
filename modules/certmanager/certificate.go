@@ -50,6 +50,7 @@ type Certificate struct {
 type CertificateRequest struct {
 	IssuerName  string
 	CertName    string
+	CommonName  *string
 	Duration    *time.Duration
 	RenewBefore *time.Duration
 	Hostnames   []string
@@ -218,6 +219,10 @@ func EnsureCert(
 
 	if request.Ips != nil {
 		certSpec.IPAddresses = request.Ips
+	}
+
+	if request.CommonName != nil {
+		certSpec.CommonName = *request.CommonName
 	}
 
 	certReq := Cert(
