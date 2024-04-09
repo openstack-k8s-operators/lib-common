@@ -50,6 +50,7 @@ type Certificate struct {
 type CertificateRequest struct {
 	IssuerName  string
 	CertName    string
+	CommonName  *string
 	Duration    *time.Duration
 	RenewBefore *time.Duration
 	Hostnames   []string
@@ -57,6 +58,7 @@ type CertificateRequest struct {
 	Annotations map[string]string
 	Labels      map[string]string
 	Usages      []certmgrv1.KeyUsage
+	Subject     *certmgrv1.X509Subject
 }
 
 // NewCertificate returns an initialized Certificate.
@@ -201,7 +203,8 @@ func EnsureCert(
 			Annotations: request.Annotations,
 			Labels:      request.Labels,
 		},
-		Usages: request.Usages,
+		Subject: request.Subject,
+		Usages:  request.Usages,
 	}
 
 	if request.RenewBefore != nil {
@@ -216,6 +219,10 @@ func EnsureCert(
 
 	if request.Ips != nil {
 		certSpec.IPAddresses = request.Ips
+	}
+
+	if request.CommonName != nil {
+		certSpec.CommonName = *request.CommonName
 	}
 
 	certReq := Cert(
