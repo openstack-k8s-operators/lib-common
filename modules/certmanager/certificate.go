@@ -57,6 +57,7 @@ type CertificateRequest struct {
 	Annotations map[string]string
 	Labels      map[string]string
 	Usages      []certmgrv1.KeyUsage
+	Subject     *certmgrv1.X509Subject
 }
 
 // NewCertificate returns an initialized Certificate.
@@ -201,7 +202,8 @@ func EnsureCert(
 			Annotations: request.Annotations,
 			Labels:      request.Labels,
 		},
-		Usages: request.Usages,
+		Subject: request.Subject,
+		Usages:  request.Usages,
 	}
 
 	if request.RenewBefore != nil {
