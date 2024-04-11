@@ -79,6 +79,9 @@ const (
 
 	// TLSInputReadyCondition Status=True condition when required TLS sources are ready
 	TLSInputReadyCondition Type = "TLSInputReady"
+
+	// RedisReadyCondition - Indicates the redis service is ready to be consumed
+	RedisReadyCondition Type = "RedisReady"
 )
 
 // Common Reasons used by API objects.
@@ -316,6 +319,21 @@ const (
 
 	// TLSInputErrorMessage - Provides the message when there's error in provision of TLS sources
 	TLSInputErrorMessage = "TLSInput error occured in TLS sources %s"
+
+	//
+	// RedisReady condition messages
+	//
+	// RedisReadyInitMessage -
+	RedisReadyInitMessage = " Redis create not started"
+
+	// RedisReadyMessage - Provides the message to clarify redis has been provisioned
+	RedisReadyMessage = " Redis instance has been provisioned"
+
+	// RedisReadyWaitingMessage - Provides the message to clarify redis has not been provisioned
+	RedisReadyWaitingMessage = " Redis instance has not been provisioned"
+
+	// RedisReadyErrorMessage -
+	RedisReadyErrorMessage = " Redis error occurred %s"
 )
 
 // Common Messages used for service accounts, roles, role bindings
