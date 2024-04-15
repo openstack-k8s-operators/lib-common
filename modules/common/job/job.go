@@ -22,6 +22,7 @@ import (
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -79,8 +80,12 @@ func (j *Job) createJob(
 			h.GetLogger().Info(fmt.Sprintf("Job %s not found, reconcile in %s", job.Name, j.timeout))
 			return ctrl.Result{RequeueAfter: j.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "JobError", fmt.Sprintf("error create/updating job: %s", j.expectedJob.Name))
 		h.GetLogger().Error(err, "Job CreateOrPatch failed", "job", job.Name)
 		return ctrl.Result{}, err
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "JobCreated", fmt.Sprintf("job %s created", j.expectedJob.Name))
 	}
 	j.actualJob = job
 	if op != controllerutil.OperationResultNone {
@@ -225,7 +230,7 @@ func DeleteJob(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return err
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "JobDeleted", fmt.Sprintf("job: %s deleted", name))
 	return nil
 }
 

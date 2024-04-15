@@ -25,6 +25,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -133,8 +134,14 @@ func (i *Issuer) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Issuer %s not found, reconcile in %s", issuer.Name, i.timeout))
 			return ctrl.Result{RequeueAfter: i.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "IssuerError", fmt.Sprintf("error create/updating issuer: %s", i.issuer.Name))
 		return ctrl.Result{}, err
 	}
+
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "IssuerCreated", fmt.Sprintf("issuer %s created", i.issuer.Name))
+	}
+
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Issuer %s - %s", issuer.Name, op))
 	}
@@ -152,7 +159,7 @@ func (i *Issuer) Delete(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return fmt.Errorf("Error deleting issuer %s: %w", i.issuer.Name, err)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "IssuerDeleted", fmt.Sprintf("issuer: %s deleted", i.issuer.Name))
 	return nil
 }
 

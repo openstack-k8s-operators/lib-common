@@ -22,6 +22,7 @@ import (
 	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -63,7 +64,11 @@ func (cj *CronJob) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("CronJob %s not found, reconcile in %s", cj.cronjob.Name, cj.timeout))
 			return ctrl.Result{RequeueAfter: cj.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "CronJobError", fmt.Sprintf("error create/updating cronjob: %s", cj.cronjob.Name))
 		return ctrl.Result{}, err
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "CronJobCreated", fmt.Sprintf("cronjob %s created", cj.cronjob.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("CronJob %s - %s", cj.cronjob.Name, op))
@@ -81,7 +86,7 @@ func (cj *CronJob) Delete(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return fmt.Errorf("Error deleting cronjob %s: %w", cj.cronjob.Name, err)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "CronJobDeleted", fmt.Sprintf("cronjob: %s deleted", cj.cronjob.Name))
 	return nil
 }
 

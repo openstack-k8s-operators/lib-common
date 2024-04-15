@@ -70,11 +70,15 @@ func (s *ServiceAccount) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("ServiceAccount %s not found, reconcile in %s", sa.Name, s.timeout))
 			return ctrl.Result{RequeueAfter: s.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "ServiceAccountError", fmt.Sprintf("error create/updating service account: %s", sa.Name))
 		return ctrl.Result{}, util.WrapErrorForObject(
 			fmt.Sprintf("Error creating service account %s", sa.Name),
 			sa,
 			err,
 		)
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "ServiceAccountCreated", fmt.Sprintf("service account %s created", sa.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("ServiceAccount %s - %s", sa.Name, op))
@@ -94,6 +98,6 @@ func (s *ServiceAccount) Delete(
 		err = fmt.Errorf("Error deleting serviceAccount %s: %w", s.serviceAccount.Name, err)
 		return err
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "ServiceAccountDeleted", fmt.Sprintf("serviceaccount: %s deleted", s.serviceAccount.Name))
 	return nil
 }

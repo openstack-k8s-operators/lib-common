@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/record"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -40,6 +41,7 @@ type Helper struct {
 	kclient      kubernetes.Interface
 	gvk          schema.GroupVersionKind
 	scheme       *runtime.Scheme
+	recorder     record.EventRecorder
 	beforeObject client.Object
 	before       *unstructured.Unstructured
 	after        *unstructured.Unstructured
@@ -50,7 +52,7 @@ type Helper struct {
 }
 
 // NewHelper returns an initialized Helper.
-func NewHelper(obj client.Object, crClient client.Client, kclient kubernetes.Interface, scheme *runtime.Scheme, log logr.Logger) (*Helper, error) {
+func NewHelper(obj client.Object, crClient client.Client, kclient kubernetes.Interface, scheme *runtime.Scheme, log logr.Logger, recorder record.EventRecorder) (*Helper, error) {
 	// Get the GroupVersionKind of the object,
 	// used to validate against later on.
 	gvk, err := apiutil.GVKForObject(obj, crClient.Scheme())
@@ -69,6 +71,7 @@ func NewHelper(obj client.Object, crClient client.Client, kclient kubernetes.Int
 		kclient:      kclient,
 		gvk:          gvk,
 		scheme:       scheme,
+		recorder:     recorder,
 		before:       unstructuredObj,
 		beforeObject: obj.DeepCopyObject().(client.Object),
 		logger:       log,
@@ -94,6 +97,11 @@ func (h *Helper) GetGKV() schema.GroupVersionKind {
 // GetScheme - returns the runtime scheme of the object
 func (h *Helper) GetScheme() *runtime.Scheme {
 	return h.scheme
+}
+
+// GetRecorder - returns the event recorder of the object
+func (h *Helper) GetRecorder() record.EventRecorder {
+	return h.recorder
 }
 
 // GetAfter - returns unstructured object after modification

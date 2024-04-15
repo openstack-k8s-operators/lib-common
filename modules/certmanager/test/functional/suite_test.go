@@ -69,6 +69,7 @@ var (
 	logger    logr.Logger
 	h         *helper.Helper
 	th        *certmanager_test.TestHelper
+	mgr       ctrl.Manager
 	namespace string
 	names     Names
 )
@@ -117,6 +118,8 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 	th = certmanager_test.NewTestHelper(ctx, k8sClient, timeout, interval, logger)
 	Expect(th).NotTo(BeNil())
+	mgr, err = ctrl.NewManager(cfg, ctrl.Options{})
+	Expect(err).NotTo(HaveOccurred())
 
 	go func() {
 		defer GinkgoRecover()
@@ -148,7 +151,8 @@ var _ = BeforeEach(func() {
 	// Note(mschuppert) using a Secret as a Namespace object does not have
 	// metadata with namespace and some functions use the BeforeObject.GetNamespace()
 	genericObject := th.CreateSecret(types.NamespacedName{Name: "generic", Namespace: namespace}, map[string][]byte{})
-	h, err = helper.NewHelper(genericObject, k8sClient, kclient, testEnv.Scheme, ctrl.Log)
+	recorder := mgr.GetEventRecorderFor("test")
+	h, err = helper.NewHelper(genericObject, k8sClient, kclient, testEnv.Scheme, ctrl.Log, recorder)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(h).NotTo(BeNil())
 

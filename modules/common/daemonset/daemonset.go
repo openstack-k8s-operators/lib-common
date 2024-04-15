@@ -24,6 +24,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -76,7 +77,11 @@ func (d *DaemonSet) CreateOrPatch(
 			util.LogForObject(h, fmt.Sprintf("DaemonSet not found, reconcile in %s", d.timeout), daemonset)
 			return ctrl.Result{RequeueAfter: d.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "DaemonSetError", fmt.Sprintf("error create/updating daemonset: %s", d.daemonset.Name))
 		return ctrl.Result{}, err
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "DaemonSetCreated", fmt.Sprintf("daemonset %s created", d.daemonset.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		util.LogForObject(h, fmt.Sprintf("DaemonSet: %s", op), daemonset)
@@ -103,7 +108,7 @@ func (d *DaemonSet) Delete(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return fmt.Errorf("error deleting daemonset %s: %w", d.daemonset.Name, err)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "DaemonSetDeleted", fmt.Sprintf("daemonset: %s deleted", d.daemonset.Name))
 	return nil
 }
 

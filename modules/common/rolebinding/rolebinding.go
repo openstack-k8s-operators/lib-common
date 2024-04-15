@@ -26,6 +26,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -73,11 +74,15 @@ func (r *RoleBinding) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("RoleBinding %s not found, reconcile in %s", rb.Name, r.timeout))
 			return ctrl.Result{RequeueAfter: r.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "RoleBindingError", fmt.Sprintf("error create/updating rolebinding: %s", r.roleBinding.Name))
 		return ctrl.Result{}, util.WrapErrorForObject(
-			fmt.Sprintf("Error creating rol binding %s", rb.Name),
+			fmt.Sprintf("Error creating role binding %s", rb.Name),
 			rb,
 			err,
 		)
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "RoleBindingCreated", fmt.Sprintf("rolebinding %s created", r.roleBinding.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("RoleBinding %s - %s", rb.Name, op))
@@ -97,6 +102,6 @@ func (r *RoleBinding) Delete(
 		err = fmt.Errorf("Error deleting roleBinding %s: %w", r.roleBinding.Name, err)
 		return err
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "RoleBindingDeleted", fmt.Sprintf("rolebinding: %s deleted", r.roleBinding.Name))
 	return nil
 }

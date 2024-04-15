@@ -323,7 +323,11 @@ func (s *Service) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Service %s not found, reconcile in %s", service.Name, s.timeout))
 			return ctrl.Result{RequeueAfter: s.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "ServiceError", fmt.Sprintf("error create/updating service: %s", service.Name))
 		return ctrl.Result{}, err
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "ServiceCreated", fmt.Sprintf("service %s created", service.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Service %s - %s", service.Name, op))
@@ -355,7 +359,7 @@ func (s *Service) Delete(
 		err = fmt.Errorf("Error deleting service %s: %w", s.service.Name, err)
 		return err
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "ServiceDeleted", fmt.Sprintf("service: %s deleted", s.service.Name))
 	return nil
 }
 

@@ -26,6 +26,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,11 +71,15 @@ func (r *Role) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Role %s not found, reconcile in %s", role.Name, r.timeout))
 			return ctrl.Result{RequeueAfter: r.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "RoleError", fmt.Sprintf("error create/updating role: %s", r.role.Name))
 		return ctrl.Result{}, util.WrapErrorForObject(
 			fmt.Sprintf("Error creating role %s", role.Name),
 			role,
 			err,
 		)
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "RoleCreated", fmt.Sprintf("role %s created", r.role.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Role %s - %s", role.Name, op))
@@ -94,6 +99,6 @@ func (r *Role) Delete(
 		err = fmt.Errorf("Error deleting role %s: %w", r.role.Name, err)
 		return err
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "RoleDeleted", fmt.Sprintf("role: %s deleted", r.role.Name))
 	return nil
 }

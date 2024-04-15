@@ -122,7 +122,10 @@ var _ = BeforeSuite(func() {
 	// provide a valid object. It is used as controller reference for certain
 	// objects created in the test. So we provide a simple one, a Namespace.
 	genericObject := th.CreateNamespace("generic-object")
-	h, err = helper.NewHelper(genericObject, cClient, client, testEnv.Scheme, ctrl.Log)
+	manager, err := ctrl.NewManager(cfg, ctrl.Options{})
+	Expect(err).NotTo(HaveOccurred())
+	recorder := manager.GetEventRecorderFor("test")
+	h, err = helper.NewHelper(genericObject, cClient, client, testEnv.Scheme, ctrl.Log, recorder)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(h).NotTo(BeNil())
 

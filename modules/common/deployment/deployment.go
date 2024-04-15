@@ -24,6 +24,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -78,7 +79,11 @@ func (d *Deployment) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Deployment %s not found, reconcile in %s", deployment.Name, d.timeout))
 			return ctrl.Result{RequeueAfter: d.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "DeploymentError", fmt.Sprintf("error create/updating deployment: %s", d.deployment.Name))
 		return ctrl.Result{}, err
+	}
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "DeploymentCreated", fmt.Sprintf("deployment %s created", d.deployment.Name))
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Deployment %s - %s", deployment.Name, op))
@@ -102,7 +107,7 @@ func (d *Deployment) Delete(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return fmt.Errorf("Error deleting deployment %s: %w", d.deployment.Name, err)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "DeploymentDeleted", fmt.Sprintf("deployment: %s deleted", d.deployment.Name))
 	return nil
 }
 

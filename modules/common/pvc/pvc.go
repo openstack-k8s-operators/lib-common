@@ -82,9 +82,12 @@ func (p *Pvc) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Pvc %s not found, reconcile in %s", pvc.Name, p.timeout))
 			return ctrl.Result{RequeueAfter: p.timeout}, nil
 		}
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeWarning, "PvcError", fmt.Sprintf("error create/updating pvc: %s", p.pvc.Name))
 		return ctrl.Result{}, err
 	}
-
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "PvcCreated", fmt.Sprintf("pvc %s created", p.pvc.Name))
+	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Pvc %s - %s", pvc.Name, op))
 	}

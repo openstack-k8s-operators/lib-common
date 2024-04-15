@@ -129,7 +129,12 @@ func CreateOrPatchSecret(
 		return nil
 	})
 	if err != nil {
+		h.GetRecorder().Event(obj, corev1.EventTypeWarning, "SecretError", fmt.Sprintf("error create/updating secret: %s", s.Name))
 		return "", op, fmt.Errorf("error create/updating secret: %w", err)
+	}
+
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(obj, corev1.EventTypeNormal, "SecretCreated", fmt.Sprintf("secret %s created", s.Name))
 	}
 
 	secretHash, err := Hash(s)
@@ -216,7 +221,12 @@ func createOrUpdateSecret(
 	})
 
 	if err != nil {
+		h.GetRecorder().Event(obj, corev1.EventTypeWarning, "Error", fmt.Sprintf("error create/updating secret: %s", secret.Name))
 		return "", op, err
+	}
+
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(obj, corev1.EventTypeNormal, "Created", fmt.Sprintf("secret %s created", secret.Name))
 	}
 
 	secretHash, err := Hash(secret)
@@ -355,7 +365,7 @@ func DeleteSecretsWithName(
 			err,
 		)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), corev1.EventTypeNormal, "SecretDeleted", fmt.Sprintf("secret: %s deleted", name))
 	util.LogForObject(
 		h,
 		fmt.Sprintf("Secret %s in namespace %s deleted", secret.Name, secret.Namespace),

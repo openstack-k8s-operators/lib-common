@@ -112,16 +112,19 @@ func (c *Certificate) CreateOrPatch(
 		},
 	}
 
+	var currentOwner client.Object
+
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), cert, func() error {
 		cert.Labels = util.MergeStringMaps(cert.Labels, c.certificate.Labels)
 		cert.Annotations = util.MergeStringMaps(cert.Annotations, c.certificate.Annotations)
 		cert.Spec = c.certificate.Spec
 
 		if owner != nil {
-			err = controllerutil.SetControllerReference(owner, cert, h.GetScheme())
+			currentOwner = owner
 		} else {
-			err = controllerutil.SetControllerReference(h.GetBeforeObject(), cert, h.GetScheme())
+			currentOwner = h.GetBeforeObject()
 		}
+		err = controllerutil.SetControllerReference(currentOwner, cert, h.GetScheme())
 		if err != nil {
 			return err
 		}
@@ -133,8 +136,14 @@ func (c *Certificate) CreateOrPatch(
 			h.GetLogger().Info(fmt.Sprintf("Certificate %s not found, reconcile in %s", cert.Name, c.timeout))
 			return ctrl.Result{RequeueAfter: c.timeout}, nil
 		}
+		h.GetRecorder().Event(currentOwner, k8s_corev1.EventTypeWarning, "Error", fmt.Sprintf("error create/updating certificate: %s", c.certificate.Name))
 		return ctrl.Result{}, err
 	}
+
+	if op == controllerutil.OperationResultCreated {
+		h.GetRecorder().Event(currentOwner, k8s_corev1.EventTypeNormal, "Created", fmt.Sprintf("certificate %s created", c.certificate.Name))
+	}
+
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Route %s - %s", cert.Name, op))
 	}
@@ -152,7 +161,7 @@ func (c *Certificate) Delete(
 	if err != nil && !k8s_errors.IsNotFound(err) {
 		return fmt.Errorf("Error deleting certificate %s: %w", c.certificate.Name, err)
 	}
-
+	h.GetRecorder().Event(h.GetBeforeObject(), k8s_corev1.EventTypeNormal, "CertificateDeleted", fmt.Sprintf("certificate: %s deleted", c.certificate.Name))
 	return nil
 }
 
