@@ -50,6 +50,24 @@ func (tc *TestHelper) GetDeployment(name types.NamespacedName) *appsv1.Deploymen
 	return deployment
 }
 
+// SimulateDeploymentAnyNumberReplicaReady function retrieves the Deployment resource and
+// simulate that replicas are ready
+// Example usage:
+//
+//	th.SimulateDeploymentAnyNumberReplicaReady(ironicNames.INAName, 0)
+func (tc *TestHelper) SimulateDeploymentAnyNumberReplicaReady(name types.NamespacedName, replica int32) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		deployment := tc.GetDeployment(name)
+
+		deployment.Status.Replicas = replica
+		deployment.Status.ReadyReplicas = replica
+		deployment.Status.ObservedGeneration = deployment.Generation
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Deployment success", "on", name)
+}
+
 // SimulateDeploymentReplicaReady function retrieves the Deployment resource and
 // simulate that replicas are ready
 // Example usage:
@@ -59,8 +77,8 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 	gomega.Eventually(func(g gomega.Gomega) {
 		deployment := tc.GetDeployment(name)
 
-		deployment.Status.Replicas = 1
-		deployment.Status.ReadyReplicas = 1
+		deployment.Status.Replicas = *deployment.Spec.Replicas
+		deployment.Status.ReadyReplicas = *deployment.Spec.Replicas
 		deployment.Status.ObservedGeneration = deployment.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
