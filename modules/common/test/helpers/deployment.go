@@ -117,20 +117,22 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 		for i := range pod.Spec.InitContainers {
 			pod.Spec.InitContainers[i].VolumeMounts = []corev1.VolumeMount{}
 		}
-
-		var netStatus []networkv1.NetworkStatus
-		for network, IPs := range networkIPs {
-			netStatus = append(
-				netStatus,
-				networkv1.NetworkStatus{
-					Name: network,
-					IPs:  IPs,
-				},
-			)
+		// Skip adding network annotations if networkIPs is empty
+		if len(networkIPs) > 0 {
+			var netStatus []networkv1.NetworkStatus
+			for network, IPs := range networkIPs {
+				netStatus = append(
+					netStatus,
+					networkv1.NetworkStatus{
+						Name: network,
+						IPs:  IPs,
+					},
+				)
+			}
+			netStatusAnnotation, err := json.Marshal(netStatus)
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 		}
-		netStatusAnnotation, err := json.Marshal(netStatus)
-		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 
 		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
 	}
