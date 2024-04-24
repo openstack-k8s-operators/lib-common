@@ -69,6 +69,29 @@ func (tc *TestHelper) AssertIssuerDoesNotExist(name types.NamespacedName) {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
 
+// CreateIssuer creates a new Issuer resource with the provided data.
+//
+// Example usage:
+//
+//	cm := th.CreateIssuer(types.NamespacedName{Namespace: "default", Name: "example-configmap"})
+func (tc *TestHelper) CreateIssuer(name types.NamespacedName) client.Object {
+	raw := map[string]interface{}{
+		"apiVersion": "cert-manager.io/v1",
+		"kind":       "Issuer",
+		"metadata": map[string]interface{}{
+			"name":      name.Name,
+			"namespace": name.Namespace,
+		},
+		"spec": map[string]interface{}{
+			"ca": map[string]interface{}{
+				"secretName": name.Name,
+			},
+		},
+	}
+
+	return tc.CreateUnstructured(raw)
+}
+
 // GetCert waits for and retrieves a Certificate resource from the Kubernetes cluster
 //
 // Example:
