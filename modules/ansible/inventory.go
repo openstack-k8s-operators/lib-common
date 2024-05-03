@@ -86,3 +86,11 @@ func (inv Inventory) AddGroup(name string) Group {
 func (inv *Inventory) MarshalYAML() ([]byte, error) {
 	return yaml.Marshal(inv)
 }
+
+// UnmarshalYAML deserializes into the Inventory object
+func UnmarshalYAML(in []byte) (Inventory, error) {
+	var out Inventory
+	// TODO: fix Host/Group empty names
+	err := yaml.Unmarshal(in, &out)
+	return out, err
+}

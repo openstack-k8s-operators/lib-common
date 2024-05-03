@@ -83,3 +83,67 @@ func TestInventoryMarshallNestedChildren(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestInventoryUnmarshallBasic(t *testing.T) {
+	expected := MakeInventory()
+	all := expected.AddGroup("all")
+	host := all.AddHost("testing")
+	host.Vars["ansible_host"] = "host.test"
+	childTest := all.AddChild(MakeGroup("child_test"))
+	childHost := childTest.AddHost("child_testing")
+	childHost.Vars["ansible_host"] = "child.host.test"
+
+	inventory := `all:
+    hosts:
+        testing:
+            ansible_host: host.test
+    children:
+        child_test:
+            hosts:
+                child_testing:
+                    ansible_host: child.host.test
+`
+	invObj, _ := UnmarshalYAML([]byte(inventory))
+
+	if invObj.Groups["all"].Hosts["testing"].Vars["ansible_host"] != expected.Groups["all"].Hosts["testing"].Vars["ansible_host"] {
+		t.Logf("error should be %+v but got %+v", expected.Groups["all"].Hosts, invObj.Groups["all"].Hosts)
+		t.Fail()
+	}
+	if invObj.Groups["all"].Children["child_test"].Hosts["child_testing"].Vars["ansible_host"] != expected.Groups["all"].Children["child_test"].Hosts["child_testing"].Vars["ansible_host"] {
+		t.Logf("error should be %+v but got %+v", expected.Groups["all"].Children, invObj.Groups["all"].Children)
+		t.Fail()
+	}
+
+}
+
+func TestInventoryUnmarshallNestedChildren(t *testing.T) {
+	expected := MakeInventory()
+	all := expected.AddGroup("allovercloud")
+	host := all.AddHost("testing")
+	host.Vars["ansible_host"] = "host.test"
+	childTest := all.AddChild(MakeGroup("overcloud"))
+	childHost := childTest.AddHost("child_testing")
+	childHost.Vars["ansible_host"] = "child.host.test"
+	compTest := childTest.AddChild(MakeGroup("Compute"))
+	compHost := compTest.AddHost("192.168.0.1")
+	compHost.Vars["ansible_ssh_user"] = "root"
+
+	inventory := `allovercloud:
+    children:
+        overcloud:
+            children:
+                Compute:
+                    hosts:
+                        192.168.0.1:
+                            ansible_ssh_user: root
+`
+	invObj, _ := UnmarshalYAML([]byte(inventory))
+
+	hosts := invObj.Groups["allovercloud"].Children["overcloud"].Children["Compute"].Hosts
+	expectedHosts := expected.Groups["allovercloud"].Children["overcloud"].Children["Compute"].Hosts
+
+	if hosts["192.168.0.1"].Vars["ansible_ssh_user"] != expectedHosts["192.168.0.1"].Vars["ansible_ssh_user"] {
+		t.Logf("error should be %+v but got %+v", expected.Groups["allovercloud"].Children, invObj.Groups["allovercloud"].Children)
+		t.Fail()
+	}
+}
