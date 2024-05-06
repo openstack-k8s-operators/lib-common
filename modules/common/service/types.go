@@ -19,9 +19,13 @@ limitations under the License.
 package service
 
 import (
+	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 // Endpoint - typedef to enumerate Endpoint verbs
@@ -58,6 +62,30 @@ const (
 
 func (e *Endpoint) String() string {
 	return string(*e)
+}
+
+// Validate - validates if the endpoint is an allowed one.
+func (e *Endpoint) Validate() error {
+	if !slices.Contains([]Endpoint{EndpointInternal, EndpointPublic}, *e) {
+		return fmt.Errorf("invalid endpoint type: %s", e.String())
+	}
+	return nil
+}
+
+// ValidateRoutedOverrides - validates map of RoutedOverrideSpec
+func ValidateRoutedOverrides(basePath *field.Path, overrides map[Endpoint]RoutedOverrideSpec) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	// validate the service override key is valid
+	for k := range overrides {
+		path := basePath.Key(k.String())
+
+		if err := k.Validate(); err != nil {
+			allErrs = append(allErrs, field.Invalid(path, k.String(), err.Error()))
+		}
+	}
+
+	return allErrs
 }
 
 func (p *Protocol) String() string {
