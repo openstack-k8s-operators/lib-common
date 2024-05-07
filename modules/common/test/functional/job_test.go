@@ -287,7 +287,7 @@ var _ = Describe("job package", func() {
 		Expect(err).Should(HaveOccurred())
 		var statusErr *k8s_errors.StatusError
 		Expect(errors.As(err, &statusErr)).To(BeTrue())
-		Expect(statusErr.Status().Message).To(ContainSubstring("Job Failed"))
+		Expect(statusErr.Status().Message).To(ContainSubstring("Check job logs"))
 	})
 
 	It("requeue if the job definition is changed while the old job still running and the wait for the old job to finish before re-run", func() {
