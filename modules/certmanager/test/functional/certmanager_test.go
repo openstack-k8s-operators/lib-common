@@ -100,6 +100,7 @@ var _ = Describe("certmanager module", func() {
 				"ca",
 				namespace,
 				map[string]string{"f": "l"},
+				map[string]string{"a": "l"},
 				"secret",
 			),
 			timeout,
@@ -111,6 +112,7 @@ var _ = Describe("certmanager module", func() {
 		Expect(issuer.Spec.CA).NotTo(BeNil())
 		Expect(issuer.Spec.CA.SecretName).To(Equal("secret"))
 		Expect(issuer.Labels["f"]).To(Equal("l"))
+		Expect(issuer.Annotations["a"]).To(Equal("l"))
 	})
 
 	It("deletes issuer", func() {
@@ -119,6 +121,7 @@ var _ = Describe("certmanager module", func() {
 				names.IssuerName.Name,
 				names.IssuerName.Namespace,
 				map[string]string{"f": "l"},
+				map[string]string{},
 				"secret",
 			),
 			timeout,
@@ -200,6 +203,7 @@ var _ = Describe("certmanager module", func() {
 				"ca",
 				names.Namespace,
 				map[string]string{"f": "l"},
+				map[string]string{},
 				"secret",
 			),
 			timeout,
@@ -258,6 +262,7 @@ var _ = Describe("certmanager module", func() {
 				"ca",
 				names.Namespace,
 				map[string]string{"f": "l"},
+				map[string]string{},
 				"secret",
 			),
 			timeout,
@@ -314,6 +319,7 @@ var _ = Describe("certmanager module", func() {
 				"ca",
 				names.Namespace,
 				map[string]string{"f": "l"},
+				map[string]string{},
 				"secret",
 			),
 			timeout,
