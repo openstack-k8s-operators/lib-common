@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/env"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
@@ -444,4 +445,75 @@ func VerifySecret(
 	}
 
 	return hash, ctrl.Result{}, nil
+}
+
+type ConditionUpdater interface {
+	Set(c *condition.Condition)
+	MarkTrue(t condition.Type, messageFormat string, messageArgs ...interface{})
+}
+
+// ensureSecret - ensures that the Secret object exists and the expected fields
+// are in the Secret. It returns a hash of the values of the expected fields.
+func EnsureSecret(
+	ctx context.Context,
+	secretName types.NamespacedName,
+	expectedFields []string,
+	reader client.Reader,
+	conditionUpdater ConditionUpdater,
+	requeueTimeout time.Duration,
+) (string, ctrl.Result, corev1.Secret, error) {
+	secret := &corev1.Secret{}
+	err := reader.Get(ctx, secretName, secret)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			conditionUpdater.Set(condition.FalseCondition(
+				condition.InputReadyCondition,
+				condition.RequestedReason,
+				condition.SeverityInfo,
+				fmt.Sprintf("Input data resources missing: %s", "secret/"+secretName.Name)))
+			return "",
+				ctrl.Result{RequeueAfter: requeueTimeout},
+				*secret,
+				fmt.Errorf("secret %s not found", secretName)
+		}
+		conditionUpdater.Set(condition.FalseCondition(
+			condition.InputReadyCondition,
+			condition.ErrorReason,
+			condition.SeverityWarning,
+			condition.InputReadyErrorMessage,
+			err.Error()))
+		return "", ctrl.Result{}, *secret, err
+	}
+
+	// collect the secret values the caller expects to exist
+	values := [][]byte{}
+	for _, field := range expectedFields {
+		val, ok := secret.Data[field]
+		if !ok {
+			err := fmt.Errorf("field '%s' not found in secret/%s", field, secretName.Name)
+			conditionUpdater.Set(condition.FalseCondition(
+				condition.InputReadyCondition,
+				condition.ErrorReason,
+				condition.SeverityWarning,
+				condition.InputReadyErrorMessage,
+				err.Error()))
+			return "", ctrl.Result{}, *secret, err
+		}
+		values = append(values, val)
+	}
+
+	// TODO(gibi): Do we need to watch the Secret for changes?
+
+	hash, err := util.ObjectHash(values)
+	if err != nil {
+		conditionUpdater.Set(condition.FalseCondition(
+			condition.InputReadyCondition,
+			condition.ErrorReason,
+			condition.SeverityWarning,
+			condition.InputReadyErrorMessage,
+			err.Error()))
+		return "", ctrl.Result{}, *secret, err
+	}
+
+	return hash, ctrl.Result{}, *secret, nil
 }
