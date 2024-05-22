@@ -139,8 +139,8 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 
 	gomega.Eventually(func(g gomega.Gomega) {
 		depl := tc.GetDeployment(name)
-		depl.Status.Replicas = 1
-		depl.Status.ReadyReplicas = 1
+		depl.Status.Replicas = *depl.Spec.Replicas
+		depl.Status.ReadyReplicas = *depl.Spec.Replicas
 		depl.Status.ObservedGeneration = depl.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, depl)).To(gomega.Succeed())
 

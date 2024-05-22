@@ -47,8 +47,8 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
-		ss.Status.Replicas = 1
-		ss.Status.ReadyReplicas = 1
+		ss.Status.Replicas = *ss.Spec.Replicas
+		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
@@ -108,8 +108,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 
 	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
-		ss.Status.Replicas = 1
-		ss.Status.ReadyReplicas = 1
+		ss.Status.Replicas = *ss.Spec.Replicas
+		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
