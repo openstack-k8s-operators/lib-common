@@ -42,6 +42,13 @@ const (
 	RootCAIssuerOvnDBLabel = "osp-rootca-issuer-ovn"
 	// RootCAIssuerLibvirtLabel for internal RootCA to issue libvirt TLS Certs
 	RootCAIssuerLibvirtLabel = "osp-rootca-issuer-libvirt"
+	// CertDurationAnnotation on an issuer reflects the duration to be used for certs being issued
+	CertDurationAnnotation = "cert-duration"
+	// CertRenewBeforeAnnotation on an issuer reflects the renewBefore to be used for certs being issued
+	CertRenewBeforeAnnotation = "cert-renewbefore"
+	// CertDefaultDuration - fallback duration for certificates if no CertDurationAnnotation
+	// annotation is set on the issuer
+	CertDefaultDuration = "43800h0m0s"
 )
 
 // Issuer -
@@ -86,13 +93,15 @@ func CAIssuer(
 	name string,
 	namespace string,
 	labels map[string]string,
+	annotations map[string]string,
 	secretName string,
 ) *certmgrv1.Issuer {
 	return &certmgrv1.Issuer{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels:    labels,
+			Name:        name,
+			Namespace:   namespace,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: certmgrv1.IssuerSpec{
 			IssuerConfig: certmgrv1.IssuerConfig{
