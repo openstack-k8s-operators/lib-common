@@ -207,6 +207,22 @@ func (j *Job) GetHash() string {
 	return j.hash
 }
 
+// GetTotalFailedAttempts func
+func (j *Job) GetTotalFailedAttempts() int32 {
+	if j.actualJob == nil {
+		return 0
+	}
+	return j.actualJob.Status.Failed
+}
+
+// HasReachedLimit func
+func (j *Job) HasReachedLimit() bool {
+	if j.actualJob == nil {
+		return false
+	}
+	return j.actualJob.Status.Failed > *j.actualJob.Spec.BackoffLimit
+}
+
 // DeleteJob deletes the batchv1.Job if exists. It is not an error to call
 // this on an already deleted job.
 func DeleteJob(
@@ -268,7 +284,11 @@ func (j *Job) waitOnJob(
 			return ctrl.Result{RequeueAfter: j.timeout}, nil
 		}
 		h.GetLogger().Info("Job Status Failed")
-		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New("Job Failed. Check job logs"))
+		errMsg := fmt.Sprintf("Job Attempt #%d Failed. Check job logs", j.GetTotalFailedAttempts())
+		if j.HasReachedLimit() {
+			errMsg = "Job has reached the specified backoff limit. Check job logs"
+		}
+		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New(errMsg))
 	} else {
 		if existingJobHash != j.hash {
 			h.GetLogger().Info(

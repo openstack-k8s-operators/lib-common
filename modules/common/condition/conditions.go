@@ -103,6 +103,10 @@ const (
 	// This is a warning because the reconciler will retry deletion.
 	ErrorReason = "Error"
 
+	// JobReasonBackoffLimitExceeded (Severity=Error) documents a condition not in Status=True because the underlying object reached the backoff limit.
+	// This is an error because the reconciler won't retry anymore.
+	JobReasonBackoffLimitExceeded = "BackoffLimitExceeded"
+
 	// DeletingReason (Severity=Info) documents a condition not in Status=True because the underlying object it is currently being deleted.
 	DeletingReason = "Deleting"
 
