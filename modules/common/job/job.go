@@ -217,7 +217,7 @@ func (j *Job) GetTotalFailedAttempts() int32 {
 
 // HasReachedLimit func
 func (j *Job) HasReachedLimit() bool {
-	if j.actualJob == nil {
+	if j.actualJob == nil || j.actualJob.Spec.BackoffLimit == nil {
 		return false
 	}
 	return j.actualJob.Status.Failed > *j.actualJob.Spec.BackoffLimit
