@@ -4,14 +4,13 @@ go 1.20
 
 require (
 	github.com/go-logr/logr v1.4.1
-	github.com/onsi/gomega v1.33.0
+	github.com/onsi/gomega v1.33.1
 	golang.org/x/mod v0.17.0
 )
 
 require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
-	github.com/onsi/ginkgo/v2 v2.17.2 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
