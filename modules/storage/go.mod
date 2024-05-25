@@ -4,12 +4,12 @@ go 1.20
 
 require github.com/onsi/gomega v1.33.0
 
-require k8s.io/api v0.28.9
+require k8s.io/api v0.28.10
 
 require (
 	github.com/onsi/ginkgo/v2 v2.17.2 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	k8s.io/apimachinery v0.28.9 // indirect
+	k8s.io/apimachinery v0.28.10 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
@@ -27,7 +27,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.110.1 // indirect
-	k8s.io/utils v0.0.0-20240423183400-0849a56e8f22 // indirect; indirect // indirect
+	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0 // indirect; indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
