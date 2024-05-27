@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/test
 go 1.20
 
 require (
-	github.com/go-logr/logr v1.4.1
+	github.com/go-logr/logr v1.4.2
 	github.com/onsi/gomega v1.33.1
 	golang.org/x/mod v0.17.0
 )
