@@ -23,6 +23,8 @@ import (
 	"sort"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -262,12 +264,12 @@ func CreateList(conditions ...*Condition) Conditions {
 }
 
 // IsError is True if the condition is a) not nil, b) status=False and
-// c) condition.Reason == condition.ErrorReason, otherwise it returns False
-// if the condition is not True or if the condition does not exist (is nil).
+// c) condition.Reason is condition.ErrorReason or condition.JobReasonBackoffLimitExceeded,
+// otherwise it returns False if the condition is not True or if the condition does not exist (is nil).
 func IsError(condition *Condition) bool {
 	if condition != nil {
 		return condition.Status == corev1.ConditionFalse &&
-			condition.Reason == ErrorReason
+			slices.Contains([]Reason{ErrorReason, JobReasonBackoffLimitExceeded}, condition.Reason)
 	}
 	return false
 }
