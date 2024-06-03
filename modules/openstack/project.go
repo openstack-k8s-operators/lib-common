@@ -30,6 +30,9 @@ type Project struct {
 	DomainID    string
 }
 
+// ProjectNotFound - project not found error message"
+const ProjectNotFound = "project not found"
+
 // CreateProject - creates project with projectName and projectDescription if it does not exist
 func (o *OpenStack) CreateProject(
 	log logr.Logger,
@@ -63,4 +66,28 @@ func (o *OpenStack) CreateProject(
 	}
 
 	return projectID, nil
+}
+
+// GetProject - gets project with projectName
+func (o *OpenStack) GetProject(
+	log logr.Logger,
+	projectName string,
+	domainID string,
+) (*projects.Project, error) {
+	allPages, err := projects.List(o.GetOSClient(), projects.ListOpts{Name: projectName, DomainID: domainID}).AllPages()
+	if err != nil {
+		return nil, err
+	}
+	allProjects, err := projects.ExtractProjects(allPages)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(allProjects) == 0 {
+		return nil, fmt.Errorf(fmt.Sprintf("%s %s", projectName, ProjectNotFound))
+	} else if len(allProjects) > 1 {
+		return nil, fmt.Errorf(fmt.Sprintf("multiple project named \"%s\" found", projectName))
+	}
+
+	return &allProjects[0], nil
 }
