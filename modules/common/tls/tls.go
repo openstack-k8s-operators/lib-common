@@ -67,6 +67,13 @@ const (
 
 	// TLSHashName - Name of the hash of hashes of all cert resources used to identify a change
 	TLSHashName = "certs"
+
+	// AdditionalSubjectNamesKey - Comma separated list of additionalSubjectNames
+	// that should be passed to the CertificateRequest
+	AdditionalSubjectNamesKey = "additionalSubjectNames"
+
+	// DefaultClusterInternalDomain - cluster internal dns domain
+	DefaultClusterInternalDomain = "cluster.local"
 )
 
 // SimpleService defines the observed state of TLS for a single service

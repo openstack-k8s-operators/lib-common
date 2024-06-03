@@ -133,3 +133,25 @@ func TestMergeMaps(t *testing.T) {
 		g.Expect(mergedIntMap).To(HaveKeyWithValue("c", 3))
 	})
 }
+
+func TestGetStringsFromMap(t *testing.T) {
+	t.Run("Get List of strings from map", func(t *testing.T) {
+		g := NewWithT(t)
+
+		key := "additionalSubjectNamesKey"
+
+		m1 := map[string]string{
+			key: "*.foo.svc,*.bar.svc,example.svc.clusterlocal",
+		}
+
+		m2 := map[string]string{
+			"otherkey": "*.foo.svc,*.bar.svc,example.svc.clusterlocal",
+		}
+
+		lstr := GetStringListFromMap(m1, key)
+		g.Expect(lstr).To(HaveLen(3))
+
+		lstr = GetStringListFromMap(m2, key)
+		g.Expect(lstr).To(BeEmpty())
+	})
+}

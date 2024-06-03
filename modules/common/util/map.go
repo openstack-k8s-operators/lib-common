@@ -16,7 +16,10 @@ limitations under the License.
 
 package util
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 // InitMap - Inititialise a map to an empty map if it is nil.
 func InitMap(m *map[string]string) {
@@ -98,4 +101,21 @@ func MergeMaps[K comparable, V any](baseMap map[K]V, extraMaps ...map[K]V) map[K
 	}
 
 	return mergedMap
+}
+
+// GetStringListFromMap - It returns a list of strings based on a comma
+// separated list assigned to the map key. This is usually invoked to normalize
+// annotation fields where a list of items is expressed with a comma separated
+// list of strings.
+// Example:
+// input: in["additionalSubjectNamesKey"] = "foo.bar,bar.svc,*.foo.bar"
+// output: [foo.bar bar.svc *.foo.bar]
+func GetStringListFromMap(in map[string]string, key string) []string {
+	strList := []string{}
+	if h, ok := in[key]; ok {
+		if h != "" {
+			strList = strings.Split(h, ",")
+		}
+	}
+	return strList
 }
