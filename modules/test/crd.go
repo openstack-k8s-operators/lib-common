@@ -18,6 +18,7 @@ import (
 	"go/build"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"unicode/utf8"
 
@@ -76,7 +77,6 @@ func getDependencyVersion(moduleName string, goModPath string) (string, string, 
 // The CheckPath() call is removed to limit the amount we copy and therefore
 // need to maintain.
 func encodePath(path string) (encoding string, err error) {
-
 	haveUpper := false
 	for _, r := range path {
 		if r == '!' || r >= utf8.RuneSelf {
@@ -124,9 +124,11 @@ func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath st
 		path = filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
 	}
 
-	path, err = encodePath(path)
-	if err != nil {
-		return path, err
+	if runtime.GOOS != "Darwin" {
+		path, err = encodePath(path)
+		if err != nil {
+			return path, err
+		}
 	}
 	return path, nil
 }
