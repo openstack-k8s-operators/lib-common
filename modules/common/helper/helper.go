@@ -19,6 +19,7 @@ package helper
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -72,7 +73,7 @@ func NewHelper(obj client.Object, crClient client.Client, kclient kubernetes.Int
 		before:       unstructuredObj,
 		beforeObject: obj.DeepCopyObject().(client.Object),
 		logger:       log,
-		finalizer:    gvk.Kind,
+		finalizer:    strings.ToLower("openstack.org/" + gvk.Kind),
 	}, nil
 }
 
