@@ -225,16 +225,8 @@ var _ = Describe("service package", func() {
 		Expect(err).Should(HaveOccurred())
 		Expect(err.Error()).Should(ContainSubstring("test-svc LoadBalancer IP still pending"))
 
-		svc := th.AssertServiceExists(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
-		Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeLoadBalancer))
-
 		// simulate LoadBalancer assigned IP and updated the k8s service to have a LB IP
-		svc.Status.LoadBalancer.Ingress = []corev1.LoadBalancerIngress{
-			{
-				IP: "1.1.1.1",
-			},
-		}
-		Expect(th.K8sClient.Status().Update(ctx, svc)).Should(Succeed())
+		th.SimulateLoadBalancerServiceIP(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
 
 		// LoadBalancer IP still pending error should _NOT_ occure
 		_, err = s.CreateOrPatch(ctx, h)
