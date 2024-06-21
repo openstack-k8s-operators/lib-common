@@ -103,3 +103,26 @@ func (tc *TestHelper) AssertServiceDoesNotExist(name types.NamespacedName) {
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 }
+
+// SimulateLoadBalancerServiceIP retrieves the k8s service and simulates
+// that it got a LoadBalancer IP assigned.
+//
+// example usage:
+//
+//	th.SimulateLoadBalancerServiceIP(types.NamespacedName{Name: "test-svc", Namespace: "test-namespace"})
+func (tc *TestHelper) SimulateLoadBalancerServiceIP(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		s := tc.GetService(name)
+		g.Expect(s.Spec.Type).To(gomega.Equal(corev1.ServiceTypeLoadBalancer))
+
+		// simulate LoadBalancer assigned IP and updated the k8s service to have a LB IP
+		s.Status.LoadBalancer.Ingress = []corev1.LoadBalancerIngress{
+			{
+				IP: "1.1.1.1",
+			},
+		}
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, s)).To(gomega.Succeed())
+
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+	tc.Logger.Info("Simulated LoadBalancer IP success", "on", name)
+}
