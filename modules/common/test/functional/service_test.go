@@ -221,17 +221,9 @@ var _ = Describe("service package", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 
 		_, err = s.CreateOrPatch(ctx, h)
-		// when LoadBalancer service gets created and LB has not assigned an LB IP we exect an error
-		Expect(err).Should(HaveOccurred())
-		Expect(err.Error()).Should(ContainSubstring("test-svc LoadBalancer IP still pending"))
-
-		// simulate LoadBalancer assigned IP and updated the k8s service to have a LB IP
-		th.SimulateLoadBalancerServiceIP(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
-
-		// LoadBalancer IP still pending error should _NOT_ occure
-		_, err = s.CreateOrPatch(ctx, h)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(s.GetExternalIPs()).To(Equal([]string{"1.1.1.1"}))
+		svc := th.AssertServiceExists(types.NamespacedName{Namespace: namespace, Name: "test-svc"})
+		Expect(svc.Spec.Type).To(Equal(corev1.ServiceTypeLoadBalancer))
 
 		// NONE endpoint with port
 		endpointURL, err := s.GetAPIEndpoint(nil, ptr.To(service.ProtocolNone), "")

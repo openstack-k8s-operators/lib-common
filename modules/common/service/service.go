@@ -338,8 +338,6 @@ func (s *Service) CreateOrPatch(
 			for _, ingr := range service.Status.LoadBalancer.Ingress {
 				s.externalIPs = append(s.externalIPs, ingr.IP)
 			}
-		} else {
-			return ctrl.Result{}, fmt.Errorf("%s LoadBalancer IP still pending", s.service.Name)
 		}
 	}
 
