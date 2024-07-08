@@ -18,9 +18,11 @@ package ocp
 
 import (
 	"context"
+	"strings"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 
+	ocp_config "github.com/openshift/api/config/v1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,4 +48,20 @@ func IsFipsCluster(ctx context.Context, h *helper.Helper) (bool, error) {
 		return false, nil
 	}
 	return fipsEnabled, nil
+}
+
+// HasIPv6ClusterNetwork - Check if OCP has an IPv6 cluster network
+func HasIPv6ClusterNetwork(ctx context.Context, h *helper.Helper) (bool, error) {
+	networkConfig := &ocp_config.Network{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: "cluster", Namespace: ""}, networkConfig)
+	if err != nil {
+		return false, err
+	}
+
+	for _, clusterNetwork := range networkConfig.Status.ClusterNetwork {
+		if strings.Count(clusterNetwork.CIDR, ":") >= 2 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
