@@ -18,7 +18,6 @@ package ocp
 
 import (
 	"context"
-	"strings"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 
@@ -26,6 +25,7 @@ import (
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	k8s_utils "k8s.io/utils/net"
 )
 
 // IsFipsCluster - Check if OCP has fips enabled which is a day 1 operation
@@ -59,7 +59,7 @@ func HasIPv6ClusterNetwork(ctx context.Context, h *helper.Helper) (bool, error) 
 	}
 
 	for _, clusterNetwork := range networkConfig.Status.ClusterNetwork {
-		if strings.Count(clusterNetwork.CIDR, ":") >= 2 {
+		if k8s_utils.IsIPv6CIDRString(clusterNetwork.CIDR) {
 			return true, nil
 		}
 	}
