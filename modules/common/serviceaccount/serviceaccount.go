@@ -56,7 +56,7 @@ func (s *ServiceAccount) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), sa, func() error {
 		sa.Labels = util.MergeStringMaps(sa.Labels, s.serviceAccount.Labels)
-		sa.Annotations = util.MergeStringMaps(sa.Labels, s.serviceAccount.Annotations)
+		sa.Annotations = util.MergeStringMaps(sa.Annotations, s.serviceAccount.Annotations)
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), sa, h.GetScheme())
 		if err != nil {
