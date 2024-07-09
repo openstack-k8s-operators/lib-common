@@ -21,9 +21,11 @@ import (
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 
+	ocp_config "github.com/openshift/api/config/v1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	k8s_utils "k8s.io/utils/net"
 )
 
 // IsFipsCluster - Check if OCP has fips enabled which is a day 1 operation
@@ -46,4 +48,20 @@ func IsFipsCluster(ctx context.Context, h *helper.Helper) (bool, error) {
 		return false, nil
 	}
 	return fipsEnabled, nil
+}
+
+// HasIPv6ClusterNetwork - Check if OCP has an IPv6 cluster network
+func HasIPv6ClusterNetwork(ctx context.Context, h *helper.Helper) (bool, error) {
+	networkConfig := &ocp_config.Network{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: "cluster", Namespace: ""}, networkConfig)
+	if err != nil {
+		return false, err
+	}
+
+	for _, clusterNetwork := range networkConfig.Status.ClusterNetwork {
+		if k8s_utils.IsIPv6CIDRString(clusterNetwork.CIDR) {
+			return true, nil
+		}
+	}
+	return false, nil
 }
