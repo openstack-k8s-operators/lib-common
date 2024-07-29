@@ -103,7 +103,7 @@ func (c *Certificate) CreateOrPatch(
 	ctx context.Context,
 	h *helper.Helper,
 	owner client.Object,
-) (ctrl.Result, error) {
+) (ctrl.Result, controllerutil.OperationResult, error) {
 	var err error
 	cert := &certmgrv1.Certificate{
 		ObjectMeta: metav1.ObjectMeta{
@@ -131,15 +131,15 @@ func (c *Certificate) CreateOrPatch(
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			h.GetLogger().Info(fmt.Sprintf("Certificate %s not found, reconcile in %s", cert.Name, c.timeout))
-			return ctrl.Result{RequeueAfter: c.timeout}, nil
+			return ctrl.Result{RequeueAfter: c.timeout}, op, nil
 		}
-		return ctrl.Result{}, err
+		return ctrl.Result{}, op, err
 	}
 	if op != controllerutil.OperationResultNone {
 		h.GetLogger().Info(fmt.Sprintf("Route %s - %s", cert.Name, op))
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, op, nil
 }
 
 // Delete - delete a certificate.
@@ -156,7 +156,7 @@ func (c *Certificate) Delete(
 	return nil
 }
 
-// EnsureCert - creates a certificate, ensures the sercret has the required key/cert and return the secret
+// EnsureCert - creates a certificate, ensures the secret has the required key/cert and return the secret
 func EnsureCert(
 	ctx context.Context,
 	helper *helper.Helper,
@@ -233,7 +233,7 @@ func EnsureCert(
 	)
 
 	cert := NewCertificate(certReq, 5)
-	ctrlResult, err := cert.CreateOrPatch(ctx, helper, owner)
+	ctrlResult, op, err := cert.CreateOrPatch(ctx, helper, owner)
 	if err != nil {
 		return nil, ctrlResult, err
 	} else if (ctrlResult != ctrl.Result{}) {
@@ -243,6 +243,10 @@ func EnsureCert(
 	// get cert secret
 	certSecret, _, err := secret.GetSecret(ctx, helper, certSecretName, namespace)
 	if err != nil {
+		if k8s_errors.IsNotFound(err) && op == controllerutil.OperationResultCreated {
+			helper.GetLogger().Info(fmt.Sprintf("Secret %s not found, reconcile in %s", certSecretName, cert.timeout))
+			return nil, ctrl.Result{RequeueAfter: cert.timeout}, nil
+		}
 		return nil, ctrl.Result{}, err
 	}
 
