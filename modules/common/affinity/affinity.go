@@ -48,7 +48,7 @@ func DistributePods(
 						// https://github.com/kubernetes/api/blob/master/core/v1/well_known_labels.go#L20
 						TopologyKey: topologyKey,
 					},
-					Weight: 1,
+					Weight: 100,
 				},
 			},
 		},
