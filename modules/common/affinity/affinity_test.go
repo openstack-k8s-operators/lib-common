@@ -41,7 +41,7 @@ var affinityObj = &corev1.Affinity{
 					},
 					TopologyKey: "ThisTopologyKey",
 				},
-				Weight: 1,
+				Weight: 100,
 			},
 		},
 	},
