@@ -158,7 +158,7 @@ var _ = Describe("certmanager module", func() {
 			timeout,
 		)
 
-		_, err := c.CreateOrPatch(ctx, h, nil)
+		_, _, err := c.CreateOrPatch(ctx, h, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		cert := th.GetCert(names.CertName)
 		Expect(cert.Spec.CommonName).To(Equal("keystone-public-openstack.apps-crc.testing"))
@@ -188,7 +188,7 @@ var _ = Describe("certmanager module", func() {
 			timeout,
 		)
 
-		_, err := c.CreateOrPatch(ctx, h, nil)
+		_, _, err := c.CreateOrPatch(ctx, h, nil)
 		Expect(err).ShouldNot(HaveOccurred())
 		cert := th.GetCert(names.CertName)
 		Expect(cert).NotTo(BeNil())
