@@ -166,6 +166,66 @@ var _ = Describe("certmanager module", func() {
 		Expect(cert.Labels["f"]).To(Equal("l"))
 	})
 
+	It("creates certificate with orderdered DNSNames", func() {
+		c := certmanager.NewCertificate(
+			certmanager.Cert(
+				names.CertName.Name,
+				names.CertName.Namespace,
+				map[string]string{"f": "l"},
+				certmgrv1.CertificateSpec{
+					CommonName: "keystone-public-openstack.apps-crc.testing",
+					DNSNames: []string{
+						"keystone-public-openstack.apps-crc.testing",
+						"keystone-public-openstack",
+					},
+					IssuerRef: certmgrmetav1.ObjectReference{
+						Kind: "Issuer",
+						Name: "issuerName",
+					},
+					SecretName: "secret",
+				},
+			),
+			timeout,
+		)
+
+		_, _, err := c.CreateOrPatch(ctx, h, nil)
+		Expect(err).ShouldNot(HaveOccurred())
+		cert := th.GetCert(names.CertName)
+		Expect(cert.Spec.DNSNames[0]).To(Equal("keystone-public-openstack"))
+		Expect(cert.Spec.DNSNames[1]).To(Equal("keystone-public-openstack.apps-crc.testing"))
+	})
+
+	It("creates certificate with orderdered IPAddresses", func() {
+		c := certmanager.NewCertificate(
+			certmanager.Cert(
+				names.CertName.Name,
+				names.CertName.Namespace,
+				map[string]string{"f": "l"},
+				certmgrv1.CertificateSpec{
+					CommonName: "keystone-public-openstack.apps-crc.testing",
+					IPAddresses: []string{
+						"2.2.2.2",
+						"1.1.1.1",
+						"2.2.2.1",
+					},
+					IssuerRef: certmgrmetav1.ObjectReference{
+						Kind: "Issuer",
+						Name: "issuerName",
+					},
+					SecretName: "secret",
+				},
+			),
+			timeout,
+		)
+
+		_, _, err := c.CreateOrPatch(ctx, h, nil)
+		Expect(err).ShouldNot(HaveOccurred())
+		cert := th.GetCert(names.CertName)
+		Expect(cert.Spec.IPAddresses[0]).To(Equal("1.1.1.1"))
+		Expect(cert.Spec.IPAddresses[1]).To(Equal("2.2.2.1"))
+		Expect(cert.Spec.IPAddresses[2]).To(Equal("2.2.2.2"))
+	})
+
 	It("deletes certificate", func() {
 		c := certmanager.NewCertificate(
 			certmanager.Cert(

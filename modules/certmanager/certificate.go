@@ -19,11 +19,13 @@ package certmanager
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmgrmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/net"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
@@ -66,10 +68,15 @@ func NewCertificate(
 	certificate *certmgrv1.Certificate,
 	timeout time.Duration,
 ) *Certificate {
-	return &Certificate{
+	crt := &Certificate{
 		certificate: certificate,
 		timeout:     timeout,
 	}
+
+	crt.certificate.Spec.IPAddresses = net.SortIPs(crt.certificate.Spec.IPAddresses)
+	sort.Strings(crt.certificate.Spec.DNSNames)
+
+	return crt
 }
 
 // Cert returns an initialized certificate request obj.
