@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -283,9 +284,10 @@ func VerifyConfigMap(
 	err := reader.Get(ctx, configMapName, configMap)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
+			log.FromContext(ctx).Info("ConfigMap not found", "configMapName", configMapName)
 			return "",
 				ctrl.Result{RequeueAfter: requeueTimeout},
-				fmt.Errorf("ConfigMap %s not found", configMapName)
+				nil
 		}
 		return "", ctrl.Result{}, fmt.Errorf("Get ConfigMap %s failed: %w", configMapName, err)
 	}
