@@ -34,6 +34,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // Hash function creates a hash of a Secret's Data and StringData fields and
@@ -420,9 +421,10 @@ func VerifySecret(
 	err := reader.Get(ctx, secretName, secret)
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
+			log.FromContext(ctx).Info("Secret not found", "secretName", secretName)
 			return "",
 				ctrl.Result{RequeueAfter: requeueTimeout},
-				fmt.Errorf("Secret %s not found", secretName)
+				nil
 		}
 		return "", ctrl.Result{}, fmt.Errorf("Get secret %s failed: %w", secretName, err)
 	}
