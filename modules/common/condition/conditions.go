@@ -318,6 +318,12 @@ const (
 	// AnsibleEEReadyErrorMessage
 	AnsibleEEReadyErrorMessage = "AnsibleEE error occurred %s"
 
+	//
+	// TLSInputReady condition messages
+	//
+	// TLSInputReadyWaitingMessage - Provides the message to clarify that TLS resources have not been generated yet
+	TLSInputReadyWaitingMessage = "TLSInput is missing: %s"
+
 	// TLSInputErrorMessage - Provides the message when there's error in provision of TLS sources
 	TLSInputErrorMessage = "TLSInput error occured in TLS sources %s"
 )
