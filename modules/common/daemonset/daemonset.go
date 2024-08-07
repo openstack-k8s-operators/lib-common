@@ -112,7 +112,7 @@ func (d *DaemonSet) GetDaemonSet() appsv1.DaemonSet {
 	return *d.daemonset
 }
 
-func getDaemonSetWithName(
+func GetDaemonSetWithName(
 	ctx context.Context,
 	h *helper.Helper,
 	name string,
