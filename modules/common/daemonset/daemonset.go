@@ -83,7 +83,7 @@ func (d *DaemonSet) CreateOrPatch(
 	}
 
 	// update the daemonset object of the daemonset type
-	d.daemonset, err = getDaemonSetWithName(ctx, h, daemonset.GetName(), daemonset.GetNamespace())
+	d.daemonset, err = GetDaemonSetWithName(ctx, h, daemonset.GetName(), daemonset.GetNamespace())
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return ctrl.Result{RequeueAfter: d.timeout}, nil
@@ -112,7 +112,8 @@ func (d *DaemonSet) GetDaemonSet() appsv1.DaemonSet {
 	return *d.daemonset
 }
 
-func getDaemonSetWithName(
+// GetDaemonSetWithName - get the daemonset object with a given name.
+func GetDaemonSetWithName(
 	ctx context.Context,
 	h *helper.Helper,
 	name string,
