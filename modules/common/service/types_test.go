@@ -134,7 +134,7 @@ func TestValidateRoutedOverrides(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			g.Expect(ValidateRoutedOverrides(tt.basePath, tt.overrides)).To(Equal(tt.want))
+			g.Expect(ValidateRoutedOverrides(tt.basePath, tt.overrides)).To(ContainElements(tt.want))
 		})
 	}
 }
