@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/go-logr/logr v1.4.2
 	github.com/gophercloud/gophercloud v1.14.0
+	github.com/gophercloud/gophercloud/v2 v2.1.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20240122120141-2eff3281aef1
 )
 
