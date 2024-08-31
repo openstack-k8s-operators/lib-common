@@ -2,14 +2,12 @@ module github.com/openstack-k8s-operators/lib-common/modules/storage
 
 go 1.20
 
-require github.com/onsi/gomega v1.34.1
+require github.com/onsi/gomega v1.34.2
 
 require k8s.io/api v0.28.12
 
 require (
-	github.com/onsi/ginkgo/v2 v2.20.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	k8s.io/apimachinery v0.28.12 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
