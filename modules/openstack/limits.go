@@ -86,7 +86,7 @@ func (o *OpenStack) CreateLimit(
 		}
 		limitID = createdLimits[0].ID
 	} else {
-		return limitID, fmt.Errorf(fmt.Sprintf("multiple limits named \"%s\" found", l.ResourceName))
+		return limitID, fmt.Errorf("multiple limits named \"%s\" found", l.ResourceName)
 	}
 
 	return limitID, nil
@@ -156,7 +156,7 @@ func (o *OpenStack) CreateOrUpdateRegisteredLimit(
 		}
 		limitID = createdLimits[0].ID
 	} else {
-		return limitID, fmt.Errorf(fmt.Sprintf("multiple limits named \"%s\" found", l.ResourceName))
+		return limitID, fmt.Errorf("multiple limits named \"%s\" found", l.ResourceName)
 	}
 
 	return limitID, nil

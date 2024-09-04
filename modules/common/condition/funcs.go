@@ -337,7 +337,7 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 	cg := g[groupOrder(*TrueCondition(ReadyCondition, "foo"))]
 	if len(cg.conditions) > 0 && cg.conditions.IsTrue(ReadyCondition) {
 		c := cg.conditions.Get(ReadyCondition)
-		mirrorCondition := TrueCondition(t, c.Message)
+		mirrorCondition := TrueCondition(t, "%s", c.Message)
 		mirrorCondition.LastTransitionTime = c.LastTransitionTime
 
 		return mirrorCondition
@@ -355,19 +355,19 @@ func (conditions *Conditions) Mirror(t Type) *Condition {
 		c := (*cl)[0]
 
 		if c.Status == corev1.ConditionTrue {
-			mirrorCondition = TrueCondition(t, c.Message)
+			mirrorCondition = TrueCondition(t, "%s", c.Message)
 			mirrorCondition.LastTransitionTime = c.LastTransitionTime
 			break
 		}
 
 		if c.Status == corev1.ConditionFalse {
-			mirrorCondition = FalseCondition(t, c.Reason, c.Severity, c.Message)
+			mirrorCondition = FalseCondition(t, c.Reason, c.Severity, "%s", c.Message)
 			mirrorCondition.LastTransitionTime = c.LastTransitionTime
 			break
 		}
 
 		if c.Status == corev1.ConditionUnknown {
-			mirrorCondition = UnknownCondition(t, c.Reason, c.Message)
+			mirrorCondition = UnknownCondition(t, c.Reason, "%s", c.Message)
 			mirrorCondition.LastTransitionTime = c.LastTransitionTime
 			break
 		}
