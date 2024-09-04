@@ -96,7 +96,7 @@ func (o *OpenStack) GetService(
 	}
 
 	if len(allServices) == 0 {
-		return nil, fmt.Errorf(fmt.Sprintf("%s %s", serviceName, ServiceNotFound))
+		return nil, fmt.Errorf("%s %s", serviceName, ServiceNotFound)
 	}
 
 	return &allServices[0], nil
