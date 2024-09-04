@@ -74,6 +74,7 @@ func TestGetAllTemplates(t *testing.T) {
 			tmplType: TemplateTypeConfig,
 			version:  "",
 			want: []string{
+				filepath.Join(path.Dir(filename), templatePath, "testservice", "config", "bar.conf"),
 				filepath.Join(path.Dir(filename), templatePath, "testservice", "config", "config.json"),
 				filepath.Join(path.Dir(filename), templatePath, "testservice", "config", "foo.conf"),
 			},
@@ -136,8 +137,10 @@ func TestGetTemplateData(t *testing.T) {
 					"Upper":       "BAR",
 				},
 				AdditionalTemplate: map[string]string{},
+				PostProcessCleanup: true,
 			},
 			want: map[string]string{
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
 				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
 				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
 			},
@@ -173,11 +176,13 @@ func TestGetTemplateData(t *testing.T) {
 					"Message":     "some common func",
 				},
 				AdditionalTemplate: map[string]string{"common.sh": "/common/common.sh"},
+				PostProcessCleanup: true,
 			},
 			want: map[string]string{
 				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
 				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
 				"common.sh":   "#!/bin/bash\nset -e\n\nfunction common_func {\n  echo some common func\n}\n",
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
 			},
 			error: false,
 		},

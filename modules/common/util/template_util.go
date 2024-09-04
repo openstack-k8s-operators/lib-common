@@ -57,6 +57,48 @@ type Template struct {
 	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
 	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
 	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
+	PostProcessCleanup bool                   // optional boolean parameter to remove extra new lines from service confs, by default set to false
+}
+
+// This function removes extra space and new-lines from conf data
+func removeSubsequentNewLines(rawConf string) string {
+	lines := strings.Split(rawConf, "\n")
+	var result []string
+	var prevLineWasBlank bool
+
+	for _, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		if trimmedLine == "" {
+			prevLineWasBlank = true
+			// if current line is blank, no need to add it in result
+		} else {
+			if strings.HasPrefix(trimmedLine, "[") && strings.HasSuffix(trimmedLine, "]") {
+				// section-header
+				if len(result) > 0 && !prevLineWasBlank {
+					result = append(result, "")
+				}
+				var sectionHeaderLine string
+				if len(result) > 0 {
+					// new section-hearder
+					sectionHeaderLine = "\n" + line
+				} else {
+					sectionHeaderLine = line
+				}
+				result = append(result, sectionHeaderLine)
+			} else {
+				// secion-body
+				result = append(result, line)
+			}
+			// reset flag
+			prevLineWasBlank = false
+		}
+	}
+
+	// add an extra line at EOF
+	result = append(result, "")
+
+	return strings.Join(result, "\n")
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -135,6 +177,7 @@ func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return renderedTemplate, nil
 }
 
@@ -242,6 +285,15 @@ func GetTemplateData(t Template) (map[string]string, error) {
 			return nil, err
 		}
 		data[filename] = renderedTemplate
+	}
+
+	if t.PostProcessCleanup {
+		for filename, content := range data {
+			if strings.HasSuffix(filename, ".conf") {
+				// as of now, only clean for confs
+				data[filename] = removeSubsequentNewLines(content)
+			}
+		}
 	}
 
 	return data, nil
