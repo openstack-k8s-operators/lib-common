@@ -260,7 +260,7 @@ func ValidateCACertSecret(
 	} else if (ctrlResult != ctrl.Result{}) {
 		return "", k8s_errors.NewNotFound(
 			appsv1.Resource("Secret"),
-			fmt.Sprintf("%s not found in namespace %s", caSecret.Name, caSecret.Namespace),
+			fmt.Sprintf("%s in namespace %s", caSecret.Name, caSecret.Namespace),
 		)
 	}
 
@@ -286,7 +286,7 @@ func (s *Service) ValidateCertSecret(ctx context.Context, h *helper.Helper, name
 	} else if (ctrlResult != ctrl.Result{}) {
 		return "", k8s_errors.NewNotFound(
 			corev1.Resource(corev1.ResourceSecrets.String()),
-			fmt.Sprintf("%s not found in namespace %s", s.SecretName, namespace),
+			fmt.Sprintf("%s in namespace %s", s.SecretName, namespace),
 		)
 	}
 
