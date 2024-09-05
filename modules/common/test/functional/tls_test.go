@@ -22,7 +22,6 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/tls"
 	"k8s.io/apimachinery/pkg/types"
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var _ = Describe("tls package", func() {
@@ -48,15 +47,13 @@ var _ = Describe("tls package", func() {
 		th.CreateEmptySecret(sname)
 
 		// validate bad ca cert secret
-		_, ctrlResult, err := tls.ValidateCACertSecret(th.Ctx, cClient, sname)
+		_, err := tls.ValidateCACertSecret(th.Ctx, cClient, sname)
 		Expect(err).To(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 
 		// update ca cert secret with good data
 		th.UpdateSecret(sname, tls.CABundleKey, []byte("foo"))
-		hash, ctrlResult, err := tls.ValidateCACertSecret(th.Ctx, cClient, sname)
+		hash, err := tls.ValidateCACertSecret(th.Ctx, cClient, sname)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 		Expect(hash).To(BeIdenticalTo("n56fh645hfbh687hc9h678h87h64bh598h577hch5d6h5c9h5d4h74h84h5f4hfch6dh678h547h9bhbchb6h89h5c4h68dhc9h664h557h595h5c5q"))
 	})
 
@@ -73,24 +70,21 @@ var _ = Describe("tls package", func() {
 		s := &tls.Service{
 			SecretName: sname.Name,
 		}
-		_, ctrlResult, err := s.ValidateCertSecret(th.Ctx, h, namespace)
+		_, err := s.ValidateCertSecret(th.Ctx, h, namespace)
 		Expect(err).To(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 
 		// update cert secret with cert, still key missing
 		th.UpdateSecret(sname, tls.CertKey, []byte("cert"))
-		_, ctrlResult, err = s.ValidateCertSecret(th.Ctx, h, namespace)
+		_, err = s.ValidateCertSecret(th.Ctx, h, namespace)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("field tls.key not found in Secret"))
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 
 		// update cert secret with key to be a good cert secret
 		th.UpdateSecret(sname, tls.PrivateKey, []byte("key"))
 
 		// validate good cert secret
-		hash, ctrlResult, err := s.ValidateCertSecret(th.Ctx, h, namespace)
+		hash, err := s.ValidateCertSecret(th.Ctx, h, namespace)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 		Expect(hash).To(BeIdenticalTo("n547h97h5cfh587h56ch594h79hd4h96h5cfh565h587h569h688h666h685h67ch7fhfbh664h5f9h694h564h9ch645h675h665h78h7h87h566hb6q"))
 	})
 
@@ -107,9 +101,8 @@ var _ = Describe("tls package", func() {
 		endpointCfgs := map[service.Endpoint]tls.Service{}
 
 		// validate empty service map
-		_, ctrlResult, err := tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
+		_, err := tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 
 		endpointCfgs[service.EndpointInternal] = tls.Service{
 			SecretName: sname.Name,
@@ -119,18 +112,16 @@ var _ = Describe("tls package", func() {
 		}
 
 		// validate service map with bad cert secret
-		_, ctrlResult, err = tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
+		_, err = tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("field tls.crt not found in Secret"))
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 
 		// update cert secret to have missing private key
 		th.UpdateSecret(sname, tls.CertKey, []byte("cert"))
 
 		// validate service map with good cert secret
-		hash, ctrlResult, err := tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
+		hash, err := tls.ValidateEndpointCerts(th.Ctx, h, namespace, endpointCfgs)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(ctrlResult).To(BeIdenticalTo(ctrl.Result{}))
 		Expect(hash).To(BeIdenticalTo("n5d7h65dh5d5h569hffh66ch568h95h686h58fhcfh586h5b8hc6hd7h65bh56bh55bh656hfh5f7h84h54bh65dh5c9h8ch64bh64bhdfh8ch589h54bq"))
 	})
 })
