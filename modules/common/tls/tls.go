@@ -29,12 +29,13 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const (
@@ -167,7 +168,7 @@ func (a *APIService) ValidateCertSecrets(
 	ctx context.Context,
 	h *helper.Helper,
 	namespace string,
-) (string, ctrl.Result, error) {
+) (string, error) {
 	var svc GenericService
 	certHashes := map[string]env.Setter{}
 	for _, endpt := range []service.Endpoint{service.EndpointInternal, service.EndpointPublic} {
@@ -187,20 +188,18 @@ func (a *APIService) ValidateCertSecrets(
 			svc = a.Internal
 		}
 
-		hash, ctrlResult, err := svc.ValidateCertSecret(ctx, h, namespace)
+		hash, err := svc.ValidateCertSecret(ctx, h, namespace)
 		if err != nil {
-			return "", ctrlResult, err
-		} else if (ctrlResult != ctrl.Result{}) {
-			return "", ctrlResult, nil
+			return "", err
 		}
 		certHashes["cert-"+endpt.String()] = env.SetValue(hash)
 	}
 
 	certsHash, err := util.HashOfInputHashes(certHashes)
 	if err != nil {
-		return "", ctrl.Result{}, err
+		return "", err
 	}
-	return certsHash, ctrl.Result{}, nil
+	return certsHash, nil
 }
 
 // ToService - convert tls.APIService to tls.Service
@@ -225,26 +224,23 @@ func (s *GenericService) ValidateCertSecret(
 	ctx context.Context,
 	h *helper.Helper,
 	namespace string,
-) (string, ctrl.Result, error) {
+) (string, error) {
 	hash := ""
 
 	endptTLSCfg, err := s.ToService()
 	if err != nil {
-		return "", ctrl.Result{}, err
+		return "", err
 	}
 
 	if endptTLSCfg.SecretName != "" {
 		// validate the cert secret has the expected keys
-		var ctrlResult reconcile.Result
-		hash, ctrlResult, err = endptTLSCfg.ValidateCertSecret(ctx, h, namespace)
+		hash, err = endptTLSCfg.ValidateCertSecret(ctx, h, namespace)
 		if err != nil {
-			return "", ctrlResult, err
-		} else if (ctrlResult != ctrl.Result{}) {
-			return "", ctrlResult, nil
+			return "", err
 		}
 	}
 
-	return hash, ctrl.Result{}, nil
+	return hash, nil
 }
 
 // ValidateCACertSecret - validates the content of the cert secret to make sure "tls-ca-bundle.pem" key exists
@@ -252,7 +248,7 @@ func ValidateCACertSecret(
 	ctx context.Context,
 	c client.Client,
 	caSecret types.NamespacedName,
-) (string, ctrl.Result, error) {
+) (string, error) {
 	hash, ctrlResult, err := secret.VerifySecret(
 		ctx,
 		caSecret,
@@ -260,16 +256,19 @@ func ValidateCACertSecret(
 		c,
 		5*time.Second)
 	if err != nil {
-		return "", ctrlResult, err
+		return "", err
 	} else if (ctrlResult != ctrl.Result{}) {
-		return "", ctrlResult, nil
+		return "", k8s_errors.NewNotFound(
+			appsv1.Resource("Secret"),
+			fmt.Sprintf("%s not found in namespace %s", caSecret.Name, caSecret.Namespace),
+		)
 	}
 
-	return hash, ctrl.Result{}, nil
+	return hash, nil
 }
 
 // ValidateCertSecret - validates the content of the cert secret to make sure "tls.key", "tls.crt" and optional "ca.crt" keys exist
-func (s *Service) ValidateCertSecret(ctx context.Context, h *helper.Helper, namespace string) (string, ctrl.Result, error) {
+func (s *Service) ValidateCertSecret(ctx context.Context, h *helper.Helper, namespace string) (string, error) {
 	// define keys to expect in cert secret
 	keys := []string{PrivateKey, CertKey}
 	if s.CaMount != nil {
@@ -283,12 +282,15 @@ func (s *Service) ValidateCertSecret(ctx context.Context, h *helper.Helper, name
 		h.GetClient(),
 		5*time.Second)
 	if err != nil {
-		return "", ctrlResult, err
+		return "", err
 	} else if (ctrlResult != ctrl.Result{}) {
-		return "", ctrlResult, nil
+		return "", k8s_errors.NewNotFound(
+			corev1.Resource(corev1.ResourceSecrets.String()),
+			fmt.Sprintf("%s not found in namespace %s", s.SecretName, namespace),
+		)
 	}
 
-	return hash, ctrl.Result{}, nil
+	return hash, nil
 }
 
 // ValidateEndpointCerts - validates all services from an endpointCfgs and
@@ -298,16 +300,14 @@ func ValidateEndpointCerts(
 	h *helper.Helper,
 	namespace string,
 	endpointCfgs map[service.Endpoint]Service,
-) (string, ctrl.Result, error) {
+) (string, error) {
 	certHashes := map[string]env.Setter{}
 	for endpt, endpointTLSCfg := range endpointCfgs {
 		if endpointTLSCfg.SecretName != "" {
 			// validate the cert secret has the expected keys
-			hash, ctrlResult, err := endpointTLSCfg.ValidateCertSecret(ctx, h, namespace)
+			hash, err := endpointTLSCfg.ValidateCertSecret(ctx, h, namespace)
 			if err != nil {
-				return "", ctrlResult, err
-			} else if (ctrlResult != ctrl.Result{}) {
-				return "", ctrlResult, nil
+				return "", err
 			}
 
 			certHashes["cert-"+endpt.String()] = env.SetValue(hash)
@@ -316,9 +316,9 @@ func ValidateEndpointCerts(
 
 	certsHash, err := util.HashOfInputHashes(certHashes)
 	if err != nil {
-		return "", ctrl.Result{}, err
+		return "", err
 	}
-	return certsHash, ctrl.Result{}, nil
+	return certsHash, nil
 }
 
 // getCertMountPath - return certificate mount path
