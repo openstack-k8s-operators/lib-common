@@ -124,7 +124,7 @@ func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath st
 		path = filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, relativeCRDPath)
 	}
 
-	if runtime.GOOS != "Darwin" {
+	if runtime.GOOS != "darwin" {
 		path, err = encodePath(path)
 		if err != nil {
 			return path, err
@@ -147,9 +147,12 @@ func GetOpenShiftCRDDir(crdName string, goModPath string) (string, error) {
 	}
 	versionedModule := fmt.Sprintf("%s@%s", libCommon, version)
 	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, "openshift_crds", crdName)
-	path, err = encodePath(path)
-	if err != nil {
-		return path, err
+
+	if runtime.GOOS != "darwin" {
+		path, err = encodePath(path)
+		if err != nil {
+			return path, err
+		}
 	}
 
 	return path, nil
