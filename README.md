@@ -1,4 +1,5 @@
 # lib-common
+[![CodeQL](https://github.com/openstack-k8s-operators/lib-common/actions/workflows/codeql.yml/badge.svg)](https://github.com/openstack-k8s-operators/lib-common/actions/workflows/codeql.yml)
 
 Common library for OpenStack K8s Operators.
 
