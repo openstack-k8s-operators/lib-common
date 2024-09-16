@@ -136,8 +136,8 @@ func TestGetTemplateData(t *testing.T) {
 					"Count":       1,
 					"Upper":       "BAR",
 				},
-				AdditionalTemplate: map[string]string{},
-				PostProcessCleanup: true,
+				AdditionalTemplate:          map[string]string{},
+				PostProcessConfFilesCleanup: true,
 			},
 			want: map[string]string{
 				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
@@ -175,8 +175,8 @@ func TestGetTemplateData(t *testing.T) {
 					"Upper":       "BAR",
 					"Message":     "some common func",
 				},
-				AdditionalTemplate: map[string]string{"common.sh": "/common/common.sh"},
-				PostProcessCleanup: true,
+				AdditionalTemplate:          map[string]string{"common.sh": "/common/common.sh"},
+				PostProcessConfFilesCleanup: true,
 			},
 			want: map[string]string{
 				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
@@ -265,4 +265,180 @@ func TestGetTemplateData(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRemoveSubsequentNewLines(t *testing.T) {
+	tests := []struct {
+		name    string
+		raw     string
+		cleaned string
+	}{
+		{
+			name:    "Empty input",
+			raw:     "",
+			cleaned: "",
+		},
+		{
+			name:    "Single empty line",
+			raw:     "\n",
+			cleaned: "",
+		},
+		{
+			name:    "Two empty lines",
+			raw:     "\n\n",
+			cleaned: "",
+		},
+		{
+			name:    "Insert newline at end of file",
+			raw:     "foo",
+			cleaned: "foo\n",
+		},
+		{
+			name:    "Remove starting empty line",
+			raw:     "\nfoo",
+			cleaned: "foo\n",
+		},
+		{
+			name:    "Remove starting empty lines",
+			raw:     "\n\nfoo",
+			cleaned: "foo\n",
+		},
+		{
+			name:    "Remove extra empty line at the end",
+			raw:     "foo\n\n",
+			cleaned: "foo\n",
+		},
+		{
+			name:    "Remove extra empty lines at the end",
+			raw:     "foo\n\n\n",
+			cleaned: "foo\n",
+		},
+		{
+			name:    "Keep subsequent data lines",
+			raw:     "foo\nbar",
+			cleaned: "foo\nbar\n",
+		},
+		{
+			name:    "Remove empty line between subsequent data",
+			raw:     "foo\n\nbar",
+			cleaned: "foo\nbar\n",
+		},
+		{
+			name:    "Extra spaces around data lines are kept",
+			raw:     "\n\n  foo  \n\n  bar  ",
+			cleaned: "  foo  \n  bar  \n",
+		},
+		{
+			name:    "Remove extra lines with spaces only",
+			raw:     " \n  \nfoo\n \nbar\n  \n  ",
+			cleaned: "foo\nbar\n",
+		},
+		{
+			name:    "Remove starting empty line from section header",
+			raw:     "\n[foo]",
+			cleaned: "[foo]\n",
+		},
+		{
+			name:    "Remove starting empty lines from section header",
+			raw:     "\n\n[foo]",
+			cleaned: "[foo]\n",
+		},
+		{
+			name:    "Remove extra empty line after section header",
+			raw:     "[foo]\n\n",
+			cleaned: "[foo]\n",
+		},
+		{
+			name:    "Remove extra empty lines after section header",
+			raw:     "[foo]\n\n\n",
+			cleaned: "[foo]\n",
+		},
+		{
+			name:    "Insert empty line after section header at the end",
+			raw:     "[foo]",
+			cleaned: "[foo]\n",
+		},
+		{
+			name:    "Keep one empty line between section headers",
+			raw:     "[foo]\n\n[bar]",
+			cleaned: "[foo]\n\n[bar]\n",
+		},
+
+		// This ws failing as it inserts two empty lines between sections. But that is inconsistent
+		// as if there are two empty lines between sections then one is removed.
+		// See next test case.
+		{
+			name:    "Insert one empty line between section headers",
+			raw:     "[foo]\n[bar]",
+			cleaned: "[foo]\n\n[bar]\n",
+		},
+		{
+			name:    "Remove more empty lines between section headers",
+			raw:     "[foo]\n\n\n[bar]",
+			cleaned: "[foo]\n\n[bar]\n",
+		},
+		{
+			name:    "Spaces are kept around section lines but not in the empty line in between",
+			raw:     "\n [foo]  \n  \n  [bar] ",
+			cleaned: " [foo]  \n\n  [bar] \n",
+		},
+		{
+			name:    "Remove extra empty line between section header and data",
+			raw:     "[foo]\n\nbar",
+			cleaned: "[foo]\nbar\n",
+		},
+		{
+			name:    "Remove extra empty lines between section header and data",
+			raw:     "[foo]\n\n\nbar",
+			cleaned: "[foo]\nbar\n",
+		},
+
+		// This was failing as it insert two extra lines. It is inconsistent as if there are
+		// two empty lines between sections then one is removed. See next test case.
+		{
+			name:    "Insert extra line between sections",
+			raw:     "[foo]\nbar\n[goo]\nbaz",
+			cleaned: "[foo]\nbar\n\n[goo]\nbaz\n",
+		},
+		{
+			name:    "Remove extra lines between sections",
+			raw:     "[foo]\nbar\n\n\n[goo]\nbaz",
+			cleaned: "[foo]\nbar\n\n[goo]\nbaz\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			cleaned := removeSubsequentNewLines(tt.raw)
+			g.Expect(cleaned).To(Equal(tt.cleaned))
+		})
+	}
+}
+
+// Run the cleaning twice on an input and ensure that the second cleaning
+// does nothing as the first run cleaned everything
+// This was failing due to empty line handling between sections is unstable.
+func TestRemoveSubsequentNewLinesIsStable(t *testing.T) {
+	g := NewWithT(t)
+
+	input := `
+
+[foo]
+boo=1
+
+
+bar=1
+[goo]
+
+
+baz=1
+
+
+`
+	cleaned := removeSubsequentNewLines(input)
+	cleaned2 := removeSubsequentNewLines(cleaned)
+
+	g.Expect(cleaned2).To(Equal(cleaned))
 }

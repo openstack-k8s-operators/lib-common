@@ -45,53 +45,43 @@ const (
 
 // Template - config map and secret details
 type Template struct {
-	Name               string                 // name of the cm/secret to create based of the Template. Check secret/configmap pkg on details how it is used.
-	Namespace          string                 // name of the nanmespace to create the cm/secret. Check secret/configmap pkg on details how it is used.
-	Type               TType                  // type of the templates, see TTtypes
-	InstanceType       string                 // the CRD name in lower case, to separate the templates for each CRD in /templates
-	SecretType         corev1.SecretType      // Secrets only, defaults to "Opaque"
-	AdditionalTemplate map[string]string      // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
-	CustomData         map[string]string      // custom data which won't get rendered as a template and just added to the resulting cm/secret
-	Labels             map[string]string      // labels to be set on the cm/secret
-	Annotations        map[string]string      // Annotations set on cm/secret
-	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
-	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
-	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
-	PostProcessCleanup bool                   // optional boolean parameter to remove extra new lines from service confs, by default set to false
+	Name                        string                 // name of the cm/secret to create based of the Template. Check secret/configmap pkg on details how it is used.
+	Namespace                   string                 // name of the nanmespace to create the cm/secret. Check secret/configmap pkg on details how it is used.
+	Type                        TType                  // type of the templates, see TTtypes
+	InstanceType                string                 // the CRD name in lower case, to separate the templates for each CRD in /templates
+	SecretType                  corev1.SecretType      // Secrets only, defaults to "Opaque"
+	AdditionalTemplate          map[string]string      // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
+	CustomData                  map[string]string      // custom data which won't get rendered as a template and just added to the resulting cm/secret
+	Labels                      map[string]string      // labels to be set on the cm/secret
+	Annotations                 map[string]string      // Annotations set on cm/secret
+	ConfigOptions               map[string]interface{} // map of parameters as input data to render the templates
+	SkipSetOwner                bool                   // skip setting ownership on the associated configmap
+	Version                     string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
+	PostProcessConfFilesCleanup bool                   // optional boolean parameter to remove extra new lines from service confs, by default set to false
 }
 
 // This function removes extra space and new-lines from conf data
 func removeSubsequentNewLines(rawConf string) string {
 	lines := strings.Split(rawConf, "\n")
 	var result []string
-	var prevLineWasBlank bool
 
 	for _, line := range lines {
 		trimmedLine := strings.TrimSpace(line)
 
-		if trimmedLine == "" {
-			prevLineWasBlank = true
-			// if current line is blank, no need to add it in result
-		} else {
+		if trimmedLine != "" {
 			if strings.HasPrefix(trimmedLine, "[") && strings.HasSuffix(trimmedLine, "]") {
 				// section-header
-				if len(result) > 0 && !prevLineWasBlank {
-					result = append(result, "")
-				}
-				var sectionHeaderLine string
 				if len(result) > 0 {
-					// new section-hearder
-					sectionHeaderLine = "\n" + line
+					// new section-header
+					result = append(result, "\n"+line)
 				} else {
-					sectionHeaderLine = line
+					// top section-header
+					result = append(result, line)
 				}
-				result = append(result, sectionHeaderLine)
 			} else {
 				// secion-body
 				result = append(result, line)
 			}
-			// reset flag
-			prevLineWasBlank = false
 		}
 	}
 
@@ -287,7 +277,7 @@ func GetTemplateData(t Template) (map[string]string, error) {
 		data[filename] = renderedTemplate
 	}
 
-	if t.PostProcessCleanup {
+	if t.PostProcessConfFilesCleanup {
 		for filename, content := range data {
 			if strings.HasSuffix(filename, ".conf") {
 				// as of now, only clean for confs
