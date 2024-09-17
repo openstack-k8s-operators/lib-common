@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/certmanager
 
-go 1.20
+go 1.21
 
 require (
 	github.com/cert-manager/cert-manager v1.11.5

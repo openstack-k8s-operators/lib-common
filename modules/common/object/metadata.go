@@ -20,8 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"k8s.io/apimachinery/pkg/runtime"
