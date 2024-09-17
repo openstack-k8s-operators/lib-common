@@ -98,7 +98,7 @@ func (in *Spec) DeepCopyInto(out *Spec) {
 	if in.TLS != nil {
 		in, out := &in.TLS, &out.TLS
 		*out = new(v1.TLSConfig)
-		**out = **in
+		(*in).DeepCopyInto(*out)
 	}
 }
 
