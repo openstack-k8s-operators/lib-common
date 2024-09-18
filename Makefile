@@ -19,6 +19,7 @@ GINKGO ?= $(LOCALBIN)/ginkgo
 
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION ?= v0.11.1
+GOTOOLCHAIN_VERSION ?= go1.21.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.29
@@ -133,7 +134,7 @@ golint: get-ci-tools ## Run go lint via ci-tools script against code
 
 .PHONY: gowork
 gowork: ## Initiate go work
-	test -f go.work || go work init
+	test -f go.work || GOTOOLCHAIN=$(GOTOOLCHAIN_VERSION) go work init
 	go work use -r modules
 	go work sync
 
