@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/test
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -24,6 +24,6 @@ replace github.com/openstack-k8s-operators/lib-common/modules/common => ../commo
 
 replace github.com/openstack-k8s-operators/lib-common/modules/openstack => ../openstack
 
-// mschuppert: map to latest commit from release-4.13 tag
+// mschuppert: map to latest commit from release-4.16 tag
 // must consistent within modules and service operators
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20230414143018-3367bc7e6ac7
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20240830023148-b7d0481c9094
