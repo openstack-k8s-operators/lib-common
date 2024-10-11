@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -138,6 +139,82 @@ func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 	return renderedTemplate, nil
 }
 
+// template functions
+var tmpl *template.Template
+
+// template function which allows to execute a template from within
+// a template file.
+// name - name of the template as defined with with `{{define "some-template"}}your template{{end}}
+// data - data to pass into to render the template for all can use `.`
+func execTempl(name string, data interface{}) (string, error) {
+	buf := &bytes.Buffer{}
+	err := tmpl.ExecuteTemplate(buf, name, data)
+	return buf.String(), err
+}
+
+// template function to indent the template with n tabs
+func indent(n int, in string) string {
+	var out string
+	s := bufio.NewScanner(bytes.NewReader([]byte(in)))
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+		for i := 0; i < n; i++ {
+			line = "\t" + line
+		}
+		out += line + "\n"
+	}
+	return out
+}
+
+// template function to remove empty lines if there are > n continuous empty lines
+func removeNewLines(n int, in string) string {
+	var out string
+	s := bufio.NewScanner(bytes.NewReader([]byte(in)))
+
+	// Variable to keep track of consecutive empty lines
+	emptyLineCount := 0
+	for s.Scan() {
+		line := s.Text()
+
+		if strings.TrimSpace(line) == "" {
+			emptyLineCount++
+			// If we have already seen more then n empty lines, skip this one
+			if emptyLineCount > n {
+				continue
+			}
+		} else {
+			// Reset the empty line counter when we encounter a non-empty line
+			emptyLineCount = 0
+		}
+
+		out += line + "\n"
+	}
+	return out
+}
+
+// This function removes extra space and new-lines from conf data.
+func removeNewLinesInSections(in string) string {
+	var out string
+	s := bufio.NewScanner(bytes.NewReader([]byte(in)))
+
+	for s.Scan() {
+		line := strings.TrimSpace(s.Text())
+
+		if line != "" {
+			if strings.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
+				// new section-header
+				if len(out) > 0 {
+					out += "\n"
+				}
+			}
+
+			out += line + "\n"
+		}
+	}
+
+	return out
+}
+
 // template function to increment an int
 func add(x, y int) int {
 	return x + y
@@ -153,11 +230,16 @@ func lower(s string) string {
 func ExecuteTemplateData(templateData string, data interface{}) (string, error) {
 
 	var buff bytes.Buffer
+	var err error
 	funcs := template.FuncMap{
-		"add":   add,
-		"lower": lower,
+		"add":                      add,
+		"execTempl":                execTempl,
+		"indent":                   indent,
+		"lower":                    lower,
+		"removeNewLines":           removeNewLines,
+		"removeNewLinesInSections": removeNewLinesInSections,
 	}
-	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData)
+	tmpl, err = template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData)
 	if err != nil {
 		return "", err
 	}
@@ -193,10 +275,14 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 	file := string(b)
 	var buff bytes.Buffer
 	funcs := template.FuncMap{
-		"add":   add,
-		"lower": lower,
+		"add":                      add,
+		"execTempl":                execTempl,
+		"indent":                   indent,
+		"lower":                    lower,
+		"removeNewLines":           removeNewLines,
+		"removeNewLinesInSections": removeNewLinesInSections,
 	}
-	tmpl, err := template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(file)
+	tmpl, err = template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(file)
 	if err != nil {
 		return "", err
 	}
