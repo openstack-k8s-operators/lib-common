@@ -78,10 +78,6 @@ type VolumeSource struct {
 	// configMap represents a configMap that should populate this volume
 	// +optional
 	ConfigMap *corev1.ConfigMapVolumeSource `json:"configMap,omitempty" protobuf:"bytes,19,opt,name=configMap"`
-	// photonPersistentDisk represents a PhotonController persistent disk attached and mounted on kubelets host machine
-	PhotonPersistentDisk *corev1.PhotonPersistentDiskVolumeSource `json:"photonPersistentDisk,omitempty" protobuf:"bytes,23,opt,name=photonPersistentDisk"`
-	// projected items for all in one resources secrets, configmaps, and downward API
-	Projected *corev1.ProjectedVolumeSource `json:"projected,omitempty" protobuf:"bytes,26,opt,name=projected"`
 	// scaleIO represents a ScaleIO persistent volume attached and mounted on Kubernetes nodes.
 	// +optional
 	ScaleIO *corev1.ScaleIOVolumeSource `json:"scaleIO,omitempty" protobuf:"bytes,25,opt,name=scaleIO"`
@@ -91,12 +87,6 @@ type VolumeSource struct {
 	// csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).
 	// +optional
 	CSI *corev1.CSIVolumeSource `json:"csi,omitempty" protobuf:"bytes,28,opt,name=csi"`
-	// ephemeral represents a volume that is handled by a cluster storage driver.
-	// The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
-	// and deleted when the pod is removed.
-	//
-	// +optional
-	Ephemeral *corev1.EphemeralVolumeSource `json:"ephemeral,omitempty" protobuf:"bytes,29,opt,name=ephemeral"`
 }
 
 // Volume our slimmed down version of Volume
@@ -165,11 +155,8 @@ func ConvertVolumeSource(v *VolumeSource) corev1.VolumeSource {
 		DownwardAPI:           v.DownwardAPI,
 		FC:                    v.FC,
 		ConfigMap:             v.ConfigMap,
-		PhotonPersistentDisk:  v.PhotonPersistentDisk,
-		Projected:             v.Projected,
 		ScaleIO:               v.ScaleIO,
 		StorageOS:             v.StorageOS,
 		CSI:                   v.CSI,
-		Ephemeral:             v.Ephemeral,
 	}
 }
