@@ -128,16 +128,6 @@ func (in *VolumeSource) DeepCopyInto(out *VolumeSource) {
 		*out = new(v1.ConfigMapVolumeSource)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.PhotonPersistentDisk != nil {
-		in, out := &in.PhotonPersistentDisk, &out.PhotonPersistentDisk
-		*out = new(v1.PhotonPersistentDiskVolumeSource)
-		**out = **in
-	}
-	if in.Projected != nil {
-		in, out := &in.Projected, &out.Projected
-		*out = new(v1.ProjectedVolumeSource)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.ScaleIO != nil {
 		in, out := &in.ScaleIO, &out.ScaleIO
 		*out = new(v1.ScaleIOVolumeSource)
@@ -151,11 +141,6 @@ func (in *VolumeSource) DeepCopyInto(out *VolumeSource) {
 	if in.CSI != nil {
 		in, out := &in.CSI, &out.CSI
 		*out = new(v1.CSIVolumeSource)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.Ephemeral != nil {
-		in, out := &in.Ephemeral, &out.Ephemeral
-		*out = new(v1.EphemeralVolumeSource)
 		(*in).DeepCopyInto(*out)
 	}
 }
