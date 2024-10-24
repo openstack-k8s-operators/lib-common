@@ -35,6 +35,9 @@ const (
 	// DBSyncReadyCondition Status=True condition when dbsync job completed ok
 	DBSyncReadyCondition Type = "DBSyncReady"
 
+	// CreateServiceReadyCondition Status=True condition when k8s service for the service created ok
+	CreateServiceReadyCondition Type = "CreateServiceReady"
+
 	// ExposeServiceReadyCondition Status=True condition when service/routes to expose the service created ok
 	ExposeServiceReadyCondition Type = "ExposeServiceReady"
 
@@ -185,6 +188,21 @@ const (
 
 	// DBSyncReadyErrorMessage
 	DBSyncReadyErrorMessage = "DBsync job error occurred %s"
+
+	//
+	// CreateService condition messages
+	//
+	// CreateServiceReadyInitMessage
+	CreateServiceReadyInitMessage = "Create service not started"
+
+	// CreateServiceReadyMessage
+	CreateServiceReadyMessage = "Create service completed"
+
+	// CreateServiceReadyRunningMessage
+	CreateServiceReadyRunningMessage = "Create service in progress"
+
+	// CreateServiceReadyErrorMessage
+	CreateServiceReadyErrorMessage = "Create service error occurred %s"
 
 	//
 	// ExposeService condition messages
