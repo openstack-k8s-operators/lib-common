@@ -18,6 +18,9 @@ limitations under the License.
 package storage
 
 import (
+	"encoding/json"
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -142,21 +145,19 @@ func (v *VolMounts) Propagate(svc []PropagationType) []VolMounts {
 	return vl
 }
 
-// ConvertVolumeSource function to convert from a VolumeSource to a corev1.VolumeSource
-func ConvertVolumeSource(v *VolumeSource) corev1.VolumeSource {
-	return corev1.VolumeSource{
-		HostPath:              v.HostPath,
-		EmptyDir:              v.EmptyDir,
-		Secret:                v.Secret,
-		NFS:                   v.NFS,
-		ISCSI:                 v.ISCSI,
-		PersistentVolumeClaim: v.PersistentVolumeClaim,
-		CephFS:                v.CephFS,
-		DownwardAPI:           v.DownwardAPI,
-		FC:                    v.FC,
-		ConfigMap:             v.ConfigMap,
-		ScaleIO:               v.ScaleIO,
-		StorageOS:             v.StorageOS,
-		CSI:                   v.CSI,
+// ToCoreVolumeSource - convert VolumeSource to corev1.VolumeSource
+func (s *VolumeSource) ToCoreVolumeSource() (*corev1.VolumeSource, error) {
+	coreVolumeSource := &corev1.VolumeSource{}
+
+	coreVolumeBytes, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling VolumeSource: %w", err)
 	}
+
+	err = json.Unmarshal(coreVolumeBytes, coreVolumeSource)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling VolumeSource: %w", err)
+	}
+
+	return coreVolumeSource, nil
 }
