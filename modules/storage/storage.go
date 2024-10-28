@@ -90,6 +90,9 @@ type VolumeSource struct {
 	// csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).
 	// +optional
 	CSI *corev1.CSIVolumeSource `json:"csi,omitempty" protobuf:"bytes,28,opt,name=csi"`
+
+	// projected items for all in one resources secrets, configmaps, and downward API
+	Projected *corev1.ProjectedVolumeSource `json:"projected,omitempty" protobuf:"bytes,26,opt,name=projected"`
 }
 
 // Volume our slimmed down version of Volume
@@ -160,4 +163,21 @@ func (s *VolumeSource) ToCoreVolumeSource() (*corev1.VolumeSource, error) {
 	}
 
 	return coreVolumeSource, nil
+}
+
+// ToCoreVolume - convert Volume to corev1.Volume
+func (s *Volume) ToCoreVolume() (*corev1.Volume, error) {
+	coreVolume := &corev1.Volume{}
+
+	coreVolumeBytes, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("error marshalling Volume: %w", err)
+	}
+
+	err = json.Unmarshal(coreVolumeBytes, coreVolume)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling Volume: %w", err)
+	}
+
+	return coreVolume, nil
 }
