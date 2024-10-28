@@ -167,17 +167,13 @@ func (s *VolumeSource) ToCoreVolumeSource() (*corev1.VolumeSource, error) {
 
 // ToCoreVolume - convert Volume to corev1.Volume
 func (s *Volume) ToCoreVolume() (*corev1.Volume, error) {
-	coreVolume := &corev1.Volume{}
-
-	coreVolumeBytes, err := json.Marshal(s)
+	volSource, err := s.VolumeSource.ToCoreVolumeSource()
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling Volume: %w", err)
+		return nil, err
 	}
-
-	err = json.Unmarshal(coreVolumeBytes, coreVolume)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling Volume: %w", err)
+	coreVolume := &corev1.Volume{
+		Name:         s.Name,
+		VolumeSource: *volSource,
 	}
-
 	return coreVolume, nil
 }
