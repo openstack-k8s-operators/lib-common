@@ -97,12 +97,10 @@ type VolumeSource struct {
 
 // Volume our slimmed down version of Volume
 type Volume struct {
-	// +kubebuilder:validation:Required
 	// Name of the volume
-	Name string `json:"name"`
-	// +kubebuilder:validation:Required
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// VolumeSource defines the source of a volume to be mounted
-	VolumeSource VolumeSource `json:"volumeSource"`
+	VolumeSource `json:",inline" protobuf:"bytes,2,opt,name=volumeSource"`
 }
 
 // VolMounts is the data structure used to expose Volumes and Mounts that can
