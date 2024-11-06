@@ -24,6 +24,7 @@ import (
 
 	. "github.com/onsi/gomega"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
+	"github.com/openstack-k8s-operators/lib-common/modules/storage"
 )
 
 func TestAPIEnabled(t *testing.T) {
@@ -206,20 +207,20 @@ func TestServiceCreateVolume(t *testing.T) {
 		name    string
 		service *Service
 		id      string
-		want    corev1.Volume
+		want    storage.Volume
 	}{
 		{
 			name:    "No Secrets",
 			service: &Service{},
-			want:    corev1.Volume{},
+			want:    storage.Volume{},
 		},
 		{
 			name:    "Only TLS Secret",
 			service: &Service{SecretName: "cert-secret"},
 			id:      "foo",
-			want: corev1.Volume{
+			want: storage.Volume{
 				Name: "foo-tls-certs",
-				VolumeSource: corev1.VolumeSource{
+				VolumeSource: storage.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName:  "cert-secret",
 						DefaultMode: ptr.To[int32](0400),
@@ -230,9 +231,9 @@ func TestServiceCreateVolume(t *testing.T) {
 		{
 			name:    "Only TLS Secret no serviceID",
 			service: &Service{SecretName: "cert-secret"},
-			want: corev1.Volume{
+			want: storage.Volume{
 				Name: "default-tls-certs",
-				VolumeSource: corev1.VolumeSource{
+				VolumeSource: storage.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName:  "cert-secret",
 						DefaultMode: ptr.To[int32](0400),
@@ -310,21 +311,21 @@ func TestCaCreateVolume(t *testing.T) {
 	tests := []struct {
 		name string
 		ca   *Ca
-		want corev1.Volume
+		want storage.Volume
 	}{
 		{
 			name: "Empty Ca",
 			ca:   &Ca{},
-			want: corev1.Volume{},
+			want: storage.Volume{},
 		},
 		{
 			name: "Set CaBundleSecretName",
 			ca: &Ca{
 				CaBundleSecretName: "ca-secret",
 			},
-			want: corev1.Volume{
+			want: storage.Volume{
 				Name: "combined-ca-bundle",
-				VolumeSource: corev1.VolumeSource{
+				VolumeSource: storage.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
 						SecretName:  "ca-secret",
 						DefaultMode: ptr.To[int32](0444),

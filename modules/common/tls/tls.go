@@ -29,6 +29,7 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	"github.com/openstack-k8s-operators/lib-common/modules/storage"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -382,15 +383,15 @@ func (s *Service) CreateVolumeMounts(serviceID string) []corev1.VolumeMount {
 }
 
 // CreateVolume - add volume for TLS certificates and CA certificate for the service
-func (s *Service) CreateVolume(serviceID string) corev1.Volume {
-	volume := corev1.Volume{}
+func (s *Service) CreateVolume(serviceID string) storage.Volume {
+	volume := storage.Volume{}
 	if serviceID == "" {
 		serviceID = "default"
 	}
 	if s.SecretName != "" {
-		volume = corev1.Volume{
+		volume = storage.Volume{
 			Name: serviceID + "-tls-certs",
-			VolumeSource: corev1.VolumeSource{
+			VolumeSource: storage.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName:  s.SecretName,
 					DefaultMode: ptr.To[int32](0400),
@@ -425,13 +426,13 @@ func (c *Ca) CreateVolumeMounts(caBundleMount *string) []corev1.VolumeMount {
 }
 
 // CreateVolume creates volumes for CA bundle file
-func (c *Ca) CreateVolume() corev1.Volume {
-	volume := corev1.Volume{}
+func (c *Ca) CreateVolume() storage.Volume {
+	volume := storage.Volume{}
 
 	if c.CaBundleSecretName != "" {
-		volume = corev1.Volume{
+		volume = storage.Volume{
 			Name: CABundleLabel,
-			VolumeSource: corev1.VolumeSource{
+			VolumeSource: storage.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
 					SecretName:  c.CaBundleSecretName,
 					DefaultMode: ptr.To[int32](0444),
