@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/gomega"
 )
@@ -166,6 +167,127 @@ func TestGetNetworkIFName(t *testing.T) {
 			ifName := GetNetworkIFName(tt.nad)
 
 			g.Expect(ifName).To(BeEquivalentTo(tt.want))
+		})
+	}
+}
+
+func TestEnsureNetworksAnnotation(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		nadList []networkv1.NetworkAttachmentDefinition
+		want    map[string]string
+	}{
+		{
+			name:    "No network",
+			nadList: []networkv1.NetworkAttachmentDefinition{},
+			want:    map[string]string{networkv1.NetworkAttachmentAnnot: "[]"},
+		},
+		{
+			name: "Single network",
+			nadList: []networkv1.NetworkAttachmentDefinition{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+					Spec: networkv1.NetworkAttachmentDefinitionSpec{
+						Config: `
+{
+  "cniVersion": "0.3.1",
+  "name": "internalapi",
+  "type": "macvlan",
+  "master": "internalapi",
+  "ipam": {
+    "type": "whereabouts",
+    "range": "172.17.0.0/24",
+    "range_start": "172.17.0.30",
+    "range_end": "172.17.0.70"
+  }
+}
+`,
+					},
+				},
+			},
+			want: map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\"}]"},
+		},
+		{
+			name: "Multiple networks",
+			nadList: []networkv1.NetworkAttachmentDefinition{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+					Spec: networkv1.NetworkAttachmentDefinitionSpec{
+						Config: `
+{
+  "cniVersion": "0.3.1",
+  "name": "internalapi",
+  "type": "macvlan",
+  "master": "internalapi",
+  "ipam": {
+    "type": "whereabouts",
+    "range": "172.17.0.0/24",
+    "range_start": "172.17.0.30",
+    "range_end": "172.17.0.70"
+  }
+}
+`,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "two", Namespace: "foo"},
+					Spec: networkv1.NetworkAttachmentDefinitionSpec{
+						Config: `
+{
+  "cniVersion": "0.3.1",
+  "name": "tenant",
+  "type": "macvlan",
+  "master": "tenant",
+  "ipam": {
+    "type": "whereabouts",
+    "range": "172.19.0.0/24",
+    "range_start": "172.19.0.30",
+    "range_end": "172.19.0.70"
+  }
+}
+`,
+					},
+				},
+			},
+			want: map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\"},{\"name\":\"two\",\"namespace\":\"foo\",\"interface\":\"two\"}]"},
+		},
+		{
+			name: "With gateway defined",
+			nadList: []networkv1.NetworkAttachmentDefinition{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+					Spec: networkv1.NetworkAttachmentDefinitionSpec{
+						Config: `
+{
+  "cniVersion": "0.3.1",
+  "name": "internalapi",
+  "type": "macvlan",
+  "master": "internalapi",
+  "ipam": {
+    "type": "whereabouts",
+    "range": "172.17.0.0/24",
+    "range_start": "172.17.0.30",
+    "range_end": "172.17.0.70",
+    "gateway": "172.17.0.1"
+  }
+}
+`,
+					},
+				},
+			},
+			want: map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\",\"default-route\":[\"172.17.0.1\"]}]"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			networkAnnotation, err := EnsureNetworksAnnotation(tt.nadList)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(networkAnnotation).To(HaveLen(len(tt.want)))
+			g.Expect(networkAnnotation).To(BeEquivalentTo(tt.want))
 		})
 	}
 }
