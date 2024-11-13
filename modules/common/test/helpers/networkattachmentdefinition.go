@@ -36,7 +36,7 @@ func (tc *TestHelper) CreateNetworkAttachmentDefinition(name types.NamespacedNam
 			Namespace: name.Namespace,
 		},
 		Spec: networkv1.NetworkAttachmentDefinitionSpec{
-			Config: "",
+			Config: `{}`,
 		},
 	}
 	gomega.Expect(tc.K8sClient.Create(tc.Ctx, instance)).Should(gomega.Succeed())
