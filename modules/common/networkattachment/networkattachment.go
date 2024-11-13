@@ -17,14 +17,17 @@ limitations under the License.
 package networkattachment
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 // GetNADWithName - Get network-attachment-definition with name in namespace
@@ -49,6 +52,7 @@ func GetNADWithName(
 
 // CreateNetworksAnnotation returns pod annotation for network-attachment-definition list
 // e.g. k8s.v1.cni.cncf.io/networks: '[{"name": "internalapi", "namespace": "openstack"},{"name": "storage", "namespace": "openstack"}]'
+// NOTE: Deprecated, use EnsureNetworksAnnotation
 func CreateNetworksAnnotation(namespace string, nads []string) (map[string]string, error) {
 
 	netAnnotations := []networkv1.NetworkSelectionElement{}
@@ -135,4 +139,68 @@ func VerifyNetworkStatusFromAnnotation(
 	}
 
 	return networkReady, networkAttachmentStatus, nil
+}
+
+// EnsureNetworksAnnotation returns pod annotation for network-attachment-definition list
+// e.g. k8s.v1.cni.cncf.io/networks: '[{"name": "internalapi", "namespace": "openstack"},{"name": "storage", "namespace": "openstack"}]'
+// If `ipam.gateway` is defined in the NAD, the annotation will contain the `default-route` for that network:
+// e.g. k8s.v1.cni.cncf.io/networks: '[{"name":"internalapi","namespace":"openstack","interface":"internalapi","default-route":["10.1.2.200"]}]'
+func EnsureNetworksAnnotation(
+	nadList []networkv1.NetworkAttachmentDefinition,
+) (map[string]string, error) {
+
+	annotationString := map[string]string{}
+	netAnnotations := []networkv1.NetworkSelectionElement{}
+	for _, nad := range nadList {
+		gateway := ""
+
+		var data interface{}
+		if err := json.Unmarshal([]byte(nad.Spec.Config), &data); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
+		}
+
+		// use jsonpath to parse the cni config
+		jp := jsonpath.New(nad.Name)
+		jp.AllowMissingKeys(true) // Allow missing keys, for when no gateway configured
+
+		// Parse the JSONPath template, for now just `ipam.gateway`
+		err := jp.Parse(`{.ipam.gateway}`)
+		if err != nil {
+			return annotationString, fmt.Errorf("parse template error: %w", err)
+		}
+
+		buf := new(bytes.Buffer)
+		// get the gateway from the config
+		err = jp.Execute(buf, data)
+		if err != nil {
+			return annotationString, fmt.Errorf("parse execute template against nad %+v error: %w", nad.Spec.Config, err)
+		}
+
+		gateway = buf.String()
+
+		gatewayReq := []net.IP{}
+		if gateway != "" {
+			gatewayReq = append(gatewayReq, net.ParseIP(gateway))
+
+		}
+
+		netAnnotations = append(
+			netAnnotations,
+			networkv1.NetworkSelectionElement{
+				Name:             nad.Name,
+				Namespace:        nad.Namespace,
+				InterfaceRequest: GetNetworkIFName(nad.Name),
+				GatewayRequest:   gatewayReq,
+			},
+		)
+	}
+
+	networks, err := json.Marshal(netAnnotations)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode networks %v into json: %w", nadList, err)
+	}
+
+	annotationString[networkv1.NetworkAttachmentAnnot] = string(networks)
+
+	return annotationString, nil
 }
