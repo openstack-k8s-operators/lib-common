@@ -17,8 +17,12 @@ limitations under the License.
 package affinity
 
 import (
+	"encoding/json"
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
 
 // DistributePods - returns rule to ensure that two replicas of the same selector
@@ -27,8 +31,9 @@ func DistributePods(
 	selectorKey string,
 	selectorValues []string,
 	topologyKey string,
+	overrides *AffinityOverrideSpec,
 ) *corev1.Affinity {
-	return &corev1.Affinity{
+	defaultAffinity := &corev1.Affinity{
 		PodAntiAffinity: &corev1.PodAntiAffinity{
 			// This rule ensures that two replicas of the same selector
 			// should not run if possible on the same worker node
@@ -53,4 +58,46 @@ func DistributePods(
 			},
 		},
 	}
+	// patch the default affinity Object with the data passed as input
+	if overrides != nil {
+		patchedAffinity, _ := toCoreAffinity(defaultAffinity, overrides)
+		return patchedAffinity
+	}
+	return defaultAffinity
+}
+
+func toCoreAffinity(
+	affinity *v1.Affinity,
+	override *AffinityOverrideSpec,
+) (*v1.Affinity, error) {
+
+	aff := &v1.Affinity{
+		PodAntiAffinity: affinity.PodAntiAffinity,
+		PodAffinity: affinity.PodAffinity,
+	}
+	if override != nil {
+		if override != nil {
+			origAffinit, err := json.Marshal(affinity)
+			if err != nil {
+				return aff, fmt.Errorf("error marshalling Affinity Spec: %w", err)
+			}
+			patch, err := json.Marshal(override)
+			if err != nil {
+				return aff, fmt.Errorf("error marshalling Affinity Spec: %w", err)
+			}
+
+			patchedJSON, err := strategicpatch.StrategicMergePatch(origAffinit, patch, v1.Affinity{})
+			if err != nil {
+				return aff, fmt.Errorf("error patching Affinity Spec: %w", err)
+			}
+
+			patchedSpec := v1.Affinity{}
+			err = json.Unmarshal(patchedJSON, &patchedSpec)
+			if err != nil {
+				return aff, fmt.Errorf("error unmarshalling patched Service Spec: %w", err)
+			}
+			aff = &patchedSpec
+		}
+	}
+	return aff, nil
 }
