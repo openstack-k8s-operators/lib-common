@@ -22,17 +22,45 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// OverrideSpec - service override configuration for the Affinity propagated to the Pods
-// Allows for the manifest of the created StatefulSet to be overwritten with custom Pod affinity configuration.
-type OverrideSpec struct {
-	Spec                       *AffinityOverrideSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-}
+const (
+	// DefaultPreferredWeight -
+	DefaultPreferredWeight = 100
+)
 
-type AffinityOverrideSpec struct {
+// OverrideSpec -
+type OverrideSpec struct {
 	// Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
 	// +optional
 	PodAffinity *corev1.PodAffinity `json:"podAffinity,omitempty" protobuf:"bytes,2,opt,name=podAffinity"`
 	// Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
 	// +optional
 	PodAntiAffinity *corev1.PodAntiAffinity `json:"podAntiAffinity,omitempty" protobuf:"bytes,3,opt,name=podAntiAffinity"`
+}
+
+// Rules -
+// +kubebuilder:object:generate:=true
+type Rules struct {
+	// +kubebuilder:validation:Optional
+	SelectorKey string `json:"selectorKey,omitempty" protobuf:"bytes,2,opt,name=selectorKey"`
+	// +kubebuilder:validation:Optional
+	SelectorValues []string `json:"selectorValues,omitempty" protobuf:"bytes,2,opt,name=selectorValues"`
+	// https://github.com/kubernetes/api/blob/master/core/v1/well_known_labels.go#L20
+	// +kubebuilder:validation:Optional
+	TopologyKey string `json:"topologyKey,omitempty" protobuf:"bytes,2,opt,name=topologyKey"`
+	// +kubebuilder:validation:Optional
+	Weight int32 `json:"weight,omitempty" protobuf:"bytes,2,opt,name=weight"`
+}
+
+// PodScheduling -
+// +kubebuilder:object:generate:=true
+type PodScheduling struct {
+	RequiredScheduling  *Rules `json:"required,omitempty" protobuf:"bytes,2,opt,name=required"`
+	PreferredScheduling *Rules `json:"preferred,omitempty" protobuf:"bytes,2,opt,name=referred"`
+}
+
+// Overrides -
+// +kubebuilder:object:generate:=true
+type Overrides struct {
+	Affinity     *PodScheduling `json:"affinity,omitempty"`
+	AntiAffinity *PodScheduling `json:"antiAffinity,omitempty"`
 }

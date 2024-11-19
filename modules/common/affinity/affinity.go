@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 )
@@ -31,49 +30,51 @@ func DistributePods(
 	selectorKey string,
 	selectorValues []string,
 	topologyKey string,
-	overrides *AffinityOverrideSpec,
-) *corev1.Affinity {
-	defaultAffinity := &corev1.Affinity{
-		PodAntiAffinity: &corev1.PodAntiAffinity{
-			// This rule ensures that two replicas of the same selector
-			// should not run if possible on the same worker node
-			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
-				{
-					PodAffinityTerm: corev1.PodAffinityTerm{
-						LabelSelector: &metav1.LabelSelector{
-							MatchExpressions: []metav1.LabelSelectorRequirement{
-								{
-									Key:      selectorKey,
-									Operator: metav1.LabelSelectorOpIn,
-									Values:   selectorValues,
-								},
-							},
-						},
-						// usually corev1.LabelHostname "kubernetes.io/hostname"
-						// https://github.com/kubernetes/api/blob/master/core/v1/well_known_labels.go#L20
-						TopologyKey: topologyKey,
-					},
-					Weight: 100,
-				},
-			},
+	overrides *Overrides,
+) (*corev1.Affinity, error) {
+	// By default apply an anti-affinity policy using corev1.LabelHostname as
+	// preferred scheduling policy: this maintains backward compatibility with
+	// an already deployed environment
+	defaultAffinity := DefaultAffinity(
+		Rules{
+			SelectorKey:    selectorKey,
+			SelectorValues: selectorValues,
+			TopologyKey:    topologyKey,
+			Weight:         DefaultPreferredWeight,
 		},
+	)
+	if overrides == nil || (overrides.Affinity == nil && overrides.AntiAffinity == nil) {
+		return defaultAffinity, nil
 	}
+
+	affinityPatch := corev1.Affinity{}
+	if overrides.Affinity != nil {
+		affinityPatch = NewAffinity(overrides.Affinity)
+	}
+
+	antiAffinityPatch := corev1.Affinity{}
+	if overrides.AntiAffinity != nil {
+		antiAffinityPatch = NewAntiAffinity(overrides.AntiAffinity)
+	}
+
+	overridesSpec := &OverrideSpec{
+		PodAffinity:     affinityPatch.PodAffinity,
+		PodAntiAffinity: antiAffinityPatch.PodAntiAffinity,
+	}
+
 	// patch the default affinity Object with the data passed as input
-	if overrides != nil {
-		patchedAffinity, _ := toCoreAffinity(defaultAffinity, overrides)
-		return patchedAffinity
-	}
-	return defaultAffinity
+	patchedAffinity, err := toCoreAffinity(defaultAffinity, overridesSpec)
+	return patchedAffinity, err
 }
 
+// toCoreAffinity -
 func toCoreAffinity(
-	affinity *v1.Affinity,
-	override *AffinityOverrideSpec,
-) (*v1.Affinity, error) {
-
-	aff := &v1.Affinity{
+	affinity *corev1.Affinity,
+	override *OverrideSpec,
+) (*corev1.Affinity, error) {
+	aff := &corev1.Affinity{
 		PodAntiAffinity: affinity.PodAntiAffinity,
-		PodAffinity: affinity.PodAffinity,
+		PodAffinity:     affinity.PodAffinity,
 	}
 	if override != nil {
 		if override != nil {
@@ -85,13 +86,11 @@ func toCoreAffinity(
 			if err != nil {
 				return aff, fmt.Errorf("error marshalling Affinity Spec: %w", err)
 			}
-
-			patchedJSON, err := strategicpatch.StrategicMergePatch(origAffinit, patch, v1.Affinity{})
+			patchedJSON, err := strategicpatch.StrategicMergePatch(origAffinit, patch, corev1.Affinity{})
 			if err != nil {
 				return aff, fmt.Errorf("error patching Affinity Spec: %w", err)
 			}
-
-			patchedSpec := v1.Affinity{}
+			patchedSpec := corev1.Affinity{}
 			err = json.Unmarshal(patchedJSON, &patchedSpec)
 			if err != nil {
 				return aff, fmt.Errorf("error unmarshalling patched Service Spec: %w", err)
@@ -100,4 +99,103 @@ func toCoreAffinity(
 		}
 	}
 	return aff, nil
+}
+
+// WeightedPodAffinityTerm - returns a WeightedPodAffinityTerm that is assigned
+// to the Affinity or AntiAffinity rule
+func (affinity *Rules) WeightedPodAffinityTerm() []corev1.WeightedPodAffinityTerm {
+	if affinity == nil {
+		return []corev1.WeightedPodAffinityTerm{}
+	}
+	affinityTerm := []corev1.WeightedPodAffinityTerm{
+		{
+			Weight: affinity.Weight,
+			PodAffinityTerm: corev1.PodAffinityTerm{
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      affinity.SelectorKey,
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   affinity.SelectorValues,
+						},
+					},
+				},
+				TopologyKey: affinity.TopologyKey,
+			},
+		},
+	}
+	return affinityTerm
+}
+
+// PodAffinityTerm -
+func (affinity *Rules) PodAffinityTerm() []corev1.PodAffinityTerm {
+	if affinity == nil {
+		return []corev1.PodAffinityTerm{}
+	}
+	affinityTerm := []corev1.PodAffinityTerm{
+		{
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      affinity.SelectorKey,
+						Operator: metav1.LabelSelectorOpIn,
+						Values:   affinity.SelectorValues,
+					},
+				},
+			},
+			TopologyKey: affinity.TopologyKey,
+		},
+	}
+	return affinityTerm
+}
+
+// NewAffinity -
+func NewAffinity(p *PodScheduling) corev1.Affinity {
+	aff := &corev1.Affinity{
+		PodAffinity: &corev1.PodAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution:  p.RequiredScheduling.PodAffinityTerm(),
+			PreferredDuringSchedulingIgnoredDuringExecution: p.PreferredScheduling.WeightedPodAffinityTerm(),
+		},
+	}
+	return *aff
+}
+
+// NewAntiAffinity -
+func NewAntiAffinity(p *PodScheduling) corev1.Affinity {
+	aff := &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution:  p.RequiredScheduling.PodAffinityTerm(),
+			PreferredDuringSchedulingIgnoredDuringExecution: p.PreferredScheduling.WeightedPodAffinityTerm(),
+		},
+	}
+	return *aff
+}
+
+// DefaultAffinity -
+func DefaultAffinity(aff Rules) *corev1.Affinity {
+	return &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			// This rule ensures that two replicas of the same selector
+			// should not run if possible on the same worker node
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Key:      aff.SelectorKey,
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   aff.SelectorValues,
+								},
+							},
+						},
+						// usually corev1.LabelHostname "kubernetes.io/hostname"
+						// https://github.com/kubernetes/api/blob/master/core/v1/well_known_labels.go#L20
+						TopologyKey: aff.TopologyKey,
+					},
+					Weight: aff.Weight,
+				},
+			},
+		},
+	}
 }
