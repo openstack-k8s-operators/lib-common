@@ -17,6 +17,7 @@ import (
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // GetPod - retrieves a Pod resource.
@@ -83,4 +84,26 @@ func (tc *TestHelper) SimulatePodReady(name types.NamespacedName) {
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 	tc.Logger.Info("Simulated pod ready state", "on", name)
+}
+
+// CreatePod creates a new Pod resource with the provided annotations and spec.
+//
+// Example usage:
+//
+//	annotations := map[string]string{}{"key": "value"}
+//	spec := map[string]interface{}{"key": "value"}
+//	p := th.CreatePod(types.NamespacedName{Namespace: "default", Name: "example"}, annotations, spec)
+func (tc *TestHelper) CreatePod(name types.NamespacedName, annotations map[string]string, spec map[string]interface{}) client.Object {
+	raw := map[string]interface{}{
+		"apiVersion": "v1",
+		"kind":       "Pod",
+		"metadata": map[string]interface{}{
+			"annotations": annotations,
+			"name":        name.Name,
+			"namespace":   name.Namespace,
+		},
+		"spec": spec,
+	}
+
+	return tc.CreateUnstructured(raw)
 }
