@@ -204,3 +204,37 @@ func EnsureNetworksAnnotation(
 
 	return annotationString, nil
 }
+
+// GetJSONPathFromConfig - returns the result of the jsonPath as string
+// from the NetworkAttachmentDefinition config.
+// if the NAD has no config, an empty string is returned.
+// The jsonPath must be in the format e.g. ".ipam"
+func GetJSONPathFromConfig(netAtt networkv1.NetworkAttachmentDefinition, path string) (string, error) {
+	var data interface{}
+	buf := new(bytes.Buffer)
+
+	if netAtt.Spec.Config == "" {
+		return buf.String(), nil
+	}
+
+	if err := json.Unmarshal([]byte(netAtt.Spec.Config), &data); err != nil {
+		return "", fmt.Errorf("failed to unmarshal JSON data: %w", err)
+	}
+
+	// use jsonpath to parse the cni config
+	jp := jsonpath.New(netAtt.Name)
+
+	// Parse the JSONPath template to get the ipam
+	err := jp.Parse(fmt.Sprintf(`{.%s}`, path))
+	if err != nil {
+		return "", fmt.Errorf("parse template error: %w", err)
+	}
+
+	// get the ipam from the config
+	err = jp.Execute(buf, data)
+	if err != nil {
+		return "", fmt.Errorf("parse execute template against nad %+v error: %w", netAtt.Spec.Config, err)
+	}
+
+	return buf.String(), nil
+}
