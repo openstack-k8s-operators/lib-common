@@ -291,3 +291,79 @@ func TestEnsureNetworksAnnotation(t *testing.T) {
 		})
 	}
 }
+
+func TestGetJSONPathFromConfig(t *testing.T) {
+
+	tests := []struct {
+		name string
+		nad  networkv1.NetworkAttachmentDefinition
+		path string
+		want string
+	}{
+		{
+			name: "No config",
+			nad:  networkv1.NetworkAttachmentDefinition{},
+			path: ".ipam",
+			want: "",
+		},
+		{
+			name: "get .name",
+			nad: networkv1.NetworkAttachmentDefinition{
+				ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+				Spec: networkv1.NetworkAttachmentDefinitionSpec{
+					Config: `
+			{
+			  "cniVersion": "0.3.1",
+			  "name": "internalapi",
+			  "type": "macvlan",
+			  "master": "internalapi",
+			  "ipam": {
+			    "type": "whereabouts",
+			    "range": "172.17.0.0/24",
+			    "range_start": "172.17.0.30",
+			    "range_end": "172.17.0.70"
+			  }
+			}
+			`,
+				},
+			},
+			path: ".name",
+			want: "internalapi",
+		},
+		{
+			name: "get .ipam.range",
+			nad: networkv1.NetworkAttachmentDefinition{
+				ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+				Spec: networkv1.NetworkAttachmentDefinitionSpec{
+					Config: `
+			{
+			  "cniVersion": "0.3.1",
+			  "name": "internalapi",
+			  "type": "macvlan",
+			  "master": "internalapi",
+			  "ipam": {
+			    "type": "whereabouts",
+			    "range": "172.17.0.0/24",
+			    "range_start": "172.17.0.30",
+			    "range_end": "172.17.0.70"
+			  }
+			}
+			`,
+				},
+			},
+			path: ".ipam.range",
+			want: "172.17.0.0/24",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			networkAnnotation, err := GetJSONPathFromConfig(tt.nad, tt.path)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(networkAnnotation).To(HaveLen(len(tt.want)))
+			g.Expect(networkAnnotation).To(BeEquivalentTo(tt.want))
+		})
+	}
+}
