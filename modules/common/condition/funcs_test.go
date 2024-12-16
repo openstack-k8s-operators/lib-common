@@ -83,7 +83,10 @@ func TestInit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			conditions := Conditions{}
+			someCondition := TrueCondition("foo", "to be removed on Init()")
+			conditions := Conditions{
+				*someCondition,
+			}
 
 			conditions.Init(&tt.conditions)
 			g.Expect(conditions).To(haveSameConditionsOf(tt.want))
@@ -223,6 +226,38 @@ func TestRemove(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.conditions.Remove(tt.cType)
+			g.Expect(tt.expected).To(haveSameConditionsOf(tt.conditions))
+		})
+	}
+}
+
+func TestReset(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions Conditions
+		expected   Conditions
+	}{
+		{
+			name:       "empty",
+			conditions: Conditions{},
+			expected:   Conditions{},
+		},
+		{
+			name: "present",
+			conditions: CreateList(
+				unknownReady,
+				unknownA,
+				unknownB,
+			),
+			expected: Conditions{},
+		},
+	}
+
+	g := NewWithT(t)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.conditions.Reset()
 			g.Expect(tt.expected).To(haveSameConditionsOf(tt.conditions))
 		})
 	}

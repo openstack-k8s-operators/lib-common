@@ -34,6 +34,7 @@ import (
 // Optional conditions list can be passed as parameter which allows to initialize
 // additional conditions at the beginning.
 func (conditions *Conditions) Init(cl *Conditions) {
+	conditions.Reset()
 	conditions.Set(UnknownCondition(ReadyCondition, RequestedReason, ReadyInitMessage))
 
 	// add all optional conditions if no not nil
@@ -100,6 +101,11 @@ func (conditions *Conditions) Remove(t Type) {
 	}
 
 	*conditions = newConditions
+}
+
+// Reset - removes all conditions
+func (conditions *Conditions) Reset() {
+	*conditions = Conditions{}
 }
 
 // Get returns the condition with the given type, if the condition does not exists,
