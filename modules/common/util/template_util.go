@@ -52,6 +52,7 @@ type Template struct {
 	InstanceType       string                 // the CRD name in lower case, to separate the templates for each CRD in /templates
 	SecretType         corev1.SecretType      // Secrets only, defaults to "Opaque"
 	AdditionalTemplate map[string]string      // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
+	StringTemplate     map[string]string      // templates to render which are not accessable files, instead read by the caller from some other source, like a secret
 	CustomData         map[string]string      // custom data which won't get rendered as a template and just added to the resulting cm/secret
 	Labels             map[string]string      // labels to be set on the cm/secret
 	Annotations        map[string]string      // Annotations set on cm/secret
@@ -273,24 +274,8 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		return "", err
 	}
 	file := string(b)
-	var buff bytes.Buffer
-	funcs := template.FuncMap{
-		"add":                      add,
-		"execTempl":                execTempl,
-		"indent":                   indent,
-		"lower":                    lower,
-		"removeNewLines":           removeNewLines,
-		"removeNewLinesInSections": removeNewLinesInSections,
-	}
-	tmpl, err = template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(file)
-	if err != nil {
-		return "", err
-	}
-	err = tmpl.Execute(&buff, data)
-	if err != nil {
-		return "", err
-	}
-	return buff.String(), nil
+
+	return ExecuteTemplateData(file, data)
 }
 
 // GetTemplateData - Renders templates specified via Template struct
@@ -324,6 +309,16 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	// e.g. can be common to multiple controllers
 	for filename, file := range t.AdditionalTemplate {
 		renderedTemplate, err := ExecuteTemplateFile(file, opts)
+		if err != nil {
+			return nil, err
+		}
+		data[filename] = renderedTemplate
+	}
+
+	// render templates passed in as string via the StringTemplate
+	for filename, tmplData := range t.StringTemplate {
+		renderedTemplate, err := ExecuteTemplateData(tmplData, opts)
+
 		if err != nil {
 			return nil, err
 		}
