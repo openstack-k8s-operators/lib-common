@@ -422,6 +422,35 @@ func TestGetTemplateData(t *testing.T) {
 			error: false,
 		},
 		{
+			name: "Render TemplateTypeConfig templates with StringTemplate",
+			tmpl: Template{
+				Name:         "testservice",
+				Namespace:    "somenamespace",
+				Type:         TemplateTypeConfig,
+				InstanceType: "testservice",
+				Version:      "",
+				ConfigOptions: map[string]interface{}{
+					"ServiceUser": "foo",
+					"Count":       1,
+					"Upper":       "BAR",
+					"Message":     "some common func",
+				},
+				StringTemplate: map[string]string{"common.sh": `#!/bin/bash
+set -e
+
+function common_func {
+  echo {{ .Message }}
+}`},
+			},
+			want: map[string]string{
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\nsome_parameter_with_brackets=[test]\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
+				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
+				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
+				"common.sh":   "#!/bin/bash\nset -e\n\nfunction common_func {\n  echo some common func\n}",
+			},
+			error: false,
+		},
+		{
 			name: "Render TemplateTypeNone templates with AdditionalTemplate",
 			tmpl: Template{
 				Name:         "testservice",
