@@ -30,4 +30,6 @@ const (
 	CustomPolicyFileName = "custom.yaml"
 	// InputHashName -Name of the hash of hashes of all resources used to indentify an input change
 	InputHashName = "input"
+	// TemplateParameters - Name of the key when storing a dump of the template parameters in the secret
+	TemplateParameters = "TemplateParameters"
 )
