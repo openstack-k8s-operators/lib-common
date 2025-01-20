@@ -82,6 +82,10 @@ const (
 
 	// TLSInputReadyCondition Status=True condition when required TLS sources are ready
 	TLSInputReadyCondition Type = "TLSInputReady"
+
+	// TopologyReadyCondition Status=True condition that indicates a CR
+	// exists and is referenced by the Service
+	TopologyReadyCondition Type = "TopologyReady"
 )
 
 // Common Reasons used by API objects.
@@ -344,6 +348,16 @@ const (
 
 	// TLSInputErrorMessage - Provides the message when there's error in provision of TLS sources
 	TLSInputErrorMessage = "TLSInput error occured in TLS sources %s"
+
+	//
+	// Topology condition messages
+	//
+	// TopologyReadyInitMessage
+	TopologyReadyInitMessage = "Topology config create not started"
+	// TopologyReadyMessage
+	TopologyReadyMessage = "Topology config create completed"
+	// TopologyReadyErrorMessage
+	TopologyReadyErrorMessage = "Topology config create error occurred %s"
 )
 
 // Common Messages used for service accounts, roles, role bindings
