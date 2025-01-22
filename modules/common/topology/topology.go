@@ -19,10 +19,12 @@ package topology
 import (
 	"context"
 	"fmt"
+
 	topologyv1 "github.com/openstack-k8s-operators/infra-operator/apis/topology/v1beta1"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -33,6 +35,7 @@ func EnsureTopologyRef(
 	h *helper.Helper,
 	topologyRef *TopoRef,
 	finalizer string,
+	defaultLabelSelector *metav1.LabelSelector,
 ) (*topologyv1.Topology, string, error) {
 
 	var err error
@@ -43,7 +46,7 @@ func EnsureTopologyRef(
 		return nil, "", fmt.Errorf("No valid TopologyRef input passed")
 	}
 
-	topology, hash, err := topologyv1.GetTopologyByName(
+	topology, _, err := topologyv1.GetTopologyByName(
 		ctx,
 		h,
 		topologyRef.Name,
@@ -52,12 +55,33 @@ func EnsureTopologyRef(
 	if err != nil {
 		return topology, hash, err
 	}
+
 	// Add finalizer (if not present) to the resource consumed by the Service
 	if controllerutil.AddFinalizer(topology, fmt.Sprintf("%s-%s", h.GetFinalizer(), finalizer)) {
 		if err := h.GetClient().Update(ctx, topology); err != nil {
 			return topology, hash, err
 		}
 	}
+
+	// Set default LabelSelector on topologyConstraints if not set, similar to cluster level default:
+	// https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#cluster-level-default-constraints
+	topology = topology.DeepCopy()
+
+	topologyConstraints := topology.Spec.TopologySpreadConstraints
+	if topologyConstraints != nil {
+		for i := 0; i < len(*topologyConstraints); i++ {
+			current := &(*topologyConstraints)[i]
+			if current.LabelSelector == nil {
+				current.LabelSelector = defaultLabelSelector
+			}
+		}
+	}
+
+	hash, err = util.ObjectHash(topology.Spec)
+	if err != nil {
+		return topology, hash, err
+	}
+
 	return topology, hash, nil
 }
 
