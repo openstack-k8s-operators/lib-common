@@ -65,3 +65,17 @@ func HasIPv6ClusterNetwork(ctx context.Context, h *helper.Helper) (bool, error) 
 	}
 	return false, nil
 }
+
+// FirstClusterNetworkIsIPv6 - Check if first OCP cluster network is IPv6
+func FirstClusterNetworkIsIPv6(ctx context.Context, h *helper.Helper) (bool, error) {
+	networkConfig := &ocp_config.Network{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: "cluster", Namespace: ""}, networkConfig)
+	if err != nil {
+		return false, err
+	}
+
+	for _, clusterNetwork := range networkConfig.Status.ClusterNetwork {
+		return k8s_utils.IsIPv6CIDRString(clusterNetwork.CIDR), nil
+	}
+	return false, nil
+}
