@@ -46,7 +46,7 @@ func EnsureTopologyRef(
 		return nil, "", fmt.Errorf("No valid TopologyRef input passed")
 	}
 
-	topology, _, err := topologyv1.GetTopologyByName(
+	topology, hash, err := topologyv1.GetTopologyByName(
 		ctx,
 		h,
 		topologyRef.Name,
@@ -63,23 +63,25 @@ func EnsureTopologyRef(
 		}
 	}
 
-	// Set default LabelSelector on topologyConstraints if not set, similar to cluster level default:
-	// https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#cluster-level-default-constraints
-	topology = topology.DeepCopy()
+	if defaultLabelSelector != nil {
+		// Set default LabelSelector on topologyConstraints if not set, similar to cluster level default:
+		// https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/#cluster-level-default-constraints
+		topology = topology.DeepCopy()
 
-	topologyConstraints := topology.Spec.TopologySpreadConstraints
-	if topologyConstraints != nil {
-		for i := 0; i < len(*topologyConstraints); i++ {
-			current := &(*topologyConstraints)[i]
-			if current.LabelSelector == nil {
-				current.LabelSelector = defaultLabelSelector
+		topologyConstraints := topology.Spec.TopologySpreadConstraints
+		if topologyConstraints != nil {
+			for i := 0; i < len(*topologyConstraints); i++ {
+				current := &(*topologyConstraints)[i]
+				if current.LabelSelector == nil {
+					current.LabelSelector = defaultLabelSelector
+				}
 			}
 		}
-	}
 
-	hash, err = util.ObjectHash(topology.Spec)
-	if err != nil {
-		return topology, hash, err
+		hash, err = util.ObjectHash(topology.Spec)
+		if err != nil {
+			return topology, hash, err
+		}
 	}
 
 	return topology, hash, nil
