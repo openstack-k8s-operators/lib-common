@@ -17,6 +17,7 @@ limitations under the License.
 package labels
 
 import (
+	"github.com/openstack-k8s-operators/lib-common/modules/common"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -59,4 +60,29 @@ func GetLabels(
 	}
 
 	return util.MergeStringMaps(labelSelector, custom)
+}
+
+// GetSingleLabelSelector - create a simple label selector for a single key/value label
+func GetSingleLabelSelector(
+	key string,
+	value string,
+) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      key,
+				Operator: metav1.LabelSelectorOpIn,
+				Values: []string{
+					value,
+				},
+			},
+		},
+	}
+}
+
+// GetAppLabelSelector - create a simple label selector for the default AppSelector "service" label
+func GetAppLabelSelector(
+	name string,
+) metav1.LabelSelector {
+	return GetSingleLabelSelector(common.AppSelector, name)
 }
