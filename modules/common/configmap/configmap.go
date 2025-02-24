@@ -44,7 +44,7 @@ func Hash(configMap *corev1.ConfigMap) (string, error) {
 	}
 
 	if configMap == nil {
-		return "", fmt.Errorf("nil ConfigMap doesn't have data to hash")
+		return "", fmt.Errorf("%w: nil ConfigMap doesn't have data to hash", util.ErrNotFound)
 	}
 
 	data := ConfigMapData{
@@ -297,7 +297,7 @@ func VerifyConfigMap(
 	for _, field := range expectedFields {
 		val, ok := configMap.Data[field]
 		if !ok {
-			err := fmt.Errorf("field %s not found in ConfigMap %s", field, configMapName)
+			err := fmt.Errorf("%w: field %s not found in ConfigMap %s", util.ErrFieldNotFound, field, configMapName)
 			return "", ctrl.Result{}, err
 		}
 		values = append(values, val)

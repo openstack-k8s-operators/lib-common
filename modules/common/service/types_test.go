@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -40,7 +42,7 @@ func TestEndpointValidate(t *testing.T) {
 		{
 			name: "Wrong endpoint",
 			e:    Endpoint("wrooong"),
-			want: fmt.Errorf("invalid endpoint type: wrooong"),
+			want: fmt.Errorf("%w: wrooong", util.ErrInvalidEndpoint),
 		},
 	}
 

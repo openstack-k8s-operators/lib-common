@@ -80,7 +80,7 @@ func (o *OpenStack) GetRole(
 	}
 
 	if len(allRoles) == 0 {
-		return nil, fmt.Errorf("%s %s", roleName, RoleNotFound)
+		return nil, fmt.Errorf("%s %s", roleName, RoleNotFound) // nolint:err113
 	}
 
 	return &allRoles[0], nil

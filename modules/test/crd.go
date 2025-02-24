@@ -66,7 +66,7 @@ func getDependencyVersion(moduleName string, goModPath string) (string, string, 
 		return name, version, nil
 	}
 
-	return name, "", fmt.Errorf("cannot find %s in %s file", moduleName, goModPath)
+	return name, "", fmt.Errorf("cannot find %s in %s file", moduleName, goModPath) // nolint:err113
 }
 
 // EncodePath returns the safe encoding of the given module path.
@@ -82,7 +82,7 @@ func encodePath(path string) (encoding string, err error) {
 		if r == '!' || r >= utf8.RuneSelf {
 			// This should be disallowed by CheckPath, but diagnose anyway.
 			// The correctness of the encoding loop below depends on it.
-			return "", fmt.Errorf("internal error: inconsistency in EncodePath")
+			return "", fmt.Errorf("internal error: inconsistency in EncodePath") // nolint:err113
 		}
 		if 'A' <= r && r <= 'Z' {
 			haveUpper = true

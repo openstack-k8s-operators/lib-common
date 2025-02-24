@@ -19,6 +19,7 @@ package probes
 import (
 	"fmt"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -41,7 +42,7 @@ type ProbeConfig struct {
 func SetProbes(port int, disableNonTLSListeners bool, config ProbeConfig) (*v1.Probe, *v1.Probe, error) {
 
 	if port < 1 || port > 65535 {
-		return nil, nil, fmt.Errorf("invalid port: %d", port)
+		return nil, nil, fmt.Errorf("%w: %d", util.ErrInvalidPort, port)
 	}
 
 	var scheme v1.URIScheme

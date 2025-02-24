@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +62,7 @@ func GetPodFQDNList(ctx context.Context, h *helper.Helper, namespace string, lab
 	for _, pod := range podList.Items {
 		// Check for pod.Spec.Hostname and Subdomain
 		if pod.Spec.Hostname == "" || pod.Spec.Subdomain == "" {
-			return nil, fmt.Errorf("Pod does not have the required Spec Hostname and Subdomain details to accurately form a FQDN")
+			return nil, fmt.Errorf("%w: Pod does not have the required Spec Hostname and Subdomain details to accurately form a FQDN", util.ErrNoPodSubdomain)
 		}
 		podSvcNames = append(podSvcNames, fmt.Sprintf("%s.%s", pod.Spec.Hostname, pod.Spec.Subdomain))
 	}

@@ -62,7 +62,7 @@ func (o *OpenStack) CreateProject(
 		}
 		projectID = project.ID
 	} else {
-		return projectID, fmt.Errorf("multiple projects named \"%s\" found", p.Name)
+		return projectID, fmt.Errorf("multiple projects named \"%s\" found", p.Name) // nolint:err113
 	}
 
 	return projectID, nil
@@ -84,9 +84,9 @@ func (o *OpenStack) GetProject(
 	}
 
 	if len(allProjects) == 0 {
-		return nil, fmt.Errorf("%s %s", projectName, ProjectNotFound)
+		return nil, fmt.Errorf("%s %s", projectName, ProjectNotFound) // nolint:err113
 	} else if len(allProjects) > 1 {
-		return nil, fmt.Errorf("multiple project named \"%s\" found", projectName)
+		return nil, fmt.Errorf("multiple project named \"%s\" found", projectName) // nolint:err113
 	}
 
 	return &allProjects[0], nil

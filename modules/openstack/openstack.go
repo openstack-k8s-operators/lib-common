@@ -212,7 +212,7 @@ func GetAvailability(
 	} else if endpointInterface == string(service.EndpointPublic) {
 		availability = gophercloud.AvailabilityPublic
 	} else {
-		return availability, fmt.Errorf("endpoint interface %s not known", endpointInterface)
+		return availability, fmt.Errorf("endpoint interface %s not known", endpointInterface) // nolint:err113
 	}
 	return availability, nil
 }

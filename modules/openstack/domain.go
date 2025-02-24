@@ -38,7 +38,7 @@ func (o *OpenStack) CreateDomain(log logr.Logger, d Domain) (string, error) {
 		}
 		domainID = domain.ID
 	} else {
-		return domainID, fmt.Errorf("Multiple domains named \"%s\" found", d.Name)
+		return domainID, fmt.Errorf("Multiple domains named \"%s\" found", d.Name) // nolint:err113
 	}
 
 	return domainID, nil

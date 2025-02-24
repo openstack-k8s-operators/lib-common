@@ -208,7 +208,7 @@ func GetIssuerByLabels(
 	}
 
 	if len(issuers.Items) > 1 {
-		return nil, fmt.Errorf("more then one issuer found in namespace %s", namespace)
+		return nil, fmt.Errorf("%w: more then one issuer found in namespace %s", util.ErrMoreThanOne, namespace)
 	}
 
 	if len(issuers.Items) == 0 {
