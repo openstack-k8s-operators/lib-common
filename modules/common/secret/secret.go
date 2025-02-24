@@ -47,7 +47,7 @@ func Hash(secret *corev1.Secret) (string, error) {
 	}
 
 	if secret == nil {
-		return "", fmt.Errorf("nil Secret doesn't have data to hash")
+		return "", fmt.Errorf("%w: nil Secret doesn't have data to hash", util.ErrNotFound)
 	}
 
 	data := SecretData{
@@ -434,7 +434,7 @@ func VerifySecret(
 	for _, field := range expectedFields {
 		val, ok := secret.Data[field]
 		if !ok {
-			err := fmt.Errorf("field %s not found in Secret %s", field, secretName)
+			err := fmt.Errorf("%w: field %s not found in Secret %s", util.ErrFieldNotFound, field, secretName)
 			return "", ctrl.Result{}, err
 		}
 		values = append(values, val)

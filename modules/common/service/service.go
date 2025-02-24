@@ -339,7 +339,7 @@ func (s *Service) CreateOrPatch(
 				s.externalIPs = append(s.externalIPs, ingr.IP)
 			}
 		} else {
-			return ctrl.Result{}, fmt.Errorf("%s LoadBalancer IP still pending", s.service.Name)
+			return ctrl.Result{}, fmt.Errorf("%w: %s LoadBalancer IP still pending", util.ErrResourceIsNotReady, s.service.Name)
 		}
 	}
 

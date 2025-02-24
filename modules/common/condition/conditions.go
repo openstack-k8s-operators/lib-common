@@ -268,6 +268,9 @@ const (
 	// NetworkAttachmentsReadyErrorMessage
 	NetworkAttachmentsReadyErrorMessage = "NetworkAttachments error occurred %s"
 
+	// NetworkAttachmentsErrorMessage
+	NetworkAttachmentsErrorMessage = "NetworkAttachments error occurred not all pods have interfaces with ips as configured in NetworkAttachments: %s"
+
 	//
 	// CronJobReady condition messages
 	//

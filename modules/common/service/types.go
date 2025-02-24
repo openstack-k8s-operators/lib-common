@@ -23,6 +23,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
@@ -66,7 +67,7 @@ func (e *Endpoint) String() string {
 // Validate - validates if the endpoint is an allowed one.
 func (e *Endpoint) Validate() error {
 	if !slices.Contains([]Endpoint{EndpointInternal, EndpointPublic}, *e) {
-		return fmt.Errorf("invalid endpoint type: %s", e.String())
+		return fmt.Errorf("%w: %s", util.ErrInvalidEndpoint, e.String())
 	}
 	return nil
 }

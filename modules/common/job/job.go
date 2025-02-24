@@ -288,7 +288,7 @@ func (j *Job) waitOnJob(
 		if j.HasReachedLimit() {
 			errMsg = "Job has reached the specified backoff limit. Check job logs"
 		}
-		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New(errMsg))
+		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New(errMsg)) // nolint:err113
 	} else {
 		if existingJobHash != j.hash {
 			h.GetLogger().Info(

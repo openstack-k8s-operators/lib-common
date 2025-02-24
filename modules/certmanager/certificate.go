@@ -262,7 +262,7 @@ func EnsureCert(
 	_, hasTLSKey := certSecret.Data["tls.key"]
 	_, hasTLSCert := certSecret.Data["tls.crt"]
 	if !hasTLSCert || !hasTLSKey {
-		err := fmt.Errorf("TLS secret %s in namespace %s does not have the fields tls.crt and tls.key", certSecretName, namespace)
+		err := fmt.Errorf("%w: TLS secret %s in namespace %s does not have the fields tls.crt and tls.key", util.ErrFieldNotFound, certSecretName, namespace)
 		return nil, ctrl.Result{}, err
 	}
 
