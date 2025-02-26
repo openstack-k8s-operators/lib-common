@@ -23,4 +23,6 @@ var (
 	ErrMoreThanOne = errors.New("Only one should exist")
 	// ErrNoPodSubdomain indicates that there is no Subdomain or Hostname
 	ErrNoPodSubdomain = errors.New("No Subdomain or Hostname")
+	// ErrPodsInterfaces indicates that pod interfaces aren't configured
+	ErrPodsInterfaces = errors.New("not all pods have interfaces")
 )
