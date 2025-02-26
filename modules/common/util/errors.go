@@ -23,18 +23,6 @@ var (
 	ErrMoreThanOne = errors.New("Only one should exist")
 	// ErrNoPodSubdomain indicates that there is no Subdomain or Hostname
 	ErrNoPodSubdomain = errors.New("No Subdomain or Hostname")
-	// ErrCreateFailed indicates that the resource failed to create
-	ErrCreateFailed = errors.New("failed to create")
-	// ErrFetchFailed indicates that the resource failed to fetch
-	ErrFetchFailed = errors.New("failed to fetch")
-	// ErrDeleteFailed indicates that the resource failed to delete
-	ErrDeleteFailed = errors.New("failed to delete")
-	// ErrNoPodSubdomain indicates that ensure failed
-	ErrEnsureFailed = errors.New("failed to ensure")
-	// ErrNoPodSubdomain indicates that the resource failed to reconcile
-	ErrReconcileFailed = errors.New("failed to reconcile")
-	// ErrNoPodSubdomain indicates that the key can't be found
-	ErrKeyNotFound = errors.New("key not found in")
-	// ErrNoPodSubdomain indicates that pod interfaces aren't configured
+	// ErrPodsInterfaces indicates that pod interfaces aren't configured
 	ErrPodsInterfaces = errors.New("not all pods have interfaces")
 )
