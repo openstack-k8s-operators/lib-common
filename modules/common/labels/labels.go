@@ -86,3 +86,14 @@ func GetAppLabelSelector(
 ) metav1.LabelSelector {
 	return GetSingleLabelSelector(common.AppSelector, name)
 }
+
+// GetLabelSelector - utility function that returns a metav1.LabelSelector
+// based on the map[string]string that represents the k/v list passed to the
+// StatefulSet or Deployment as labelSelector
+func GetLabelSelector(
+	serviceLabels map[string]string,
+) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: serviceLabels,
+	}
+}
