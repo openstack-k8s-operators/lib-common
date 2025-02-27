@@ -22,6 +22,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// k8s recommended labels from https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/ .
+const (
+	K8sAppName      = "app.kubernetes.io/name"
+	K8sAppInstance  = "app.kubernetes.io/instance"
+	K8sAppVersion   = "app.kubernetes.io/version"
+	K8sAppComponent = "app.kubernetes.io/component"
+	K8sAppPartOf    = "app.kubernetes.io/part-of"
+	K8sAppManagedBy = "app.kubernetes.io/managed-by"
+	K8sHostname     = "kubernetes.io/hostname"
+)
+
 // GetGroupLabel -
 func GetGroupLabel(serviceName string) string {
 	return serviceName + ".openstack.org"
