@@ -37,10 +37,36 @@ import (
 //
 //     ValidateStorageRequest(<path>, "500M", "5G", true)
 func ValidateStorageRequest(basePath *field.Path, req string, min string, err bool) (admission.Warnings, field.ErrorList) {
-	storageRequestProd := resource.MustParse(min)
-	storageRequest := resource.MustParse(req)
 	allErrs := field.ErrorList{}
 	allWarn := []string{}
+
+	// If the StorageRequest is a wrong string, we must return
+	// an error. MustParse can't be used in this context as it
+	// generates panic() and we can't recover the operator.
+	storageRequest, parseError := resource.ParseQuantity(req)
+	if parseError != nil {
+		parseQuantityError := fmt.Sprintf("Field %s: %s is invalid",
+			basePath.Child("storageRequest").String(), req)
+		// Return error if err == true was provided, else a warning
+		if err {
+			allErrs = append(allErrs, field.Invalid(basePath, req, parseQuantityError))
+		} else {
+			allWarn = append(allWarn, parseQuantityError)
+		}
+		return allWarn, allErrs
+	}
+
+	storageRequestProd, parseError := resource.ParseQuantity(min)
+	if parseError != nil {
+		parseQuantityError := fmt.Sprintf("Invalid %s quantity", min)
+		// Return error if err == true was provided, else a warning
+		if err {
+			allErrs = append(allErrs, field.Invalid(basePath, min, parseQuantityError))
+		} else {
+			allWarn = append(allWarn, parseQuantityError)
+		}
+		return allWarn, allErrs
+	}
 
 	if storageRequest.Cmp(storageRequestProd) < 0 {
 		res := fmt.Sprintf("%s: %s is not appropriate for production! For production use at least %s!",

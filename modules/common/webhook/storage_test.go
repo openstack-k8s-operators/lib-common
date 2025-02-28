@@ -65,6 +65,30 @@ func TestValidateStorageRequest(t *testing.T) {
 			wantErr:  false,
 			wantWarn: false,
 		},
+		{
+			name:     "req is a wrong string, want err",
+			req:      "foo",
+			min:      "500M",
+			err:      true,
+			wantErr:  true,
+			wantWarn: false,
+		},
+		{
+			name:     "min is a wrong string, want warn",
+			req:      "500M",
+			min:      "foo",
+			err:      false,
+			wantErr:  false,
+			wantWarn: true,
+		},
+		{
+			name:     "both are wrong strings, want err",
+			req:      "foo",
+			min:      "bar",
+			err:      true,
+			wantErr:  true,
+			wantWarn: false,
+		},
 	}
 
 	for _, tt := range tests {
