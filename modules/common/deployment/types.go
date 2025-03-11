@@ -22,8 +22,31 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+const (
+	// DeploymentPollCompleted -
+	DeploymentPollCompleted = "Completed"
+	// DeploymentPollCompletedMessage -
+	DeploymentPollCompletedMessage = "%s Completed"
+	// DeploymentPollProgressing -
+	DeploymentPollProgressing = "Progressing"
+	// DeploymentPollProgressingMessage -
+	DeploymentPollProgressingMessage = "%s - %d/%d replicas updated"
+	// DeploymentPollProgressDeadlineExceeded -
+	DeploymentPollProgressDeadlineExceeded = "ProgressDeadlineExceeded"
+	// DeploymentPollProgressDeadlineExceededMessage -
+	DeploymentPollProgressDeadlineExceededMessage = "%s ProgressDeadlineExceeded - %s"
+	// DefaultPollInterval -
+	DefaultPollInterval = 2 * time.Second
+	// DefaultPollTimeout -
+	DefaultPollTimeout = 20 * time.Second
+)
+
 // Deployment -
 type Deployment struct {
-	deployment *appsv1.Deployment
-	timeout    time.Duration
+	deployment          *appsv1.Deployment
+	timeout             time.Duration
+	rolloutStatus       *string
+	rolloutMessage      string
+	rolloutPollInterval *time.Duration
+	rolloutPollTimeout  *time.Duration
 }
