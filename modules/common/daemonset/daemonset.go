@@ -63,6 +63,7 @@ func (d *DaemonSet) CreateOrPatch(
 		daemonset.Annotations = util.MergeStringMaps(daemonset.Annotations, d.daemonset.Annotations)
 		daemonset.Labels = util.MergeStringMaps(daemonset.Labels, d.daemonset.Labels)
 		daemonset.Spec.Template = d.daemonset.Spec.Template
+		daemonset.Spec.UpdateStrategy = d.daemonset.Spec.UpdateStrategy
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), daemonset, h.GetScheme())
 		if err != nil {
