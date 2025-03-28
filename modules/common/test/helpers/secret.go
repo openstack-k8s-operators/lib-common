@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,6 +35,16 @@ func (tc *TestHelper) GetSecret(name types.NamespacedName) corev1.Secret {
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
 
 	return *secret
+}
+
+// GetSecrets retrieves all secrets by namespace
+func (tc *TestHelper) GetSecrets(namespace string) *corev1.SecretList {
+	scerets := &corev1.SecretList{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.List(tc.Ctx, scerets, client.InNamespace(namespace))).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	return scerets
 }
 
 // CreateSecret creates a new Secret resource with provided data.

@@ -105,6 +105,16 @@ func (tc *TestHelper) GetCert(name types.NamespacedName) *certmgrv1.Certificate 
 	return instance
 }
 
+// GetCerts retrieves all certs by namespace
+func (tc *TestHelper) GetCerts(namespace string) *certmgrv1.CertificateList {
+	certs := &certmgrv1.CertificateList{}
+	gomega.Eventually(func(g gomega.Gomega) {
+		g.Expect(tc.K8sClient.List(tc.Ctx, certs, client.InNamespace(namespace))).Should(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	return certs
+}
+
 // AssertCertDoesNotExist ensures the Certificate resource does not exist in a k8s cluster.
 func (tc *TestHelper) AssertCertDoesNotExist(name types.NamespacedName) {
 	instance := &certmgrv1.Certificate{}
