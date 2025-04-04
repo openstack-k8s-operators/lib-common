@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/onsi/gomega"
@@ -59,8 +60,10 @@ func (tc *TestHelper) SimulateDeploymentAnyNumberReplicaReady(name types.Namespa
 	gomega.Eventually(func(g gomega.Gomega) {
 		deployment := tc.GetDeployment(name)
 
+		deployment.Status.AvailableReplicas = replica
 		deployment.Status.Replicas = replica
 		deployment.Status.ReadyReplicas = replica
+		deployment.Status.UpdatedReplicas = replica
 		deployment.Status.ObservedGeneration = deployment.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
@@ -77,8 +80,10 @@ func (tc *TestHelper) SimulateDeploymentReplicaReady(name types.NamespacedName) 
 	gomega.Eventually(func(g gomega.Gomega) {
 		deployment := tc.GetDeployment(name)
 
+		deployment.Status.AvailableReplicas = *deployment.Spec.Replicas
 		deployment.Status.Replicas = *deployment.Spec.Replicas
 		deployment.Status.ReadyReplicas = *deployment.Spec.Replicas
+		deployment.Status.UpdatedReplicas = *deployment.Spec.Replicas
 		deployment.Status.ObservedGeneration = deployment.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
@@ -139,8 +144,10 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 
 	gomega.Eventually(func(g gomega.Gomega) {
 		depl := tc.GetDeployment(name)
+		depl.Status.AvailableReplicas = *depl.Spec.Replicas
 		depl.Status.Replicas = *depl.Spec.Replicas
 		depl.Status.ReadyReplicas = *depl.Spec.Replicas
+		depl.Status.UpdatedReplicas = *depl.Spec.Replicas
 		depl.Status.ObservedGeneration = depl.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, depl)).To(gomega.Succeed())
 
@@ -156,4 +163,107 @@ func (tc *TestHelper) AssertDeploymentDoesNotExist(name types.NamespacedName) {
 		err := tc.K8sClient.Get(tc.Ctx, name, instance)
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+}
+
+// SimulateDeploymentProgressing function retrieves the Deployment resource and
+// simulate that replicas are progressing
+// Example usage:
+//
+//	th.SimulateDeploymentProgressing(ironicNames.INAName)
+func (tc *TestHelper) SimulateDeploymentProgressing(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		deployment := tc.GetDeployment(name)
+
+		deployment.Status.AvailableReplicas = *deployment.Spec.Replicas
+		deployment.Status.Replicas = *deployment.Spec.Replicas + 1
+		deployment.Status.ReadyReplicas = *deployment.Spec.Replicas
+		deployment.Status.UpdatedReplicas = *deployment.Spec.Replicas
+		deployment.Status.ObservedGeneration = deployment.Generation
+
+		/*
+			conditions:
+			- lastTransitionTime: "2025-03-11T10:53:00Z"
+			  lastUpdateTime: "2025-03-11T10:53:00Z"
+			  message: Deployment has minimum availability.
+			  reason: MinimumReplicasAvailable
+			  status: "True"
+			  type: Available
+			- lastTransitionTime: "2025-03-11T16:17:41Z"
+			  lastUpdateTime: "2025-03-11T16:27:31Z"
+			  message: ReplicaSet "keystone-869cb5d44c" is progressing.
+			  reason: ReplicaSetUpdated
+			  status: "True"
+			  type: Progressing
+		*/
+
+		deployment.Status.Conditions = []appsv1.DeploymentCondition{
+			{
+				Message: "Deployment has minimum availability",
+				Reason:  "MinimumReplicasAvailable",
+				Status:  corev1.ConditionTrue,
+				Type:    appsv1.DeploymentAvailable,
+			},
+			{
+				Message: fmt.Sprintf("ReplicaSet \"%s-869cb5d44c\" is progressing.", deployment.Name),
+				Reason:  "ReplicaSetUpdated",
+				Status:  corev1.ConditionTrue,
+				Type:    appsv1.DeploymentProgressing,
+			}}
+
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Deployment progressing", "on", name)
+}
+
+// SimulateDeploymentProgressDeadlineExceeded function retrieves the Deployment resource and
+// simulate that it hit ProgressDeadlineExceeded
+// Example usage:
+//
+//	th.SimulateDeploymentProgressDeadlineExceeded(ironicNames.INAName)
+func (tc *TestHelper) SimulateDeploymentProgressDeadlineExceeded(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		deployment := tc.GetDeployment(name)
+
+		deployment.Status.AvailableReplicas = *deployment.Spec.Replicas
+		deployment.Status.Replicas = *deployment.Spec.Replicas + 1
+		deployment.Status.ReadyReplicas = *deployment.Spec.Replicas
+		deployment.Status.UpdatedReplicas = *deployment.Spec.Replicas
+		deployment.Status.ObservedGeneration = deployment.Generation
+		deployment.Status.UnavailableReplicas = 1
+
+		/*
+			conditions:
+			- lastTransitionTime: "2025-03-14T11:09:42Z"
+			  lastUpdateTime: "2025-03-14T11:09:42Z"
+			  message: Deployment has minimum availability.
+			  reason: MinimumReplicasAvailable
+			  status: "True"
+			  type: Available
+			- lastTransitionTime: "2025-03-18T13:49:18Z"
+			  lastUpdateTime: "2025-03-18T13:49:18Z"
+			  message: ReplicaSet "keystone-5d9c965546" has timed out progressing.
+			  reason: ProgressDeadlineExceeded
+			  status: "False"
+			  type: Progressing
+		*/
+
+		deployment.Status.Conditions = []appsv1.DeploymentCondition{
+			{
+				Message: "Deployment has minimum availability",
+				Reason:  "MinimumReplicasAvailable",
+				Status:  corev1.ConditionTrue,
+				Type:    appsv1.DeploymentAvailable,
+			},
+			{
+				Message: fmt.Sprintf("ReplicaSet \"%s-869cb5d44c\" has timed out progressing.", deployment.Name),
+				Reason:  "ProgressDeadlineExceeded",
+				Status:  corev1.ConditionFalse,
+				Type:    appsv1.DeploymentProgressing,
+			}}
+
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, deployment)).To(gomega.Succeed())
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+
+	tc.Logger.Info("Simulated Deployment ProgressDeadlineExceeded", "on", name)
 }

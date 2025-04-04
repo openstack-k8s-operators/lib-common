@@ -47,8 +47,10 @@ func (tc *TestHelper) GetStatefulSet(name types.NamespacedName) *appsv1.Stateful
 func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName) {
 	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
+		ss.Status.AvailableReplicas = *ss.Spec.Replicas
 		ss.Status.Replicas = *ss.Spec.Replicas
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
+		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
@@ -108,8 +110,10 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 
 	gomega.Eventually(func(g gomega.Gomega) {
 		ss := tc.GetStatefulSet(name)
+		ss.Status.AvailableReplicas = *ss.Spec.Replicas
 		ss.Status.Replicas = *ss.Spec.Replicas
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
+		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
@@ -125,4 +129,24 @@ func (tc *TestHelper) AssertStatefulSetDoesNotExist(name types.NamespacedName) {
 		err := tc.K8sClient.Get(tc.Ctx, name, instance)
 		g.Expect(k8s_errors.IsNotFound(err)).To(gomega.BeTrue())
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+}
+
+// SimulateStatefulSetProgressing function retrieves the StatefulSet resource and
+// simulate that replicas are progressing
+// Example usage:
+//
+//	th.SimulateStatefulSetReplicaReady(types.NamespacedName{Name: "test-statefulset", Namespace: "test-namespace"})
+func (tc *TestHelper) SimulateStatefulSetProgressing(name types.NamespacedName) {
+	gomega.Eventually(func(g gomega.Gomega) {
+		ss := tc.GetStatefulSet(name)
+		ss.Status.AvailableReplicas = *ss.Spec.Replicas - 1
+		ss.Status.Replicas = *ss.Spec.Replicas
+		ss.Status.ReadyReplicas = *ss.Spec.Replicas - 1
+		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
+		ss.Status.ObservedGeneration = ss.Generation
+
+		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
+
+	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
+	tc.Logger.Info("Simulated statefulset progressing", "on", name)
 }
