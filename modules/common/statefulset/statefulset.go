@@ -138,3 +138,12 @@ func (s *StatefulSet) Delete(
 
 	return nil
 }
+
+// IsReady - validates when deployment is ready deployed to whats being requested
+// - the requested replicas in the spec matches the ReadyReplicas of the status
+// - both when the Generatation of the object matches the ObservedGeneration of the Status
+func IsReady(deployment appsv1.StatefulSet) bool {
+	return deployment.Spec.Replicas != nil &&
+		*deployment.Spec.Replicas == deployment.Status.ReadyReplicas &&
+		deployment.Generation == deployment.Status.ObservedGeneration
+}
