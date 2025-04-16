@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package probes provides utilities for configuring Kubernetes liveness and readiness probes
 package probes
 
 import (

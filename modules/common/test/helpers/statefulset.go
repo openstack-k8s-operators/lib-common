@@ -74,8 +74,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 			ObjectMeta: ss.Spec.Template.ObjectMeta,
 			Spec:       ss.Spec.Template.Spec,
 		}
-		pod.ObjectMeta.Namespace = name.Namespace
-		pod.ObjectMeta.Name = fmt.Sprintf("%s-%d", name.Name, i)
+		pod.Namespace = name.Namespace
+		pod.Name = fmt.Sprintf("%s-%d", name.Name, i)
 
 		// NOTE(gibi): If there is a mount that refers to a volume created via
 		// persistent volume claim then that mount won't have a corresponding

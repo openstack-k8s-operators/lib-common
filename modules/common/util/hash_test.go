@@ -19,7 +19,7 @@ package util
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 
 	env "github.com/openstack-k8s-operators/lib-common/modules/common/env"
 )

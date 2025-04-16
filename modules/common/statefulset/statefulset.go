@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package statefulset provides utilities for managing Kubernetes StatefulSet resources
 package statefulset
 
 import (
@@ -57,7 +58,7 @@ func (s *StatefulSet) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), statefulset, func() error {
 		// selector is immutable so we set this value only if
 		// a new object is going to be created
-		if statefulset.ObjectMeta.CreationTimestamp.IsZero() {
+		if statefulset.CreationTimestamp.IsZero() {
 			statefulset.Spec.Selector = s.statefulset.Spec.Selector
 		}
 
@@ -132,7 +133,7 @@ func (s *StatefulSet) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, s.statefulset)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting statefulset %s: %w", s.statefulset.Name, err)
+		err = fmt.Errorf("error deleting statefulset %s: %w", s.statefulset.Name, err)
 		return err
 	}
 

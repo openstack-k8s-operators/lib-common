@@ -1,9 +1,9 @@
-package util
+package util // nolint:revive
 
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 func TestMergeStringMaps(t *testing.T) {

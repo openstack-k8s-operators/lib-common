@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package helper provides common helper utilities for Kubernetes operations and client management
 package helper
 
 import (

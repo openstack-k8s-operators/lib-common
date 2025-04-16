@@ -159,7 +159,7 @@ func (i *Issuer) Delete(
 
 	err := h.GetClient().Delete(ctx, i.issuer)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting issuer %s: %w", i.issuer.Name, err)
+		return fmt.Errorf("error deleting issuer %s: %w", i.issuer.Name, err)
 	}
 
 	return nil
@@ -177,7 +177,7 @@ func GetIssuerByName(
 
 	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, issuer)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting issuer %s: %w", issuer.Name, err)
+		return nil, fmt.Errorf("error getting issuer %s: %w", issuer.Name, err)
 	}
 
 	return issuer, nil
@@ -204,7 +204,7 @@ func GetIssuerByLabels(
 
 	err := h.GetClient().List(ctx, issuers, listOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting issuer by label: %w", err)
+		return nil, fmt.Errorf("error getting issuer by label: %w", err)
 	}
 
 	if len(issuers.Items) > 1 {
