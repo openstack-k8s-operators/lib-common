@@ -29,7 +29,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	memcachedv1 "github.com/openstack-k8s-operators/infra-operator/apis/memcached/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/utils/ptr"
 )
 
 type conditionsGetter interface {
@@ -124,4 +126,13 @@ func GetEnvVarValue(envs []corev1.EnvVar, name string, defaultValue string) stri
 		}
 	}
 	return defaultValue
+}
+
+// GetDefaultMemcachedSpec return memcachedv1.MemcachedSpec for test-helpers in operators
+func GetDefaultMemcachedSpec() memcachedv1.MemcachedSpec {
+	return memcachedv1.MemcachedSpec{
+		MemcachedSpecCore: memcachedv1.MemcachedSpecCore{
+			Replicas: ptr.To(int32(3)),
+		},
+	}
 }
