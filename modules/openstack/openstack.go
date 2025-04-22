@@ -47,6 +47,7 @@ type AuthOpts struct {
 	Username   string
 	Password   string
 	TenantName string
+	TenantID   string
 	DomainName string
 	Region     string
 	Scope      *gophercloud.AuthScope
@@ -70,6 +71,7 @@ func GetOpenStackProvider(
 		Username:         cfg.Username,
 		Password:         cfg.Password,
 		TenantName:       cfg.TenantName,
+		TenantID:         cfg.TenantID,
 		DomainName:       cfg.DomainName,
 	}
 	if cfg.Scope != nil {
