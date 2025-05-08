@@ -19,6 +19,7 @@ package annotations
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 // NetworkAttachmentAnnot pod annotation for network-attachment-definition
@@ -53,4 +54,29 @@ func GetNADAnnotation(namespace string, nads []string) (map[string]string, error
 	}
 
 	return map[string]string{NetworkAttachmentAnnot: string(networks)}, nil
+}
+
+// GetBoolFromAnnotation - it returns a boolean from a string annotation
+// e.g. glance.openstack.org/wsgi: "true" returns true as a boolean type
+//
+// Cases covered by this function:
+// 1. the annotation does not exist -> false, false, nil
+// 2. the annotation exist and is not a valid boolean -> false, true, error
+// 3. the annotation exists and is a valid False bool -> false, true, nil
+// 4. the annotation exists and is a valid True bool -> true, true, nil
+func GetBoolFromAnnotation(
+	ann map[string]string,
+	key string,
+) (bool, bool, error) {
+	// Try to get the value associated to the annotation key
+	value, exists := ann[key]
+	if !exists {
+		return false, false, nil
+	}
+	result, err := strconv.ParseBool(value)
+	if err != nil {
+		// the annotation is not a valid boolean, return an error
+		return false, exists, err
+	}
+	return result, exists, nil
 }
