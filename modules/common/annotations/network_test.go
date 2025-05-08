@@ -17,9 +17,8 @@ limitations under the License.
 package annotations
 
 import (
-	"testing"
-
 	. "github.com/onsi/gomega"
+	"testing"
 )
 
 func TestGetNADAnnotation(t *testing.T) {
@@ -60,4 +59,43 @@ func TestGetNADAnnotation(t *testing.T) {
 			g.Expect(networkAnnotation).To(BeEquivalentTo(tt.want))
 		})
 	}
+}
+
+func TestGetBoolFromAnnotation(t *testing.T) {
+	ann := map[string]string{}
+	testKey := "service.example.org/key"
+	var value bool
+	var exists bool
+	var err error
+
+	t.Run("", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Case 1: empty annotation map (the key does not exist)
+		value, exists, err = GetBoolFromAnnotation(ann, testKey)
+		g.Expect(exists).To(BeFalse())
+		g.Expect(value).To(BeFalse())
+		g.Expect(err).NotTo(HaveOccurred())
+
+		// Case 2: testKey exists but is not a valid bool
+		ann[testKey] = "foo"
+		value, exists, err = GetBoolFromAnnotation(ann, testKey)
+		g.Expect(value).To(BeFalse())
+		g.Expect(exists).To(BeTrue())
+		g.Expect(err).To(HaveOccurred())
+
+		// Case 3: testKey exists and is False
+		ann[testKey] = "false"
+		value, exists, err = GetBoolFromAnnotation(ann, testKey)
+		g.Expect(value).To(BeFalse())
+		g.Expect(exists).To(BeTrue())
+		g.Expect(err).ToNot(HaveOccurred())
+
+		// Case 4: testKey exists and is True
+		ann[testKey] = "true"
+		value, exists, err = GetBoolFromAnnotation(ann, testKey)
+		g.Expect(value).To(BeTrue())
+		g.Expect(exists).To(BeTrue())
+		g.Expect(err).ToNot(HaveOccurred())
+	})
 }
