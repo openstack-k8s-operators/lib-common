@@ -68,6 +68,9 @@ const (
 	// RabbitMqTransportURLReadyCondition Status=True condition which indicates if the RabbitMQ TransportURLUrl is ready
 	RabbitMqTransportURLReadyCondition Type = "RabbitMqTransportURLReady"
 
+	// NotificationBusInstanceReadyCondition Status=True condition which indicates if the Notification TransportURLUrl is ready
+	NotificationBusInstanceReadyCondition Type = "NotificationBusInstanceReady"
+
 	// AnsibleEECondition Status=True condition when the AnsibleEE run has been created ok
 	AnsibleEECondition Type = "AnsibleEEReady"
 
@@ -327,6 +330,21 @@ const (
 
 	// RabbitMqTransportURLReadyErrorMessage
 	RabbitMqTransportURLReadyErrorMessage = "RabbitMqTransportURL error occured %s"
+
+	//
+	// NotificationBusInstanceReady condition messages
+	//
+	// NotificationBusInstanceReadyInitMessage
+	NotificationBusInstanceReadyInitMessage = "NotificationBusInstance not started"
+
+	// NotificationBusInstanceReadyRunningMessage
+	NotificationBusInstanceReadyRunningMessage = "NotificationBusInstance creation in progress"
+
+	// NotificationBusInstanceReadyMessage
+	NotificationBusInstanceReadyMessage = "NotificationBusInstance successfully created"
+
+	// NotificationBusInstanceReadyErrorMessage
+	NotificationBusInstanceReadyErrorMessage = "NotificationBusInstance error occured %s"
 
 	//
 	// AnsibleEEReady condition messages
