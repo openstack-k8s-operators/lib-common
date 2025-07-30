@@ -89,6 +89,9 @@ const (
 	// TopologyReadyCondition Status=True condition that indicates a CR
 	// exists and is referenced by the Service
 	TopologyReadyCondition Type = "TopologyReady"
+
+	// PDBReadyCondition Status=True condition which indicates if PodDisruptionBudget is configured and operational
+	PDBReadyCondition Type = "PDBReady"
 )
 
 // Common Reasons used by API objects.
@@ -379,6 +382,19 @@ const (
 	TopologyReadyMessage = "Topology config create completed"
 	// TopologyReadyErrorMessage
 	TopologyReadyErrorMessage = "Topology config create error occurred %s"
+
+	//
+	// PDBReady condition messages
+	//
+
+	// PDBReadyInitMessage
+	PDBReadyInitMessage = "PodDisruptionBudget not configured"
+
+	// PDBReadyMessage
+	PDBReadyMessage = "PodDisruptionBudget completed"
+
+	// PDBReadyErrorMessage
+	PDBReadyErrorMessage = "PodDisruptionBudget error occured %s"
 )
 
 // Common Messages used for service accounts, roles, role bindings
