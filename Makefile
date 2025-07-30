@@ -19,7 +19,7 @@ GINKGO ?= $(LOCALBIN)/ginkgo
 
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION ?= v0.14.0
-GOTOOLCHAIN_VERSION ?= go1.21.0
+GOTOOLCHAIN_VERSION ?= go1.22.0
 GOLANGCI_VERSION ?= v1.64.8
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
