@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 var (
@@ -276,7 +276,7 @@ func TestRemoveNewLinesInSections(t *testing.T) {
 
 func TestGetTemplatesPath(t *testing.T) {
 	// set the env var used to specify the template path in the container case
-	os.Setenv("OPERATOR_TEMPLATES", templatePath)
+	_ = os.Setenv("OPERATOR_TEMPLATES", templatePath)
 
 	t.Run("Lower string", func(t *testing.T) {
 		g := NewWithT(t)
@@ -296,7 +296,7 @@ func TestGetAllTemplates(t *testing.T) {
 	}
 
 	// set the env var used to specify the template path in the container case
-	os.Setenv("OPERATOR_TEMPLATES", filepath.Join(path.Dir(filename), templatePath))
+	_ = os.Setenv("OPERATOR_TEMPLATES", filepath.Join(path.Dir(filename), templatePath))
 
 	tests := []struct {
 		name     string
@@ -352,7 +352,7 @@ func TestGetTemplateData(t *testing.T) {
 	}
 
 	// set the env var used to specify the template path in the container case
-	os.Setenv("OPERATOR_TEMPLATES", filepath.Join(path.Dir(filename), templatePath))
+	_ = os.Setenv("OPERATOR_TEMPLATES", filepath.Join(path.Dir(filename), templatePath))
 
 	tests := []struct {
 		name  string

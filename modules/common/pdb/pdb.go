@@ -126,7 +126,7 @@ func (p *PDB) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, p.pdb)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting PodDisruptionBudget %s: %w", p.pdb.Name, err)
+		return fmt.Errorf("error deleting PodDisruptionBudget %s: %w", p.pdb.Name, err)
 	}
 
 	return nil
@@ -170,7 +170,7 @@ func DeletePDBWithName(
 
 	err := h.GetClient().Delete(ctx, pdb)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting PodDisruptionBudget %s/%s: %w", namespace, name, err)
+		return fmt.Errorf("error deleting PodDisruptionBudget %s/%s: %w", namespace, name, err)
 	}
 
 	return nil

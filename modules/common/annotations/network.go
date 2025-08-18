@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package annotations provides utilities for managing network annotations and network attachment definitions
 package annotations
 
 import (

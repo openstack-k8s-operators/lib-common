@@ -107,8 +107,8 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 			ObjectMeta: depl.Spec.Template.ObjectMeta,
 			Spec:       depl.Spec.Template.Spec,
 		}
-		pod.ObjectMeta.Namespace = name.Namespace
-		pod.ObjectMeta.GenerateName = name.Name
+		pod.Namespace = name.Namespace
+		pod.GenerateName = name.Name
 		// NOTE(gibi): If there is a mount that refers to a volume created via
 		// persistent volume claim then that mount won't have a corresponding
 		// volume created in EnvTest as we are not simulating the k8s volume

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package clusterdns provides utilities for DNS cluster domain operations
 package clusterdns
 
 // GetDNSClusterDomain - Return openshift dns Cluster Domain name

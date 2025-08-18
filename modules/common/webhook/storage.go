@@ -36,7 +36,7 @@ import (
 //   - return an error
 //
 //     ValidateStorageRequest(<path>, "500M", "5G", true)
-func ValidateStorageRequest(basePath *field.Path, req string, min string, err bool) (admission.Warnings, field.ErrorList) {
+func ValidateStorageRequest(basePath *field.Path, req string, minReq string, err bool) (admission.Warnings, field.ErrorList) {
 	allErrs := field.ErrorList{}
 	allWarn := []string{}
 
@@ -56,12 +56,12 @@ func ValidateStorageRequest(basePath *field.Path, req string, min string, err bo
 		return allWarn, allErrs
 	}
 
-	storageRequestProd, parseError := resource.ParseQuantity(min)
+	storageRequestProd, parseError := resource.ParseQuantity(minReq)
 	if parseError != nil {
-		parseQuantityError := fmt.Sprintf("Invalid %s quantity", min)
+		parseQuantityError := fmt.Sprintf("Invalid %s quantity", minReq)
 		// Return error if err == true was provided, else a warning
 		if err {
-			allErrs = append(allErrs, field.Invalid(basePath, min, parseQuantityError))
+			allErrs = append(allErrs, field.Invalid(basePath, minReq, parseQuantityError))
 		} else {
 			allWarn = append(allWarn, parseQuantityError)
 		}
@@ -70,7 +70,7 @@ func ValidateStorageRequest(basePath *field.Path, req string, min string, err bo
 
 	if storageRequest.Cmp(storageRequestProd) < 0 {
 		res := fmt.Sprintf("%s: %s is not appropriate for production! For production use at least %s!",
-			basePath.Child("storageRequest").String(), req, min)
+			basePath.Child("storageRequest").String(), req, minReq)
 		// Return error if err == true was provided, else a warning
 		if err {
 			allErrs = append(allErrs, field.Invalid(basePath, req, res))

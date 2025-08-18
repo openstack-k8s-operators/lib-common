@@ -19,7 +19,7 @@ package env
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 	corev1 "k8s.io/api/core/v1"
 )
 
