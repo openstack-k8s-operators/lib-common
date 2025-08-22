@@ -4,16 +4,14 @@ go 1.24
 
 require github.com/onsi/gomega v1.34.1
 
-require k8s.io/api v0.29.15
+require k8s.io/api v0.31.12
 
 require (
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.1 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
+	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	k8s.io/apimachinery v0.29.15 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
+	k8s.io/apimachinery v0.31.12 // indirect
 )
 
 require (
@@ -29,8 +27,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/klog/v2 v2.120.1 // indirect
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect; indirect // indirect
+	k8s.io/klog/v2 v2.130.1 // indirect
+	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d // indirect; indirect // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect; indirect // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
