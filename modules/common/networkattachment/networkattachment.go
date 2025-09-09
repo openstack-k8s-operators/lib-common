@@ -152,36 +152,38 @@ func EnsureNetworksAnnotation(
 	annotationString := map[string]string{}
 	netAnnotations := []networkv1.NetworkSelectionElement{}
 	for _, nad := range nadList {
-		gateway := ""
-
-		var data interface{}
-		if err := json.Unmarshal([]byte(nad.Spec.Config), &data); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
-		}
-
-		// use jsonpath to parse the cni config
-		jp := jsonpath.New(nad.Name)
-		jp.AllowMissingKeys(true) // Allow missing keys, for when no gateway configured
-
-		// Parse the JSONPath template, for now just `ipam.gateway`
-		err := jp.Parse(`{.ipam.gateway}`)
-		if err != nil {
-			return annotationString, fmt.Errorf("parse template error: %w", err)
-		}
-
-		buf := new(bytes.Buffer)
-		// get the gateway from the config
-		err = jp.Execute(buf, data)
-		if err != nil {
-			return annotationString, fmt.Errorf("parse execute template against nad %+v error: %w", nad.Spec.Config, err)
-		}
-
-		gateway = buf.String()
 
 		gatewayReq := []net.IP{}
-		if gateway != "" {
-			gatewayReq = append(gatewayReq, net.ParseIP(gateway))
+		if nad.Spec.Config != "" {
 
+			var data interface{}
+			if err := json.Unmarshal([]byte(nad.Spec.Config), &data); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
+			}
+
+			// use jsonpath to parse the cni config
+			jp := jsonpath.New(nad.Name)
+			jp.AllowMissingKeys(true) // Allow missing keys, for when no gateway configured
+
+			// Parse the JSONPath template, for now just `ipam.gateway`
+			err := jp.Parse(`{.ipam.gateway}`)
+			if err != nil {
+				return annotationString, fmt.Errorf("parse template error: %w", err)
+			}
+
+			buf := new(bytes.Buffer)
+			// get the gateway from the config
+			err = jp.Execute(buf, data)
+			if err != nil {
+				return annotationString, fmt.Errorf("parse execute template against nad %+v error: %w", nad.Spec.Config, err)
+			}
+
+			gateway := buf.String()
+
+			if gateway != "" {
+				gatewayReq = append(gatewayReq, net.ParseIP(gateway))
+
+			}
 		}
 
 		netAnnotations = append(
