@@ -26,7 +26,7 @@ type Handler struct {
 	// same request then the handler for the longer pattern will be executed.
 	// Using the same pattern in two handlers will cause a panic.
 	Pattern string
-	// Func the the function that handles the request by writing a response
+	// Func the function that handles the request by writing a response
 	Func func(http.ResponseWriter, *http.Request)
 }
 

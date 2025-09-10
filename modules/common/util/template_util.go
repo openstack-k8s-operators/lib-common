@@ -145,7 +145,7 @@ var tmpl *template.Template
 
 // template function which allows to execute a template from within
 // a template file.
-// name - name of the template as defined with with `{{define "some-template"}}your template{{end}}
+// name - name of the template as defined with `{{define "some-template"}}your template{{end}}
 // data - data to pass into to render the template for all can use `.`
 func execTempl(name string, data interface{}) (string, error) {
 	buf := &bytes.Buffer{}
