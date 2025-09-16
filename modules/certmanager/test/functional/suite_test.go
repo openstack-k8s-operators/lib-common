@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	// NOTE(mschuppert): CRD files in github.com/cert-manager/cert-manager/deploy/crds
-	// are templated and can not be be used as is. Rendered templates are in the
+	// are templated and can not be used as is. Rendered templates are in the
 	// openshift operator at github.com/openshift/cert-manager-operator/config/crd/bases
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{

@@ -217,7 +217,7 @@ spec:
                                       description: value specifies a header value.
                                         Dynamic values can be added. The value will
                                         be interpreted as an HAProxy format string
-                                        as defined in http://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
+                                        as defined in https://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
                                         and may use HAProxy's %[] syntax and otherwise
                                         must be a valid HTTP header value as defined
                                         in https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.
@@ -291,7 +291,7 @@ spec:
                         - message: Either the header value provided is not in correct
                             format or the sample fetcher/converter specified is not
                             allowed. The dynamic header value will be interpreted
-                            as an HAProxy format string as defined in http://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
+                            as an HAProxy format string as defined in https://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
                             and may use HAProxy's %[] syntax and otherwise must be
                             a valid HTTP header value as defined in https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.
                             Sample fetchers allowed are req.hdr, ssl_c_der. Converters
@@ -333,7 +333,7 @@ spec:
                                       description: value specifies a header value.
                                         Dynamic values can be added. The value will
                                         be interpreted as an HAProxy format string
-                                        as defined in http://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
+                                        as defined in https://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
                                         and may use HAProxy's %[] syntax and otherwise
                                         must be a valid HTTP header value as defined
                                         in https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.
@@ -407,7 +407,7 @@ spec:
                         - message: Either the header value provided is not in correct
                             format or the sample fetcher/converter specified is not
                             allowed. The dynamic header value will be interpreted
-                            as an HAProxy format string as defined in http://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
+                            as an HAProxy format string as defined in https://cbonte.github.io/haproxy-dconv/2.6/configuration.html#8.2.6
                             and may use HAProxy's %[] syntax and otherwise must be
                             a valid HTTP header value as defined in https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.
                             Sample fetchers allowed are res.hdr, ssl_c_der. Converters

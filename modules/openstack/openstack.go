@@ -155,7 +155,7 @@ func GetNovaOpenStackClient(
 	return &os, nil
 }
 
-// NewOpenStack creates a new new instance of the openstack identity struct from a config struct
+// NewOpenStack creates a new instance of the openstack identity struct from a config struct
 func NewOpenStack(
 	log logr.Logger,
 	cfg AuthOpts,
