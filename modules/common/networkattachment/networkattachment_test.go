@@ -184,6 +184,15 @@ func TestEnsureNetworksAnnotation(t *testing.T) {
 			want:    map[string]string{networkv1.NetworkAttachmentAnnot: "[]"},
 		},
 		{
+			name: "Empty NetworkAttachmentDefinition spec",
+			nadList: []networkv1.NetworkAttachmentDefinition{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: "one", Namespace: "foo"},
+				},
+			},
+			want: map[string]string{networkv1.NetworkAttachmentAnnot: "[{\"name\":\"one\",\"namespace\":\"foo\",\"interface\":\"one\"}]"},
+		},
+		{
 			name: "Single network",
 			nadList: []networkv1.NetworkAttachmentDefinition{
 				{
