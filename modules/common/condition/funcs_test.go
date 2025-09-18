@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
@@ -148,7 +148,7 @@ func TestSet(t *testing.T) {
 	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 
 			conditions.Set(tt.condition)
 
@@ -224,7 +224,7 @@ func TestRemove(t *testing.T) {
 	g := NewWithT(t)
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			tt.conditions.Remove(tt.cType)
 			g.Expect(tt.expected).To(haveSameConditionsOf(tt.conditions))
 		})
@@ -256,7 +256,7 @@ func TestReset(t *testing.T) {
 	g := NewWithT(t)
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			tt.conditions.Reset()
 			g.Expect(tt.expected).To(haveSameConditionsOf(tt.conditions))
 		})
@@ -400,7 +400,7 @@ func TestAllSubConditionIsTrue(t *testing.T) {
 	g.Expect(conditions).To(haveSameConditionsOf(CreateList(unknownReady)))
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 
 			conditions.Set(tt.condition)
 			g.Expect(conditions.AllSubConditionIsTrue()).To(BeIdenticalTo(tt.want))
@@ -651,14 +651,14 @@ func TestRestoreLastTransitionTimes(t *testing.T) {
 		// LastTransitionTime should change to time2 when HasSameCondition() passes.
 		{
 			name:  "Same condition state",
-			patch: func(condition *Condition) {},
+			patch: func(_ *Condition) {},
 			want:  time2,
 		},
 	}
 
 	g := NewWithT(t)
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.name, func(_ *testing.T) {
 			testCond := falseA.DeepCopy()
 			testCond.LastTransitionTime = time1
 			conditions := CreateList(testCond)

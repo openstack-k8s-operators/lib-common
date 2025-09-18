@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/test
 
-go 1.21
+go 1.24
 
 require (
 	github.com/go-logr/logr v1.4.3
@@ -12,7 +12,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.1 // indirect
-	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -24,6 +24,6 @@ replace github.com/openstack-k8s-operators/lib-common/modules/common => ../commo
 
 replace github.com/openstack-k8s-operators/lib-common/modules/openstack => ../openstack
 
-// mschuppert: map to latest commit from release-4.16 tag
+// mschuppert: map to latest commit from release-4.18 tag
 // must consistent within modules and service operators
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20240830023148-b7d0481c9094
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20250711200046-c86d80652a9e

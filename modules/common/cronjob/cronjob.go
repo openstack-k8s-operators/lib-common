@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package cronjob provides utilities for managing Kubernetes CronJob resources
 package cronjob
 
 import (
@@ -79,7 +80,7 @@ func (cj *CronJob) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, cj.cronjob)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting cronjob %s: %w", cj.cronjob.Name, err)
+		return fmt.Errorf("error deleting cronjob %s: %w", cj.cronjob.Name, err)
 	}
 
 	return nil

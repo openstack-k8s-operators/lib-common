@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+// Package util provides environment variable utilities
+package util // nolint:revive
 
 import "os"
 

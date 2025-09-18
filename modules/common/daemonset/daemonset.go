@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package daemonset provides utilities for managing Kubernetes DaemonSet resources
 package daemonset
 
 import (
@@ -57,7 +58,7 @@ func (d *DaemonSet) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), daemonset, func() error {
 		// DaemonSet selector is immutable so we set this value only if
 		// a new object is going to be created
-		if daemonset.ObjectMeta.CreationTimestamp.IsZero() {
+		if daemonset.CreationTimestamp.IsZero() {
 			daemonset.Spec.Selector = d.daemonset.Spec.Selector
 		}
 		daemonset.Annotations = util.MergeStringMaps(daemonset.Annotations, d.daemonset.Annotations)

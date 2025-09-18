@@ -17,8 +17,9 @@ limitations under the License.
 package annotations
 
 import (
-	. "github.com/onsi/gomega"
 	"testing"
+
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 func TestGetNADAnnotation(t *testing.T) {

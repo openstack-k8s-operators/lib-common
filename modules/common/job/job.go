@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package job provides utilities for managing Kubernetes Job resources and execution
 package job
 
 import (
@@ -289,15 +290,14 @@ func (j *Job) waitOnJob(
 			errMsg = "Job has reached the specified backoff limit. Check job logs"
 		}
 		return ctrl.Result{}, k8s_errors.NewInternalError(errors.New(errMsg)) // nolint:err113
-	} else {
-		if existingJobHash != j.hash {
-			h.GetLogger().Info(
-				"The hash of the job changed while the job was incomplete, " +
-					"waiting for the previous job to finish before re-run.")
-		}
-		h.GetLogger().Info("Job Status incomplete... requeuing")
-		return ctrl.Result{RequeueAfter: j.timeout}, nil
 	}
+	if existingJobHash != j.hash {
+		h.GetLogger().Info(
+			"The hash of the job changed while the job was incomplete, " +
+				"waiting for the previous job to finish before re-run.")
+	}
+	h.GetLogger().Info("Job Status incomplete... requeuing")
+	return ctrl.Result{RequeueAfter: j.timeout}, nil
 }
 
 // GetJobWithName func

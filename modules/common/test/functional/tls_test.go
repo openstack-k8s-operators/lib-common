@@ -17,8 +17,8 @@ package functional
 
 import (
 	"github.com/google/uuid"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" // nolint:revive
+	. "github.com/onsi/gomega"    // nolint:revive
 	"github.com/openstack-k8s-operators/lib-common/modules/common/service"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/tls"
 	"k8s.io/apimachinery/pkg/types"

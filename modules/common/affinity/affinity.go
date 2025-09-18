@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package affinity provides utilities for managing Kubernetes pod affinity and anti-affinity rules
 package affinity
 
 import (

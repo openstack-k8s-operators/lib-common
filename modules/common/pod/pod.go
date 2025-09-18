@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package pod provides utilities for managing Kubernetes Pod resources and operations
 package pod
 
 import (

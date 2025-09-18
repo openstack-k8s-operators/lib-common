@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package env provides utilities for managing environment variables in Kubernetes containers
 package env
 
 import (

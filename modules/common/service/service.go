@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package service provides utilities for managing Kubernetes Service resources
 package service
 
 import (
@@ -354,7 +355,7 @@ func (s *Service) Delete(
 
 	err := h.GetClient().Delete(ctx, s.service)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting service %s: %w", s.service.Name, err)
+		err = fmt.Errorf("error deleting service %s: %w", s.service.Name, err)
 		return err
 	}
 
@@ -379,7 +380,7 @@ func DeleteServicesWithLabel(
 	}
 
 	if err := h.GetClient().List(ctx, serviceList, listOpts...); err != nil {
-		err = fmt.Errorf("Error listing services for %s: %w", obj.GetName(), err)
+		err = fmt.Errorf("error listing services for %s: %w", obj.GetName(), err)
 		return err
 	}
 
@@ -387,7 +388,7 @@ func DeleteServicesWithLabel(
 	for _, pod := range serviceList.Items {
 		err := h.GetClient().Delete(ctx, &pod)
 		if err != nil && !k8s_errors.IsNotFound(err) {
-			err = fmt.Errorf("Error deleting service %s: %w", pod.Name, err)
+			err = fmt.Errorf("error deleting service %s: %w", pod.Name, err)
 			return err
 		}
 	}
@@ -409,7 +410,7 @@ func GetServicesListWithLabel(
 	// otherwise we hit "Error listing services for labels: map[ ... ] - unable to get: default because of unknown namespace for the cache"
 	serviceList, err := h.GetKClient().CoreV1().Services(namespace).List(ctx, metav1.ListOptions{LabelSelector: labelSelectorString})
 	if err != nil {
-		err = fmt.Errorf("Error listing services for labels: %v - %w", labelSelectorMap, err)
+		err = fmt.Errorf("error listing services for labels: %v - %w", labelSelectorMap, err)
 		return nil, err
 	}
 
@@ -428,7 +429,7 @@ func GetServiceWithName(
 
 	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, service)
 	if err != nil {
-		err = fmt.Errorf("Error getting service %s/%s - %w", name, namespace, err)
+		err = fmt.Errorf("error getting service %s/%s - %w", name, namespace, err)
 
 		return nil, err
 	}

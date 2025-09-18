@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package networkattachment provides utilities for managing network attachment definitions and network operations
 package networkattachment
 
 import (
@@ -42,7 +43,7 @@ func GetNADWithName(
 
 	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, nad)
 	if err != nil {
-		err = fmt.Errorf("Error getting network-attachment-definition %s/%s - %w", name, namespace, err)
+		err = fmt.Errorf("error getting network-attachment-definition %s/%s - %w", name, namespace, err)
 
 		return nil, err
 	}

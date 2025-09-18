@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package role provides utilities for managing Kubernetes Role and RoleBinding resources
 package role
 
 import (
@@ -91,7 +92,7 @@ func (r *Role) Delete(
 
 	err := h.GetClient().Delete(ctx, r.role)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting role %s: %w", r.role.Name, err)
+		err = fmt.Errorf("error deleting role %s: %w", r.role.Name, err)
 		return err
 	}
 

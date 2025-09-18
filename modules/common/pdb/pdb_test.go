@@ -233,7 +233,7 @@ func TestDeletePDBWithName(t *testing.T) {
 	var h *helper.Helper = nil // This would cause a panic if called, but we're testing the interface
 
 	// Test function signature - this should compile without errors
-	var testFunc func(context.Context, *helper.Helper, string, string) error = DeletePDBWithName
+	var testFunc = DeletePDBWithName
 	g.Expect(testFunc).ToNot(BeNil())
 
 	// In integration tests, you would test actual deletion:

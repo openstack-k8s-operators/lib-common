@@ -16,6 +16,7 @@ limitations under the License.
 
 // +kubebuilder:object:generate:=true
 
+// Package secret provides utilities for managing Kubernetes Secret resources and conditions
 package secret
 
 import condition "github.com/openstack-k8s-operators/lib-common/modules/common/condition"

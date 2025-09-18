@@ -165,7 +165,7 @@ func (s *VolumeSource) ToCoreVolumeSource() (*corev1.VolumeSource, error) {
 
 // ToCoreVolume - convert Volume to corev1.Volume
 func (s *Volume) ToCoreVolume() (*corev1.Volume, error) {
-	volSource, err := s.VolumeSource.ToCoreVolumeSource()
+	volSource, err := s.ToCoreVolumeSource()
 	if err != nil {
 		return nil, err
 	}

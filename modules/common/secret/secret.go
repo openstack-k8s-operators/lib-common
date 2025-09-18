@@ -327,7 +327,7 @@ func DeleteSecretsWithLabel(
 		client.MatchingLabels(labelSelectorMap),
 	)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error DeleteAllOf Secret: %w", err)
+		err = fmt.Errorf("error DeleteAllOf Secret: %w", err)
 		return err
 	}
 
@@ -426,7 +426,7 @@ func VerifySecret(
 				ctrl.Result{RequeueAfter: requeueTimeout},
 				nil
 		}
-		return "", ctrl.Result{}, fmt.Errorf("Get secret %s failed: %w", secretName, err)
+		return "", ctrl.Result{}, fmt.Errorf("get secret %s failed: %w", secretName, err)
 	}
 
 	// collect the secret values the caller expects to exist

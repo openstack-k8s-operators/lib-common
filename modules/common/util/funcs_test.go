@@ -16,12 +16,12 @@ limitations under the License.
 
 // +kubebuilder:object:generate:=true
 
-package util
+package util // nolint:revive
 
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 func TestGetOr(t *testing.T) {

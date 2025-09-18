@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package serviceaccount provides utilities for managing Kubernetes ServiceAccount resources
 package serviceaccount
 
 import (
@@ -91,7 +92,7 @@ func (s *ServiceAccount) Delete(
 
 	err := h.GetClient().Delete(ctx, s.serviceAccount)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting serviceAccount %s: %w", s.serviceAccount.Name, err)
+		err = fmt.Errorf("error deleting serviceAccount %s: %w", s.serviceAccount.Name, err)
 		return err
 	}
 

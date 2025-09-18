@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package deployment provides utilities for managing Kubernetes Deployment resources
 package deployment
 
 import (
@@ -57,7 +58,7 @@ func (d *Deployment) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), deployment, func() error {
 		// Deployment selector is immutable so we set this value only if
 		// a new object is going to be created
-		if deployment.ObjectMeta.CreationTimestamp.IsZero() {
+		if deployment.CreationTimestamp.IsZero() {
 			deployment.Spec.Selector = d.deployment.Spec.Selector
 		}
 		deployment.Annotations = util.MergeStringMaps(deployment.Annotations, d.deployment.Annotations)
@@ -100,7 +101,7 @@ func (d *Deployment) Delete(
 ) error {
 	err := h.GetClient().Delete(ctx, d.deployment)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting deployment %s: %w", d.deployment.Name, err)
+		return fmt.Errorf("error deleting deployment %s: %w", d.deployment.Name, err)
 	}
 
 	return nil

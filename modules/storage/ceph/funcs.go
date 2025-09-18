@@ -39,7 +39,7 @@ func GetPool(pools map[string]PoolSpec, service string) (string, error) {
 	case "glance":
 		return string(DefaultGlancePool), nil
 	default:
-		return string(CError), errors.New(string("No default pool found")) // nolint:err113
+		return string(CError), errors.New(string("no default pool found")) // nolint:err113
 	}
 }
 

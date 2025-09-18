@@ -11,6 +11,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package helpers provides common test utilities and helper functions for testing
 package helpers
 
 import (

@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package pvc provides utilities for managing Kubernetes PersistentVolumeClaim resources
 package pvc
 
 import (
@@ -62,7 +63,7 @@ func (p *Pvc) CreateOrPatch(
 		// following fields.  Technically it is possible to change the size
 		// request, but this requires dynamic provisioning and a storage
 		// class that supports such a thing.
-		if pvc.ObjectMeta.CreationTimestamp.IsZero() {
+		if pvc.CreationTimestamp.IsZero() {
 			pvc.Spec.Resources.Requests = p.pvc.Spec.Resources.Requests
 			pvc.Spec.StorageClassName = p.pvc.Spec.StorageClassName
 			pvc.Spec.AccessModes = p.pvc.Spec.AccessModes

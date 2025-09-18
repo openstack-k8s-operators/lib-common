@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package route provides utilities for managing OpenShift Route resources
 package route
 
 import (
@@ -184,7 +185,7 @@ func (r *Route) Delete(
 
 	err := h.GetClient().Delete(ctx, r.route)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting route %s: %w", r.route.Name, err)
+		return fmt.Errorf("error deleting route %s: %w", r.route.Name, err)
 	}
 
 	return nil

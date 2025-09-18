@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 func TestGetEnvVar(t *testing.T) {

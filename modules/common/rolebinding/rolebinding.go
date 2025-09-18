@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package rolebinding provides utilities for managing Kubernetes RoleBinding resources
 package rolebinding
 
 import (
@@ -94,7 +95,7 @@ func (r *RoleBinding) Delete(
 
 	err := h.GetClient().Delete(ctx, r.roleBinding)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		err = fmt.Errorf("Error deleting roleBinding %s: %w", r.roleBinding.Name, err)
+		err = fmt.Errorf("error deleting roleBinding %s: %w", r.roleBinding.Name, err)
 		return err
 	}
 

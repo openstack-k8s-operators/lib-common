@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package common
+// Package common provides shared constants and utilities used across all operators
+package common // nolint:revive
 
 // consts used by all operators
 const (

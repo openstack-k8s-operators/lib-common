@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" // nolint:revive
+	. "github.com/onsi/gomega"    // nolint:revive
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"go.uber.org/zap/zapcore"
 
@@ -42,7 +42,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 
-	. "github.com/openstack-k8s-operators/lib-common/modules/common/test/helpers"
+	. "github.com/openstack-k8s-operators/lib-common/modules/common/test/helpers" // nolint:revive
 	//+kubebuilder:scaffold:imports
 )
 

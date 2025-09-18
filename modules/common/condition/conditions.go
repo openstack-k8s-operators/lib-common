@@ -16,6 +16,7 @@ limitations under the License.
 
 // +kubebuilder:object:generate:=true
 
+// Package condition provides types and utilities for managing Kubernetes condition objects
 package condition
 
 // Common Condition Types used by API objects.

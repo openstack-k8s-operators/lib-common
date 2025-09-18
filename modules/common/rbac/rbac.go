@@ -1,3 +1,4 @@
+// Package rbac provides utilities for managing Kubernetes RBAC resources and reconciliation
 package rbac
 
 import (

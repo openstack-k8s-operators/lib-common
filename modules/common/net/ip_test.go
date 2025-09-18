@@ -19,7 +19,7 @@ package net
 import (
 	"testing"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 func TestSortIPs(t *testing.T) {

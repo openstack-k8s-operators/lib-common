@@ -24,7 +24,7 @@ import (
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint:revive
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
