@@ -158,7 +158,7 @@ func (c *Certificate) Delete(
 
 	err := h.GetClient().Delete(ctx, c.certificate)
 	if err != nil && !k8s_errors.IsNotFound(err) {
-		return fmt.Errorf("Error deleting certificate %s: %w", c.certificate.Name, err)
+		return fmt.Errorf("error deleting certificate %s: %w", c.certificate.Name, err)
 	}
 
 	return nil
@@ -177,7 +177,7 @@ func EnsureCert(
 
 	err := helper.GetClient().Get(ctx, types.NamespacedName{Name: request.IssuerName, Namespace: namespace}, issuer)
 	if err != nil {
-		err = fmt.Errorf("Error getting issuer %s/%s - %w", request.IssuerName, namespace, err)
+		err = fmt.Errorf("error getting issuer %s/%s - %w", request.IssuerName, namespace, err)
 
 		return nil, ctrl.Result{}, err
 	}

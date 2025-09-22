@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package object provides utilities for managing Kubernetes object metadata and operations
 package object
 
 import (

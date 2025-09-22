@@ -16,6 +16,7 @@ limitations under the License.
 
 // +kubebuilder:object:generate:=true
 
+// Package tls provides utilities for managing TLS certificates and configurations
 package tls
 
 import (

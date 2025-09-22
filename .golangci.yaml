@@ -1,3 +1,5 @@
+version: "2"
+
 linters:
   # Enable specific linter
   # https://golangci-lint.run/usage/linters/#enabled-by-default
@@ -5,16 +7,20 @@ linters:
     - errorlint
     - revive
     - ginkgolinter
-    - gofmt
     - govet
     - errname
     - err113
-linters-settings:
-  revive:
-    rules:
-      # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md#unused-parameter
+
+  settings:
+    revive:
+      rules:
       - name: unused-parameter
         severity: warning
         disabled: true
+
+formatters:
+  enable:
+    - gofmt
+
 run:
   timeout: 5m

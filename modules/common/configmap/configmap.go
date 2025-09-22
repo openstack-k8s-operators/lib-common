@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package configmap provides utilities for managing Kubernetes ConfigMap resources
 package configmap
 
 import (
@@ -202,7 +203,7 @@ func EnsureConfigMaps(
 func GetConfigMaps(
 	ctx context.Context,
 	h *helper.Helper,
-	obj client.Object,
+	_ client.Object,
 	configMaps []string,
 	namespace string,
 	envVars *map[string]env.Setter,
@@ -289,7 +290,7 @@ func VerifyConfigMap(
 				ctrl.Result{RequeueAfter: requeueTimeout},
 				nil
 		}
-		return "", ctrl.Result{}, fmt.Errorf("Get ConfigMap %s failed: %w", configMapName, err)
+		return "", ctrl.Result{}, fmt.Errorf("get ConfigMap %s failed: %w", configMapName, err)
 	}
 
 	// collect the ConfigMap values the caller expects to exist
