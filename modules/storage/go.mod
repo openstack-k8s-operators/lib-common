@@ -4,14 +4,14 @@ go 1.24
 
 require github.com/onsi/gomega v1.34.1
 
-require k8s.io/api v0.31.12
+require k8s.io/api v0.31.13
 
 require (
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	k8s.io/apimachinery v0.31.12 // indirect
+	k8s.io/apimachinery v0.31.13 // indirect
 )
 
 require (
