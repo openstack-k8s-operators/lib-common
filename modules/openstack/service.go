@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	services "github.com/gophercloud/gophercloud/openstack/identity/v3/services"
+	services "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/services"
 )
 
 // ServiceNotFound - service not found error message"
@@ -64,7 +65,7 @@ func (o *OpenStack) CreateService(
 			},
 		}
 
-		service, err := services.Create(o.GetOSClient(), createOpts).Extract()
+		service, err := services.Create(context.TODO(), o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return serviceID, err
 		}
@@ -86,7 +87,7 @@ func (o *OpenStack) GetService(
 		Name:        serviceName,
 	}
 
-	allPages, err := services.List(o.osclient, listOpts).AllPages()
+	allPages, err := services.List(o.osclient, listOpts).AllPages(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (o *OpenStack) UpdateService(
 			"description": s.Description,
 		},
 	}
-	_, err := services.Update(o.GetOSClient(), serviceID, updateOpts).Extract()
+	_, err := services.Update(context.TODO(), o.GetOSClient(), serviceID, updateOpts).Extract()
 	if err != nil {
 		return err
 	}
@@ -129,7 +130,7 @@ func (o *OpenStack) DeleteService(
 	serviceID string,
 ) error {
 	log.Info(fmt.Sprintf("Delete service with id %s", serviceID))
-	err := services.Delete(o.GetOSClient(), serviceID).ExtractErr()
+	err := services.Delete(context.TODO(), o.GetOSClient(), serviceID).ExtractErr()
 	if err != nil && !strings.Contains(err.Error(), "Resource not found") {
 		return err
 	}
