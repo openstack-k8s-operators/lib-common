@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	limits "github.com/gophercloud/gophercloud/openstack/identity/v3/limits"
-	registeredlimits "github.com/gophercloud/gophercloud/openstack/identity/v3/registeredlimits"
+	limits "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/limits"
+	registeredlimits "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/registeredlimits"
 )
 
 // Limit -
@@ -50,12 +51,13 @@ type Limit struct {
 
 // CreateLimit - create a limit in keystone for particular project if it does not exist
 func (o *OpenStack) CreateLimit(
+	ctx context.Context,
 	log logr.Logger,
 	l Limit,
 ) (string, error) {
 	var limitID string
 
-	allPages, err := limits.List(o.osclient, limits.ListOpts{ResourceName: l.ResourceName}).AllPages()
+	allPages, err := limits.List(o.osclient, limits.ListOpts{ResourceName: l.ResourceName}).AllPages(ctx)
 	if err != nil {
 		return limitID, err
 	}
@@ -80,7 +82,7 @@ func (o *OpenStack) CreateLimit(
 			},
 		}
 		log.Info(fmt.Sprintf("Creating limit %s", l.ResourceName))
-		createdLimits, err := limits.BatchCreate(o.osclient, createOpts).Extract()
+		createdLimits, err := limits.BatchCreate(ctx, o.osclient, createOpts).Extract()
 		if err != nil {
 			return limitID, err
 		}
@@ -112,12 +114,13 @@ type RegisteredLimit struct {
 
 // CreateOrUpdateRegisteredLimit - create or update limit in keystone (global across projects) if it does not exist
 func (o *OpenStack) CreateOrUpdateRegisteredLimit(
+	ctx context.Context,
 	log logr.Logger,
 	l RegisteredLimit,
 ) (string, error) {
 	var limitID string
 
-	allPages, err := registeredlimits.List(o.osclient, registeredlimits.ListOpts{ResourceName: l.ResourceName}).AllPages()
+	allPages, err := registeredlimits.List(o.osclient, registeredlimits.ListOpts{ResourceName: l.ResourceName}).AllPages(ctx)
 	if err != nil {
 		return limitID, err
 	}
@@ -134,7 +137,7 @@ func (o *OpenStack) CreateOrUpdateRegisteredLimit(
 			DefaultLimit: &l.DefaultLimit,
 		}
 		log.Info(fmt.Sprintf("Updating registered limit %s", l.ResourceName))
-		_, err := registeredlimits.Update(o.osclient, limitID, updateOpts).Extract()
+		_, err := registeredlimits.Update(ctx, o.osclient, limitID, updateOpts).Extract()
 		if err != nil {
 			return limitID, err
 		}
@@ -150,7 +153,7 @@ func (o *OpenStack) CreateOrUpdateRegisteredLimit(
 			},
 		}
 		log.Info(fmt.Sprintf("Creating registered limit %s", l.ResourceName))
-		createdLimits, err := registeredlimits.BatchCreate(o.osclient, createOpts).Extract()
+		createdLimits, err := registeredlimits.BatchCreate(ctx, o.osclient, createOpts).Extract()
 		if err != nil {
 			return limitID, err
 		}
@@ -164,11 +167,12 @@ func (o *OpenStack) CreateOrUpdateRegisteredLimit(
 
 // DeleteRegisteredLimit - delete limit from keystone
 func (o *OpenStack) DeleteRegisteredLimit(
+	ctx context.Context,
 	log logr.Logger,
 	registeredLimitID string,
 ) error {
 	log.Info(fmt.Sprintf("Deleting registered limit %s", registeredLimitID))
-	err := registeredlimits.Delete(o.osclient, registeredLimitID).ExtractErr()
+	err := registeredlimits.Delete(ctx, o.osclient, registeredLimitID).ExtractErr()
 	if err != nil {
 		return err
 	}
@@ -177,11 +181,12 @@ func (o *OpenStack) DeleteRegisteredLimit(
 
 // GetRegisteredLimit - Get existing registered limit by ID
 func (o *OpenStack) GetRegisteredLimit(
+	ctx context.Context,
 	log logr.Logger,
 	registeredLimitID string,
 ) (*registeredlimits.RegisteredLimit, error) {
 	log.Info(fmt.Sprintf("Fetching registered limit %s", registeredLimitID))
-	registeredLimit, err := registeredlimits.Get(o.osclient, registeredLimitID).Extract()
+	registeredLimit, err := registeredlimits.Get(ctx, o.osclient, registeredLimitID).Extract()
 	if err != nil {
 		return nil, err
 	}
@@ -190,6 +195,7 @@ func (o *OpenStack) GetRegisteredLimit(
 
 // ListRegisteredLimitsByResourceName - List all registered limits filtered by resource name
 func (o *OpenStack) ListRegisteredLimitsByResourceName(
+	ctx context.Context,
 	log logr.Logger,
 	resourceName string,
 ) ([]registeredlimits.RegisteredLimit, error) {
@@ -198,7 +204,7 @@ func (o *OpenStack) ListRegisteredLimitsByResourceName(
 	}
 
 	log.Info(fmt.Sprintf("Fetching registered limit %s", resourceName))
-	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages()
+	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +218,7 @@ func (o *OpenStack) ListRegisteredLimitsByResourceName(
 
 // ListRegisteredLimitsByServiceID - List all registered limits filtered by service id
 func (o *OpenStack) ListRegisteredLimitsByServiceID(
+	ctx context.Context,
 	log logr.Logger,
 	serviceID string,
 ) ([]registeredlimits.RegisteredLimit, error) {
@@ -220,7 +227,7 @@ func (o *OpenStack) ListRegisteredLimitsByServiceID(
 	}
 
 	log.Info(fmt.Sprintf("Fetching registered limit for service %s", serviceID))
-	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages()
+	allPages, err := registeredlimits.List(o.osclient, listOpts).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}

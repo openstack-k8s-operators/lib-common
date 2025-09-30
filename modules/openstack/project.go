@@ -17,10 +17,11 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	projects "github.com/gophercloud/gophercloud/openstack/identity/v3/projects"
+	projects "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/projects"
 )
 
 // Project -
@@ -35,11 +36,12 @@ const ProjectNotFound = "project not found"
 
 // CreateProject - creates project with projectName and projectDescription if it does not exist
 func (o *OpenStack) CreateProject(
+	ctx context.Context,
 	log logr.Logger,
 	p Project,
 ) (string, error) {
 	var projectID string
-	allPages, err := projects.List(o.osclient, projects.ListOpts{Name: p.Name, DomainID: p.DomainID}).AllPages()
+	allPages, err := projects.List(o.osclient, projects.ListOpts{Name: p.Name, DomainID: p.DomainID}).AllPages(ctx)
 	if err != nil {
 		return projectID, err
 	}
@@ -56,7 +58,7 @@ func (o *OpenStack) CreateProject(
 			DomainID:    p.DomainID,
 		}
 		log.Info(fmt.Sprintf("Creating project %s in %s", p.Name, p.DomainID))
-		project, err := projects.Create(o.osclient, createOpts).Extract()
+		project, err := projects.Create(ctx, o.osclient, createOpts).Extract()
 		if err != nil {
 			return projectID, err
 		}
@@ -70,11 +72,12 @@ func (o *OpenStack) CreateProject(
 
 // GetProject - gets project with projectName
 func (o *OpenStack) GetProject(
+	ctx context.Context,
 	log logr.Logger,
 	projectName string,
 	domainID string,
 ) (*projects.Project, error) {
-	allPages, err := projects.List(o.GetOSClient(), projects.ListOpts{Name: projectName, DomainID: domainID}).AllPages()
+	allPages, err := projects.List(o.GetOSClient(), projects.ListOpts{Name: projectName, DomainID: domainID}).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}

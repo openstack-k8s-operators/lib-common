@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	services "github.com/gophercloud/gophercloud/openstack/identity/v3/services"
+	services "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/services"
 )
 
 // ServiceNotFound - service not found error message"
@@ -37,12 +38,14 @@ type Service struct {
 
 // CreateService - create service
 func (o *OpenStack) CreateService(
+	ctx context.Context,
 	log logr.Logger,
 	s Service,
 ) (string, error) {
 	var serviceID string
 
 	service, err := o.GetService(
+		ctx,
 		log,
 		s.Type,
 		s.Name,
@@ -64,7 +67,7 @@ func (o *OpenStack) CreateService(
 			},
 		}
 
-		service, err := services.Create(o.GetOSClient(), createOpts).Extract()
+		service, err := services.Create(ctx, o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return serviceID, err
 		}
@@ -77,6 +80,7 @@ func (o *OpenStack) CreateService(
 
 // GetService - get service with type and name
 func (o *OpenStack) GetService(
+	ctx context.Context,
 	log logr.Logger,
 	serviceType string,
 	serviceName string,
@@ -86,7 +90,7 @@ func (o *OpenStack) GetService(
 		Name:        serviceName,
 	}
 
-	allPages, err := services.List(o.osclient, listOpts).AllPages()
+	allPages, err := services.List(o.osclient, listOpts).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +108,7 @@ func (o *OpenStack) GetService(
 
 // UpdateService - update service with type and name
 func (o *OpenStack) UpdateService(
+	ctx context.Context,
 	log logr.Logger,
 	s Service,
 	serviceID string,
@@ -116,7 +121,7 @@ func (o *OpenStack) UpdateService(
 			"description": s.Description,
 		},
 	}
-	_, err := services.Update(o.GetOSClient(), serviceID, updateOpts).Extract()
+	_, err := services.Update(ctx, o.GetOSClient(), serviceID, updateOpts).Extract()
 	if err != nil {
 		return err
 	}
@@ -125,11 +130,12 @@ func (o *OpenStack) UpdateService(
 
 // DeleteService - delete service with serviceID
 func (o *OpenStack) DeleteService(
+	ctx context.Context,
 	log logr.Logger,
 	serviceID string,
 ) error {
 	log.Info(fmt.Sprintf("Delete service with id %s", serviceID))
-	err := services.Delete(o.GetOSClient(), serviceID).ExtractErr()
+	err := services.Delete(ctx, o.GetOSClient(), serviceID).ExtractErr()
 	if err != nil && !strings.Contains(err.Error(), "Resource not found") {
 		return err
 	}

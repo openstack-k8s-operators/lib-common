@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	gophercloud "github.com/gophercloud/gophercloud"
-	endpoints "github.com/gophercloud/gophercloud/openstack/identity/v3/endpoints"
+	gophercloud "github.com/gophercloud/gophercloud/v2"
+	endpoints "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
 )
 
 // Endpoint -
@@ -34,12 +35,13 @@ type Endpoint struct {
 
 // CreateEndpoint - create endpoint
 func (o *OpenStack) CreateEndpoint(
+	ctx context.Context,
 	log logr.Logger,
 	e Endpoint,
 ) (string, error) {
-
 	// validate if endpoint already exist
 	allEndpoints, err := o.GetEndpoints(
+		ctx,
 		log,
 		e.ServiceID,
 		string(e.Availability))
@@ -59,7 +61,7 @@ func (o *OpenStack) CreateEndpoint(
 		ServiceID:    e.ServiceID,
 		URL:          e.URL,
 	}
-	createdEndpoint, err := endpoints.Create(o.osclient, createOpts).Extract()
+	createdEndpoint, err := endpoints.Create(ctx, o.osclient, createOpts).Extract()
 	if err != nil {
 		return "", err
 	}
@@ -69,6 +71,7 @@ func (o *OpenStack) CreateEndpoint(
 // GetEndpoints - get endpoints for the registered service. if endpointInterface
 // is provided, just return the endpoint for that type.
 func (o *OpenStack) GetEndpoints(
+	ctx context.Context,
 	log logr.Logger,
 	serviceID string,
 	endpointInterface string,
@@ -88,7 +91,7 @@ func (o *OpenStack) GetEndpoints(
 		listOpts.Availability = availability
 	}
 
-	allPages, err := endpoints.List(o.osclient, listOpts).AllPages()
+	allPages, err := endpoints.List(o.osclient, listOpts).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,19 +107,20 @@ func (o *OpenStack) GetEndpoints(
 
 // DeleteEndpoint - delete endpoint
 func (o *OpenStack) DeleteEndpoint(
+	ctx context.Context,
 	log logr.Logger,
 	e Endpoint,
 ) error {
 	log.Info(fmt.Sprintf("Deleting Endpoint %s %s ", e.Name, e.Availability))
 
 	// get all registered endpoints for the service/endpointInterface
-	allEndpoints, err := o.GetEndpoints(log, e.ServiceID, string(e.Availability))
+	allEndpoints, err := o.GetEndpoints(ctx, log, e.ServiceID, string(e.Availability))
 	if err != nil {
 		return err
 	}
 
 	for _, endpt := range allEndpoints {
-		err = endpoints.Delete(o.osclient, endpt.ID).ExtractErr()
+		err = endpoints.Delete(ctx, o.osclient, endpt.ID).ExtractErr()
 		if err != nil {
 			return err
 		}
@@ -129,6 +133,7 @@ func (o *OpenStack) DeleteEndpoint(
 
 // UpdateEndpoint -
 func (o *OpenStack) UpdateEndpoint(
+	ctx context.Context,
 	log logr.Logger,
 	e Endpoint,
 	endpointID string,
@@ -143,7 +148,7 @@ func (o *OpenStack) UpdateEndpoint(
 		ServiceID:    e.ServiceID,
 		URL:          e.URL,
 	}
-	endpt, err := endpoints.Update(o.osclient, endpointID, updateOpts).Extract()
+	endpt, err := endpoints.Update(ctx, o.osclient, endpointID, updateOpts).Extract()
 	if err != nil {
 		return "", err
 	}
