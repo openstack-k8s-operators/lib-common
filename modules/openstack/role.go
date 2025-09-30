@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	roles "github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
+	roles "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
 )
 
 // RoleNotFound - role not found error message"
@@ -54,7 +55,7 @@ func (o *OpenStack) CreateRole(
 		createOpts := roles.CreateOpts{
 			Name: roleName,
 		}
-		role, err := roles.Create(o.osclient, createOpts).Extract()
+		role, err := roles.Create(context.TODO(), o.osclient, createOpts).Extract()
 		if err != nil {
 			return roleID, err
 		}
@@ -70,7 +71,7 @@ func (o *OpenStack) GetRole(
 	log logr.Logger,
 	roleName string,
 ) (*roles.Role, error) {
-	allPages, err := roles.List(o.osclient, roles.ListOpts{Name: roleName}).AllPages()
+	allPages, err := roles.List(o.osclient, roles.ListOpts{Name: roleName}).AllPages(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func (o *OpenStack) AssignUserRole(
 		UserID:         userID,
 		RoleID:         role.ID,
 	}
-	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -117,9 +118,10 @@ func (o *OpenStack) AssignUserRole(
 	if assignUser {
 		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
 
-		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+		err = roles.Assign(context.TODO(), o.osclient, role.ID, roles.AssignOpts{
 			UserID:    userID,
-			ProjectID: projectID}).ExtractErr()
+			ProjectID: projectID,
+		}).ExtractErr()
 		if err != nil {
 			return err
 		}
@@ -146,7 +148,7 @@ func (o *OpenStack) AssignUserDomainRole(
 		UserID:        userID,
 		RoleID:        role.ID,
 	}
-	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -159,9 +161,10 @@ func (o *OpenStack) AssignUserDomainRole(
 	if assignUser {
 		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
 
-		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+		err = roles.Assign(context.TODO(), o.osclient, role.ID, roles.AssignOpts{
 			UserID:   userID,
-			DomainID: domainID}).ExtractErr()
+			DomainID: domainID,
+		}).ExtractErr()
 		if err != nil {
 			return err
 		}

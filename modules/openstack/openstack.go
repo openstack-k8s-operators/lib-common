@@ -17,6 +17,7 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -24,8 +25,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	gophercloud "github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
+	gophercloud "github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
 	service "github.com/openstack-k8s-operators/lib-common/modules/common/service"
 )
 
@@ -122,7 +123,7 @@ func GetOpenStackProvider(
 	providerClient.HTTPClient.Transport = transport
 
 	// authenticate the client
-	err = openstack.Authenticate(providerClient, opts)
+	err = openstack.Authenticate(context.TODO(), providerClient, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +137,6 @@ func GetNovaOpenStackClient(
 	cfg AuthOpts,
 	endpointOpts gophercloud.EndpointOpts,
 ) (*OpenStack, error) {
-
 	providerClient, err := GetOpenStackProvider(cfg)
 	if err != nil {
 		return nil, err
@@ -160,7 +160,6 @@ func NewOpenStack(
 	log logr.Logger,
 	cfg AuthOpts,
 ) (*OpenStack, error) {
-
 	providerClient, err := GetOpenStackProvider(cfg)
 	if err != nil {
 		return nil, err

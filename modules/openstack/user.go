@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	users "github.com/gophercloud/gophercloud/openstack/identity/v3/users"
+	users "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
 )
 
 // UserNotFound - user not found error message"
@@ -66,7 +67,7 @@ func (o *OpenStack) CreateUser(
 			createOpts.DefaultProjectID = u.ProjectID
 		}
 
-		user, err := users.Create(o.GetOSClient(), createOpts).Extract()
+		user, err := users.Create(context.TODO(), o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return userID, err
 		}
@@ -84,7 +85,7 @@ func (o *OpenStack) GetUser(
 	userName string,
 	domainID string,
 ) (*users.User, error) {
-	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName, DomainID: domainID}).AllPages()
+	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName, DomainID: domainID}).AllPages(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func (o *OpenStack) DeleteUser(
 
 	if user != nil {
 		log.Info(fmt.Sprintf("Deleting user %s in %s", user.Name, user.DomainID))
-		err = users.Delete(o.GetOSClient(), user.ID).ExtractErr()
+		err = users.Delete(context.TODO(), o.GetOSClient(), user.ID).ExtractErr()
 		if err != nil {
 			return err
 		}

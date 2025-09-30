@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	services "github.com/gophercloud/gophercloud/openstack/blockstorage/extensions/services"
+	services "github.com/gophercloud/gophercloud/v2/openstack/blockstorage/v2/services"
 )
 
 // VolumeServiceCheck - Check particular cinder service is enabled and running or not
@@ -32,7 +33,7 @@ func (o *OpenStack) VolumeServiceCheck(
 	var serviceRunning bool
 	serviceRunning = false
 	log.Info(fmt.Sprintf("Checking %s service is running or not", serviceName))
-	allPages, err := services.List(o.osclient, services.ListOpts{}).AllPages()
+	allPages, err := services.List(o.osclient, services.ListOpts{}).AllPages(context.TODO())
 	if err != nil {
 		return serviceRunning, err
 	}
@@ -47,5 +48,4 @@ func (o *OpenStack) VolumeServiceCheck(
 		}
 	}
 	return serviceRunning, nil
-
 }

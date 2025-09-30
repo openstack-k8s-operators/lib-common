@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	gophercloud "github.com/gophercloud/gophercloud"
-	endpoints "github.com/gophercloud/gophercloud/openstack/identity/v3/endpoints"
+	gophercloud "github.com/gophercloud/gophercloud/v2"
+	endpoints "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/endpoints"
 )
 
 // Endpoint -
@@ -37,7 +38,6 @@ func (o *OpenStack) CreateEndpoint(
 	log logr.Logger,
 	e Endpoint,
 ) (string, error) {
-
 	// validate if endpoint already exist
 	allEndpoints, err := o.GetEndpoints(
 		log,
@@ -59,7 +59,7 @@ func (o *OpenStack) CreateEndpoint(
 		ServiceID:    e.ServiceID,
 		URL:          e.URL,
 	}
-	createdEndpoint, err := endpoints.Create(o.osclient, createOpts).Extract()
+	createdEndpoint, err := endpoints.Create(context.TODO(), o.osclient, createOpts).Extract()
 	if err != nil {
 		return "", err
 	}
@@ -88,7 +88,7 @@ func (o *OpenStack) GetEndpoints(
 		listOpts.Availability = availability
 	}
 
-	allPages, err := endpoints.List(o.osclient, listOpts).AllPages()
+	allPages, err := endpoints.List(o.osclient, listOpts).AllPages(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (o *OpenStack) DeleteEndpoint(
 	}
 
 	for _, endpt := range allEndpoints {
-		err = endpoints.Delete(o.osclient, endpt.ID).ExtractErr()
+		err = endpoints.Delete(context.TODO(), o.osclient, endpt.ID).ExtractErr()
 		if err != nil {
 			return err
 		}
@@ -143,7 +143,7 @@ func (o *OpenStack) UpdateEndpoint(
 		ServiceID:    e.ServiceID,
 		URL:          e.URL,
 	}
-	endpt, err := endpoints.Update(o.osclient, endpointID, updateOpts).Extract()
+	endpt, err := endpoints.Update(context.TODO(), o.osclient, endpointID, updateOpts).Extract()
 	if err != nil {
 		return "", err
 	}
