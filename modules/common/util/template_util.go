@@ -46,19 +46,19 @@ const (
 
 // Template - config map and secret details
 type Template struct {
-	Name               string                 // name of the cm/secret to create based of the Template. Check secret/configmap pkg on details how it is used.
-	Namespace          string                 // name of the nanmespace to create the cm/secret. Check secret/configmap pkg on details how it is used.
-	Type               TType                  // type of the templates, see TTtypes
-	InstanceType       string                 // the CRD name in lower case, to separate the templates for each CRD in /templates
-	SecretType         corev1.SecretType      // Secrets only, defaults to "Opaque"
-	AdditionalTemplate map[string]string      // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
-	StringTemplate     map[string]string      // templates to render which are not accessable files, instead read by the caller from some other source, like a secret
-	CustomData         map[string]string      // custom data which won't get rendered as a template and just added to the resulting cm/secret
-	Labels             map[string]string      // labels to be set on the cm/secret
-	Annotations        map[string]string      // Annotations set on cm/secret
-	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
-	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
-	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
+	Name               string            // name of the cm/secret to create based of the Template. Check secret/configmap pkg on details how it is used.
+	Namespace          string            // name of the nanmespace to create the cm/secret. Check secret/configmap pkg on details how it is used.
+	Type               TType             // type of the templates, see TTtypes
+	InstanceType       string            // the CRD name in lower case, to separate the templates for each CRD in /templates
+	SecretType         corev1.SecretType // Secrets only, defaults to "Opaque"
+	AdditionalTemplate map[string]string // templates which are common to multiple CRDs can be located in a shared folder and added via this type into the resulting CM/secret
+	StringTemplate     map[string]string // templates to render which are not accessable files, instead read by the caller from some other source, like a secret
+	CustomData         map[string]string // custom data which won't get rendered as a template and just added to the resulting cm/secret
+	Labels             map[string]string // labels to be set on the cm/secret
+	Annotations        map[string]string // Annotations set on cm/secret
+	ConfigOptions      map[string]any    // map of parameters as input data to render the templates
+	SkipSetOwner       bool              // skip setting ownership on the associated configmap
+	Version            string            // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -123,7 +123,7 @@ func GetAllTemplates(path string, kind string, templateType string, version stri
 
 // ExecuteTemplate creates a template from the file and
 // execute it with the specified data
-func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
+func ExecuteTemplate(templateFile string, data any) (string, error) {
 
 	b, err := os.ReadFile(templateFile)
 	if err != nil {
@@ -147,7 +147,7 @@ var tmpl *template.Template
 // a template file.
 // name - name of the template as defined with `{{define "some-template"}}your template{{end}}
 // data - data to pass into to render the template for all can use `.`
-func execTempl(name string, data interface{}) (string, error) {
+func execTempl(name string, data any) (string, error) {
 	buf := &bytes.Buffer{}
 	err := tmpl.ExecuteTemplate(buf, name, data)
 	return buf.String(), err
@@ -159,7 +159,7 @@ func indent(n int, in string) string {
 	s := bufio.NewScanner(bytes.NewReader([]byte(in)))
 	for s.Scan() {
 		line := strings.TrimSpace(s.Text())
-		for i := 0; i < n; i++ {
+		for range n {
 			line = "\t" + line
 		}
 		out += line + "\n"
@@ -228,7 +228,7 @@ func lower(s string) string {
 
 // ExecuteTemplateData creates a template from string and
 // execute it with the specified data
-func ExecuteTemplateData(templateData string, data interface{}) (string, error) {
+func ExecuteTemplateData(templateData string, data any) (string, error) {
 
 	var buff bytes.Buffer
 	var err error
@@ -253,7 +253,7 @@ func ExecuteTemplateData(templateData string, data interface{}) (string, error) 
 
 // ExecuteTemplateFile - creates a template from the file and
 // execute it with the specified data
-func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
+func ExecuteTemplateFile(filename string, data any) (string, error) {
 
 	templates := os.Getenv("OPERATOR_TEMPLATES")
 	filepath := ""

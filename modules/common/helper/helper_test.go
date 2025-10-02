@@ -54,13 +54,13 @@ func TestToUnstructured(t *testing.T) {
 		g := NewWithT(t)
 
 		obj := &unstructured.Unstructured{
-			Object: map[string]interface{}{
+			Object: map[string]any{
 				"apiVersion": "test.x.y.z/v1",
-				"metadata": map[string]interface{}{
+				"metadata": map[string]any{
 					"name":      "keystone",
 					"namespace": "openstack",
 				},
-				"spec": map[string]interface{}{
+				"spec": map[string]any{
 					"databaseHostname": "dbhost",
 				},
 			},

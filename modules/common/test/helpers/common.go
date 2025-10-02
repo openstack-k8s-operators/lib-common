@@ -101,7 +101,7 @@ func getTestTimeout(defaultTimeout time.Duration) time.Duration {
 //	    ...
 //	  }
 //	  unstructuredObj := tc.CreateUnstructured(rawObj)
-func (tc *TestHelper) CreateUnstructured(rawObj map[string]interface{}) *unstructured.Unstructured {
+func (tc *TestHelper) CreateUnstructured(rawObj map[string]any) *unstructured.Unstructured {
 	tc.Logger.Info("Creating", "raw", rawObj)
 	unstructuredObj := &unstructured.Unstructured{Object: rawObj}
 	_, err := controllerutil.CreateOrPatch(

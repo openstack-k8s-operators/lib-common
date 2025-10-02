@@ -75,15 +75,15 @@ func (tc *TestHelper) AssertIssuerDoesNotExist(name types.NamespacedName) {
 //
 //	cm := th.CreateIssuer(types.NamespacedName{Namespace: "default", Name: "example-configmap"})
 func (tc *TestHelper) CreateIssuer(name types.NamespacedName) client.Object {
-	raw := map[string]interface{}{
+	raw := map[string]any{
 		"apiVersion": "cert-manager.io/v1",
 		"kind":       "Issuer",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      name.Name,
 			"namespace": name.Namespace,
 		},
-		"spec": map[string]interface{}{
-			"ca": map[string]interface{}{
+		"spec": map[string]any{
+			"ca": map[string]any{
 				"secretName": name.Name,
 			},
 		},

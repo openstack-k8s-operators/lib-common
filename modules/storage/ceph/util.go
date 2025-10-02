@@ -25,7 +25,7 @@ import (
 // for the external ceph cluster; it also checks the provided IP addresses are not
 // malformed
 func ValidateMons(ipList string) bool {
-	for _, ip := range strings.Split(ipList, ",") {
+	for ip := range strings.SplitSeq(ipList, ",") {
 		if net.ParseIP(strings.Trim(ip, " ")) == nil {
 			return false
 		}

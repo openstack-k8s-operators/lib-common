@@ -24,8 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func logObjectParams(object metav1.Object) []interface{} {
-	return []interface{}{
+func logObjectParams(object metav1.Object) []any {
+	return []any{
 		"ObjectType", fmt.Sprintf("%T", object),
 		"ObjectNamespace", object.GetNamespace(),
 		"ObjectName", object.GetName()}
@@ -36,7 +36,7 @@ func LogForObject(
 	h *helper.Helper,
 	msg string,
 	object metav1.Object,
-	params ...interface{},
+	params ...any,
 ) {
 
 	params = append(params, logObjectParams(object)...)
@@ -58,7 +58,7 @@ func LogErrorForObject(
 	err error,
 	msg string,
 	object metav1.Object,
-	params ...interface{},
+	params ...any,
 ) {
 
 	params = append(params, logObjectParams(object)...)

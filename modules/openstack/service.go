@@ -58,7 +58,7 @@ func (o *OpenStack) CreateService(
 		createOpts := services.CreateOpts{
 			Type:    s.Type,
 			Enabled: &s.Enabled,
-			Extra: map[string]interface{}{
+			Extra: map[string]any{
 				"name":        s.Name,
 				"description": s.Description,
 			},
@@ -111,7 +111,7 @@ func (o *OpenStack) UpdateService(
 	updateOpts := services.UpdateOpts{
 		Type:    s.Type,
 		Enabled: &s.Enabled,
-		Extra: map[string]interface{}{
+		Extra: map[string]any{
 			"name":        s.Name,
 			"description": s.Description,
 		},
