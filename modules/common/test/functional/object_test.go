@@ -45,7 +45,7 @@ var _ = Describe("object package", func() {
 			Name:      "test-cm",
 		}
 
-		cm := th.CreateConfigMap(cmName, map[string]interface{}{})
+		cm := th.CreateConfigMap(cmName, map[string]any{})
 
 		err := object.EnsureOwnerRef(th.Ctx, h, cm, cm)
 		Expect(err).ShouldNot(HaveOccurred())
@@ -59,14 +59,14 @@ var _ = Describe("object package", func() {
 			Namespace: namespace,
 			Name:      "test-owner",
 		}
-		ownerCM := th.CreateConfigMap(owner, map[string]interface{}{})
+		ownerCM := th.CreateConfigMap(owner, map[string]any{})
 
 		// create target obj we add the owner ref to
 		cmName := types.NamespacedName{
 			Namespace: namespace,
 			Name:      "test-cm",
 		}
-		cm := th.CreateConfigMap(cmName, map[string]interface{}{})
+		cm := th.CreateConfigMap(cmName, map[string]any{})
 
 		err := object.EnsureOwnerRef(th.Ctx, h, ownerCM, cm)
 		Expect(err).ShouldNot(HaveOccurred())
