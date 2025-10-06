@@ -10,9 +10,7 @@ require (
 
 require (
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
-	github.com/onsi/ginkgo/v2 v2.25.3 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.26.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
