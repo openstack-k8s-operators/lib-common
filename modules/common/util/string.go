@@ -16,6 +16,12 @@ limitations under the License.
 
 package util // nolint:revive
 
+import (
+	"crypto/rand"
+	"fmt"
+	"time"
+)
+
 // StringInSlice - is string in slice
 func StringInSlice(a string, list []string) bool {
 	for _, b := range list {
@@ -24,4 +30,27 @@ func StringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+// RandomString generates a random string of specified length.
+// It uses alphanumeric characters (0-9, a-z, A-Z).
+func RandomString(length int) string {
+	if length <= 0 {
+		return ""
+	}
+
+	const charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	csLen := len(charset)
+
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		// Fallback to a deterministic but unique string based on time
+		return fmt.Sprintf("fallback-%d", time.Now().UnixNano())
+	}
+
+	result := make([]byte, length)
+	for i := 0; i < length; i++ {
+		result[i] = charset[int(b[i])%csLen]
+	}
+	return string(result)
 }
