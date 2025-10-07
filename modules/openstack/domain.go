@@ -1,10 +1,11 @@
 package openstack
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/gophercloud/gophercloud/openstack/identity/v3/domains"
+	"github.com/gophercloud/gophercloud/v2/openstack/identity/v3/domains"
 )
 
 // Domain - Holds the name and description to be used while creating or looking up the OpenStack domain.
@@ -16,7 +17,7 @@ type Domain struct {
 // CreateDomain - creates a domain with domainName and domainDescription if it does not exist
 func (o *OpenStack) CreateDomain(log logr.Logger, d Domain) (string, error) {
 	var domainID string
-	allPages, err := domains.List(o.osclient, domains.ListOpts{Name: d.Name}).AllPages()
+	allPages, err := domains.List(o.osclient, domains.ListOpts{Name: d.Name}).AllPages(context.TODO())
 	if err != nil {
 		return domainID, err
 	}
@@ -32,7 +33,7 @@ func (o *OpenStack) CreateDomain(log logr.Logger, d Domain) (string, error) {
 			Description: d.Description,
 		}
 		log.Info(fmt.Sprintf("Creating domain %s", d.Name))
-		domain, err := domains.Create(o.osclient, createOpts).Extract()
+		domain, err := domains.Create(context.TODO(), o.osclient, createOpts).Extract()
 		if err != nil {
 			return domainID, err
 		}
