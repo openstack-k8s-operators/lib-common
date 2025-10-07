@@ -109,12 +109,12 @@ type APIService struct {
 	// +kubebuilder:validation:optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// Public GenericService - holds the secret for the public endpoint
-	Public GenericService `json:"public,omitempty"`
+	Public GenericService `json:"public"`
 
 	// +kubebuilder:validation:optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec
 	// Internal GenericService - holds the secret for the internal endpoint
-	Internal GenericService `json:"internal,omitempty"`
+	Internal GenericService `json:"internal"`
 }
 
 // GenericService contains server-specific TLS secret or issuer
