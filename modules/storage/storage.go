@@ -108,13 +108,16 @@ type Volume struct {
 type VolMounts struct {
 	// +kubebuilder:validation:type={PropagationEverywhere}
 	// Propagation defines which pod should mount the volume
+	// +listType=atomic
 	Propagation []PropagationType `json:"propagation,omitempty"`
 	// Label associated to a given extraMount
 	// +kubebuilder:validation:Optional
 	ExtraVolType ExtraVolType `json:"extraVolType,omitempty"`
 	// +kubebuilder:validation:Required
+	// +listType=atomic
 	Volumes []Volume `json:"volumes"`
 	// +kubebuilder:validation:Required
+	// +listType=atomic
 	Mounts []corev1.VolumeMount `json:"mounts"`
 }
 
