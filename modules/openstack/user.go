@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	users "github.com/gophercloud/gophercloud/openstack/identity/v3/users"
+	users "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/users"
 )
 
 // UserNotFound - user not found error message"
@@ -37,12 +38,14 @@ type User struct {
 
 // CreateUser - creates user with userName, password and default project projectID
 func (o *OpenStack) CreateUser(
+	ctx context.Context,
 	log logr.Logger,
 	u User,
 ) (string, error) {
 	var userID string
 
 	user, err := o.GetUser(
+		ctx,
 		log,
 		u.Name,
 		u.DomainID,
@@ -66,7 +69,7 @@ func (o *OpenStack) CreateUser(
 			createOpts.DefaultProjectID = u.ProjectID
 		}
 
-		user, err := users.Create(o.GetOSClient(), createOpts).Extract()
+		user, err := users.Create(ctx, o.GetOSClient(), createOpts).Extract()
 		if err != nil {
 			return userID, err
 		}
@@ -80,11 +83,12 @@ func (o *OpenStack) CreateUser(
 
 // GetUser - get user with userName
 func (o *OpenStack) GetUser(
+	ctx context.Context,
 	log logr.Logger,
 	userName string,
 	domainID string,
 ) (*users.User, error) {
-	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName, DomainID: domainID}).AllPages()
+	allPages, err := users.List(o.GetOSClient(), users.ListOpts{Name: userName, DomainID: domainID}).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +108,13 @@ func (o *OpenStack) GetUser(
 
 // DeleteUser - deletes user with userName
 func (o *OpenStack) DeleteUser(
+	ctx context.Context,
 	log logr.Logger,
 	userName string,
 	domainID string,
 ) error {
 	user, err := o.GetUser(
+		ctx,
 		log,
 		userName,
 		domainID,
@@ -120,7 +126,7 @@ func (o *OpenStack) DeleteUser(
 
 	if user != nil {
 		log.Info(fmt.Sprintf("Deleting user %s in %s", user.Name, user.DomainID))
-		err = users.Delete(o.GetOSClient(), user.ID).ExtractErr()
+		err = users.Delete(ctx, o.GetOSClient(), user.ID).ExtractErr()
 		if err != nil {
 			return err
 		}

@@ -17,6 +17,7 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -24,8 +25,8 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	gophercloud "github.com/gophercloud/gophercloud"
-	"github.com/gophercloud/gophercloud/openstack"
+	gophercloud "github.com/gophercloud/gophercloud/v2"
+	"github.com/gophercloud/gophercloud/v2/openstack"
 	service "github.com/openstack-k8s-operators/lib-common/modules/common/service"
 )
 
@@ -64,6 +65,7 @@ type TLSConfig struct {
 
 // GetOpenStackProvider creates a new instance of the openstack struct from a config struct
 func GetOpenStackProvider(
+	ctx context.Context,
 	cfg AuthOpts,
 ) (*gophercloud.ProviderClient, error) {
 	opts := gophercloud.AuthOptions{
@@ -122,7 +124,7 @@ func GetOpenStackProvider(
 	providerClient.HTTPClient.Transport = transport
 
 	// authenticate the client
-	err = openstack.Authenticate(providerClient, opts)
+	err = openstack.Authenticate(ctx, providerClient, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -132,12 +134,12 @@ func GetOpenStackProvider(
 
 // GetNovaOpenStackClient creates a new instance of the openstack compute struct from a config struct
 func GetNovaOpenStackClient(
+	ctx context.Context,
 	log logr.Logger,
 	cfg AuthOpts,
 	endpointOpts gophercloud.EndpointOpts,
 ) (*OpenStack, error) {
-
-	providerClient, err := GetOpenStackProvider(cfg)
+	providerClient, err := GetOpenStackProvider(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +159,11 @@ func GetNovaOpenStackClient(
 
 // NewOpenStack creates a new instance of the openstack identity struct from a config struct
 func NewOpenStack(
+	ctx context.Context,
 	log logr.Logger,
 	cfg AuthOpts,
 ) (*OpenStack, error) {
-
-	providerClient, err := GetOpenStackProvider(cfg)
+	providerClient, err := GetOpenStackProvider(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}

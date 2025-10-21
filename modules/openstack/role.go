@@ -17,11 +17,12 @@ limitations under the License.
 package openstack
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/go-logr/logr"
-	roles "github.com/gophercloud/gophercloud/openstack/identity/v3/roles"
+	roles "github.com/gophercloud/gophercloud/v2/openstack/identity/v3/roles"
 )
 
 // RoleNotFound - role not found error message"
@@ -34,12 +35,14 @@ type Role struct {
 
 // CreateRole - creates role with projectuserName, password and default project projectID
 func (o *OpenStack) CreateRole(
+	ctx context.Context,
 	log logr.Logger,
 	roleName string,
 ) (string, error) {
 	var roleID string
 
 	role, err := o.GetRole(
+		ctx,
 		log,
 		roleName,
 	)
@@ -54,7 +57,7 @@ func (o *OpenStack) CreateRole(
 		createOpts := roles.CreateOpts{
 			Name: roleName,
 		}
-		role, err := roles.Create(o.osclient, createOpts).Extract()
+		role, err := roles.Create(ctx, o.osclient, createOpts).Extract()
 		if err != nil {
 			return roleID, err
 		}
@@ -67,10 +70,11 @@ func (o *OpenStack) CreateRole(
 
 // GetRole - gets role with roleName
 func (o *OpenStack) GetRole(
+	ctx context.Context,
 	log logr.Logger,
 	roleName string,
 ) (*roles.Role, error) {
-	allPages, err := roles.List(o.osclient, roles.ListOpts{Name: roleName}).AllPages()
+	allPages, err := roles.List(o.osclient, roles.ListOpts{Name: roleName}).AllPages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -88,12 +92,13 @@ func (o *OpenStack) GetRole(
 
 // AssignUserRole - adds user with userID,projectID to role with roleName
 func (o *OpenStack) AssignUserRole(
+	ctx context.Context,
 	log logr.Logger,
 	roleName string,
 	userID string,
 	projectID string,
 ) error {
-	role, err := o.GetRole(log, roleName)
+	role, err := o.GetRole(ctx, log, roleName)
 	if err != nil {
 		return err
 	}
@@ -104,7 +109,7 @@ func (o *OpenStack) AssignUserRole(
 		UserID:         userID,
 		RoleID:         role.ID,
 	}
-	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,9 +122,10 @@ func (o *OpenStack) AssignUserRole(
 	if assignUser {
 		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
 
-		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+		err = roles.Assign(ctx, o.osclient, role.ID, roles.AssignOpts{
 			UserID:    userID,
-			ProjectID: projectID}).ExtractErr()
+			ProjectID: projectID,
+		}).ExtractErr()
 		if err != nil {
 			return err
 		}
@@ -130,12 +136,13 @@ func (o *OpenStack) AssignUserRole(
 
 // AssignUserDomainRole - adds user with userID and domainID to role with roleName
 func (o *OpenStack) AssignUserDomainRole(
+	ctx context.Context,
 	log logr.Logger,
 	roleName string,
 	userID string,
 	domainID string,
 ) error {
-	role, err := o.GetRole(log, roleName)
+	role, err := o.GetRole(ctx, log, roleName)
 	if err != nil {
 		return err
 	}
@@ -146,7 +153,7 @@ func (o *OpenStack) AssignUserDomainRole(
 		UserID:        userID,
 		RoleID:        role.ID,
 	}
-	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages()
+	allPages, err := roles.ListAssignments(o.osclient, listAssignmentsOpts).AllPages(ctx)
 	if err != nil {
 		return err
 	}
@@ -159,9 +166,10 @@ func (o *OpenStack) AssignUserDomainRole(
 	if assignUser {
 		log.Info(fmt.Sprintf("Assigning userID %s to role %s - %s", userID, role.Name, role.ID))
 
-		err = roles.Assign(o.osclient, role.ID, roles.AssignOpts{
+		err = roles.Assign(ctx, o.osclient, role.ID, roles.AssignOpts{
 			UserID:   userID,
-			DomainID: domainID}).ExtractErr()
+			DomainID: domainID,
+		}).ExtractErr()
 		if err != nil {
 			return err
 		}
