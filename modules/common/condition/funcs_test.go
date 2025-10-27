@@ -687,7 +687,7 @@ type conditionsMatcher struct {
 	Expected Conditions
 }
 
-func (matcher *conditionsMatcher) Match(actual interface{}) (success bool, err error) {
+func (matcher *conditionsMatcher) Match(actual any) (success bool, err error) {
 	actualConditions, ok := actual.(Conditions)
 	if !ok {
 		return false, errors.New("Value should be a conditions list")
@@ -705,11 +705,11 @@ func (matcher *conditionsMatcher) Match(actual interface{}) (success bool, err e
 	return true, nil
 }
 
-func (matcher *conditionsMatcher) FailureMessage(actual interface{}) (message string) {
+func (matcher *conditionsMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, "to have the same conditions of", matcher.Expected)
 }
 
-func (matcher *conditionsMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (matcher *conditionsMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, "not to have the same conditions of", matcher.Expected)
 }
 
@@ -724,7 +724,7 @@ type conditionMatcher struct {
 	Expected *Condition
 }
 
-func (matcher *conditionMatcher) Match(actual interface{}) (success bool, err error) {
+func (matcher *conditionMatcher) Match(actual any) (success bool, err error) {
 	actualCondition, ok := actual.(*Condition)
 	if !ok {
 		return false, errors.New("value should be a condition")
@@ -733,10 +733,10 @@ func (matcher *conditionMatcher) Match(actual interface{}) (success bool, err er
 	return HasSameState(actualCondition, matcher.Expected), nil
 }
 
-func (matcher *conditionMatcher) FailureMessage(actual interface{}) (message string) {
+func (matcher *conditionMatcher) FailureMessage(actual any) (message string) {
 	return format.Message(actual, "to have the same state of", matcher.Expected)
 }
 
-func (matcher *conditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (matcher *conditionMatcher) NegatedFailureMessage(actual any) (message string) {
 	return format.Message(actual, "not to have the same state of", matcher.Expected)
 }
