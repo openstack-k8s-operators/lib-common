@@ -93,11 +93,11 @@ func (tc *TestHelper) SimulatePodReady(name types.NamespacedName) {
 //	annotations := map[string]string{}{"key": "value"}
 //	spec := map[string]interface{}{"key": "value"}
 //	p := th.CreatePod(types.NamespacedName{Namespace: "default", Name: "example"}, annotations, spec)
-func (tc *TestHelper) CreatePod(name types.NamespacedName, annotations map[string]string, spec map[string]interface{}) client.Object {
-	raw := map[string]interface{}{
+func (tc *TestHelper) CreatePod(name types.NamespacedName, annotations map[string]string, spec map[string]any) client.Object {
+	raw := map[string]any{
 		"apiVersion": "v1",
 		"kind":       "Pod",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"annotations": annotations,
 			"name":        name.Name,
 			"namespace":   name.Namespace,
