@@ -12,10 +12,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.27.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.31.13
-	k8s.io/apimachinery v0.31.13
-	k8s.io/client-go v0.31.13
-	k8s.io/kubectl v0.31.13
+	k8s.io/api v0.31.14
+	k8s.io/apimachinery v0.31.14
+	k8s.io/client-go v0.31.14
+	k8s.io/kubectl v0.31.14
 	k8s.io/utils v0.0.0-20250820121507-0af2bda4dd1d
 	sigs.k8s.io/controller-runtime v0.19.7
 )
@@ -76,7 +76,7 @@ require (
 	google.golang.org/protobuf v1.36.7 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiextensions-apiserver v0.31.13 // indirect
+	k8s.io/apiextensions-apiserver v0.31.14 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240903163716-9e1beecbcb38 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
