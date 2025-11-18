@@ -56,20 +56,20 @@ func (s *StatefulSet) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), statefulset, func() error {
-		// selector is immutable so we set this value only if
+		// selector and VolumeClaimTemplates are immutable so we set this value only if
 		// a new object is going to be created
 		if statefulset.CreationTimestamp.IsZero() {
 			statefulset.Spec.Selector = s.statefulset.Spec.Selector
+			statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
 		}
 
 		statefulset.Annotations = util.MergeStringMaps(statefulset.Annotations, s.statefulset.Annotations)
 		statefulset.Labels = util.MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
-		// We need to copy the Spec field by field as Selector is not updatable
+		// We need to copy the Spec field by field as Selector and VolumeClaimTemplates are not updatable
 		// This list needs to be synced StatefulSet to gain ability to set
 		// those new fields via lib-common
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
 		statefulset.Spec.Template = s.statefulset.Spec.Template
-		statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
 		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
 		statefulset.Spec.PodManagementPolicy = s.statefulset.Spec.PodManagementPolicy
 		statefulset.Spec.UpdateStrategy = s.statefulset.Spec.UpdateStrategy
