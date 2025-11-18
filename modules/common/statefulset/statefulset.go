@@ -68,7 +68,6 @@ func (s *StatefulSet) CreateOrPatch(
 		// We need to copy the Spec field by field as Selector and VolumeClaimTemplates are not updatable
 		// This list needs to be synced StatefulSet to gain ability to set
 		// those new fields via lib-common
-		statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
 		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
 		statefulset.Spec.Template = s.statefulset.Spec.Template
 		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
