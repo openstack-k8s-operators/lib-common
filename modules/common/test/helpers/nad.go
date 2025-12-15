@@ -40,11 +40,11 @@ func (tc *TestHelper) GetNAD(name types.NamespacedName) *networkv1.NetworkAttach
 //
 //	spec := map[string]interface{}{"key": "value"}
 //	p := th.CreateNAD(types.NamespacedName{Namespace: "default", Name: "example"}, spec)
-func (tc *TestHelper) CreateNAD(name types.NamespacedName, spec map[string]interface{}) client.Object {
-	raw := map[string]interface{}{
+func (tc *TestHelper) CreateNAD(name types.NamespacedName, spec map[string]any) client.Object {
+	raw := map[string]any{
 		"apiVersion": "k8s.cni.cncf.io/v1",
 		"kind":       "NetworkAttachmentDefinition",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      name.Name,
 			"namespace": name.Namespace,
 		},

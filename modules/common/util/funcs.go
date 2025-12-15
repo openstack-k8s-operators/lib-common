@@ -21,7 +21,7 @@ import "encoding/json"
 // GetOr returns the value of m[key] if it exists, fallback otherwise.
 // As a special case, it also returns fallback if the value of m[key] is
 // the empty string
-func GetOr(m map[string]interface{}, key, fallback string) interface{} {
+func GetOr(m map[string]any, key, fallback string) any {
 	val, ok := m[key]
 	if !ok {
 		return fallback
@@ -37,7 +37,7 @@ func GetOr(m map[string]interface{}, key, fallback string) interface{} {
 
 // IsSet returns the value of m[key] if key exists, otherwise false
 // Different from getOr because it will return zero values.
-func IsSet(m map[string]interface{}, key string) interface{} {
+func IsSet(m map[string]any, key string) any {
 	val, ok := m[key]
 	if !ok {
 		return false
@@ -47,7 +47,7 @@ func IsSet(m map[string]interface{}, key string) interface{} {
 
 // IsJSON check if string is json format
 func IsJSON(s string) error {
-	var js map[string]interface{}
+	var js map[string]any
 	return json.Unmarshal([]byte(s), &js)
 }
 

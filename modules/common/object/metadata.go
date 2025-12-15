@@ -53,7 +53,7 @@ func PatchOwnerRef(
 	owner client.Object,
 	object client.Object,
 	scheme *runtime.Scheme,
-) (map[string]interface{}, client.Patch, error) {
+) (map[string]any, client.Patch, error) {
 	beforeObject := object.DeepCopyObject().(client.Object)
 
 	// add owner ref to the object
@@ -70,7 +70,7 @@ func PatchOwnerRef(
 	}
 
 	// Unmarshal patch data into a local map for logging
-	patchDiff := map[string]interface{}{}
+	patchDiff := map[string]any{}
 	if err := json.Unmarshal(diff, &patchDiff); err != nil {
 		return nil, nil, err
 	}

@@ -37,7 +37,7 @@ func IsFipsCluster(ctx context.Context, h *helper.Helper) (bool, error) {
 		return false, err
 	}
 
-	var installConfig map[string]interface{}
+	var installConfig map[string]any
 	installConfigYAML := configMap.Data["install-config"]
 	err = yaml.Unmarshal([]byte(installConfigYAML), &installConfig)
 	if err != nil {

@@ -368,7 +368,7 @@ func TestGetTemplateData(t *testing.T) {
 				Type:         TemplateTypeConfig,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
@@ -405,7 +405,7 @@ func TestGetTemplateData(t *testing.T) {
 				Type:         TemplateTypeConfig,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
@@ -429,7 +429,7 @@ func TestGetTemplateData(t *testing.T) {
 				Type:         TemplateTypeConfig,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
@@ -458,7 +458,7 @@ function common_func {
 				Type:         TemplateTypeNone,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",
@@ -479,7 +479,7 @@ function common_func {
 				Type:         TemplateTypeConfig,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"Count": 1,
 					"Upper": "BAR",
 				},
@@ -496,7 +496,7 @@ function common_func {
 				Type:         TemplateTypeConfig,
 				InstanceType: "testservice",
 				Version:      "",
-				ConfigOptions: map[string]interface{}{
+				ConfigOptions: map[string]any{
 					"ServiceUser": "foo",
 					"Count":       1,
 					"Upper":       "BAR",

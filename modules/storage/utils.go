@@ -16,15 +16,12 @@ limitations under the License.
 
 package storage
 
+import "slices"
+
 // canPropagate is a utility function that checks if a Volume meet the propagation policy
 func canPropagate(prop PropagationType, svcs []PropagationType) bool {
 	if prop == PropagationEverywhere {
 		return true
 	}
-	for _, service := range svcs {
-		if prop == service {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(svcs, prop)
 }

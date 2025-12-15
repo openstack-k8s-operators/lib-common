@@ -81,11 +81,11 @@ func (tc *TestHelper) DeleteConfigMap(name types.NamespacedName) {
 //
 //	data := map[string]interface{}{"key": "value"}
 //	cm := th.CreateConfigMap(types.NamespacedName{Namespace: "default", Name: "example-configmap"}, data)
-func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string]interface{}) client.Object {
-	raw := map[string]interface{}{
+func (tc *TestHelper) CreateConfigMap(name types.NamespacedName, data map[string]any) client.Object {
+	raw := map[string]any{
 		"apiVersion": "v1",
 		"kind":       "ConfigMap",
-		"metadata": map[string]interface{}{
+		"metadata": map[string]any{
 			"name":      name.Name,
 			"namespace": name.Namespace,
 		},

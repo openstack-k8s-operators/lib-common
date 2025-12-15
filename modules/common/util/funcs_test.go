@@ -28,25 +28,25 @@ func TestGetOr(t *testing.T) {
 
 	tests := []struct {
 		name string
-		data map[string]interface{}
+		data map[string]any
 		key  string
-		want interface{}
+		want any
 	}{
 		{
 			name: "Key exists with value 111, returns 111",
-			data: map[string]interface{}{"one": "111"},
+			data: map[string]any{"one": "111"},
 			key:  "one",
 			want: "111",
 		},
 		{
 			name: "Key exists and empty string value, returns fallback",
-			data: map[string]interface{}{"one": ""},
+			data: map[string]any{"one": ""},
 			key:  "one",
 			want: "fallback",
 		},
 		{
 			name: "Key does not exist, returns the fallback",
-			data: map[string]interface{}{"one": "111"},
+			data: map[string]any{"one": "111"},
 			key:  "four",
 			want: "fallback",
 		},
@@ -66,19 +66,19 @@ func TestIsSet(t *testing.T) {
 
 	tests := []struct {
 		name string
-		data map[string]interface{}
+		data map[string]any
 		key  string
-		want interface{}
+		want any
 	}{
 		{
 			name: "Key exists, returns 111",
-			data: map[string]interface{}{"one": "111"},
+			data: map[string]any{"one": "111"},
 			key:  "one",
 			want: "111",
 		},
 		{
 			name: "Key does not exist, returns false",
-			data: map[string]interface{}{"one": "111"},
+			data: map[string]any{"one": "111"},
 			key:  "four",
 			want: false,
 		},
