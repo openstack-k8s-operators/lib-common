@@ -37,6 +37,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// Validator - interface implemented by specialized validators
+// +kubebuilder:object:generate=false
+type Validator interface {
+	Validate(value string) error
+}
+
+// NoOpValidator for fields that don't need validation
+type NoOpValidator struct{}
+
+// Validate - Validation function implemented by NoOpValidator. It can be used
+// by service operators when no validation is required on a secret field.
+func (v NoOpValidator) Validate(value string) error {
+	return nil
+}
+
 // Hash function creates a hash of a Secret's Data and StringData fields and
 // returns it as a safe encoded string.
 func Hash(secret *corev1.Secret) (string, error) {
@@ -435,6 +450,60 @@ func VerifySecret(
 		val, ok := secret.Data[field]
 		if !ok {
 			err := fmt.Errorf("%w: field %s not found in Secret %s", util.ErrFieldNotFound, field, secretName)
+			return "", ctrl.Result{}, err
+		}
+		values = append(values, val)
+	}
+
+	hash, err := util.ObjectHash(values)
+	if err != nil {
+		return "", ctrl.Result{}, err
+	}
+
+	return hash, ctrl.Result{}, nil
+}
+
+// VerifySecretFields - verifies if the Secret object exists and the expected
+// fields are in the Secret. It also performs field validation using provided
+// validators and returns an error if validation fails. Returns a hash of the
+// values of the expected fields.
+//
+// Example usage for password validation:
+//
+//	validators := map[string]Validator{
+//	    "password": PasswordValidator{},
+//	    "username": NoOpValidator{},  // no validation needed
+//	}
+//	hash, result, err := secret.VerifySecretFields(
+//		ctx, secretName, validators, reader, timeout)
+func VerifySecretFields(
+	ctx context.Context,
+	secretName types.NamespacedName,
+	expectedFields map[string]Validator,
+	reader client.Reader,
+	requeueTimeout time.Duration,
+) (string, ctrl.Result, error) {
+	secret := &corev1.Secret{}
+	err := reader.Get(ctx, secretName, secret)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			log.FromContext(ctx).Info("Secret not found", "secretName", secretName)
+			return "",
+				ctrl.Result{RequeueAfter: requeueTimeout},
+				nil
+		}
+		return "", ctrl.Result{}, fmt.Errorf("get secret %s failed: %w", secretName, err)
+	}
+
+	// collect the secret values the caller expects to exist
+	values := [][]byte{}
+	for field, validator := range expectedFields {
+		val, ok := secret.Data[field]
+		if !ok {
+			err := fmt.Errorf("%w: field %s not found in Secret %s", util.ErrFieldNotFound, field, secretName)
+			return "", ctrl.Result{}, err
+		}
+		if err := validator.Validate(string(val)); err != nil {
 			return "", ctrl.Result{}, err
 		}
 		values = append(values, val)
