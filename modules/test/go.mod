@@ -4,7 +4,7 @@ go 1.24.4
 
 require (
 	github.com/go-logr/logr v1.4.3
-	github.com/onsi/gomega v1.39.0
+	github.com/onsi/gomega v1.39.1
 	golang.org/x/mod v0.32.0
 )
 
