@@ -21,23 +21,23 @@ import "gopkg.in/yaml.v3"
 // Host represents ansible host
 type Host struct {
 	name string
-	Vars map[string]interface{} `yaml:",inline"`
+	Vars map[string]any `yaml:",inline"`
 }
 
 // MakeHost instatiates an Host object
 func MakeHost(name string) Host {
 	return Host{
 		name: name,
-		Vars: make(map[string]interface{}),
+		Vars: make(map[string]any),
 	}
 }
 
 // Group represents ansible group
 type Group struct {
 	name     string
-	Vars     map[string]interface{} `yaml:",omitempty"`
-	Hosts    map[string]Host        `yaml:",omitempty"`
-	Children map[string]Group       `yaml:",omitempty"`
+	Vars     map[string]any   `yaml:",omitempty"`
+	Hosts    map[string]Host  `yaml:",omitempty"`
+	Children map[string]Group `yaml:",omitempty"`
 }
 
 // AddHost adds a host to the current group
@@ -51,7 +51,7 @@ func (group Group) AddHost(name string) Host {
 func MakeGroup(name string) Group {
 	return Group{
 		name:     name,
-		Vars:     make(map[string]interface{}),
+		Vars:     make(map[string]any),
 		Hosts:    make(map[string]Host),
 		Children: make(map[string]Group),
 	}
