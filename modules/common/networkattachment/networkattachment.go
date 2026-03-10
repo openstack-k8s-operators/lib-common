@@ -157,7 +157,7 @@ func EnsureNetworksAnnotation(
 		gatewayReq := []net.IP{}
 		if nad.Spec.Config != "" {
 
-			var data interface{}
+			var data any
 			if err := json.Unmarshal([]byte(nad.Spec.Config), &data); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
 			}
@@ -213,7 +213,7 @@ func EnsureNetworksAnnotation(
 // if the NAD has no config, an empty string is returned.
 // The jsonPath must be in the format e.g. ".ipam"
 func GetJSONPathFromConfig(netAtt networkv1.NetworkAttachmentDefinition, path string) (string, error) {
-	var data interface{}
+	var data any
 	buf := new(bytes.Buffer)
 
 	if netAtt.Spec.Config == "" {
