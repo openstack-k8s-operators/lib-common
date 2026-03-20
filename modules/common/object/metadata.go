@@ -114,3 +114,70 @@ func EnsureOwnerRef(
 
 	return nil
 }
+
+// AddConsumerFinalizer adds consumerFinalizer to the given object.
+func AddConsumerFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+	obj client.Object,
+	consumerFinalizer string,
+) error {
+	before := obj.DeepCopyObject().(client.Object)
+	if controllerutil.AddFinalizer(obj, consumerFinalizer) {
+		patch := client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{})
+		if err := h.GetClient().Patch(ctx, obj, patch); err != nil {
+			return fmt.Errorf("failed to add consumer finalizer to %s: %w", obj.GetName(), err)
+		}
+		h.GetLogger().Info("Added consumer finalizer", "object", obj.GetName(), "finalizer", consumerFinalizer)
+	}
+	return nil
+}
+
+// RemoveConsumerFinalizer removes consumerFinalizer from the given object.
+func RemoveConsumerFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+	obj client.Object,
+	consumerFinalizer string,
+) error {
+	before := obj.DeepCopyObject().(client.Object)
+	if controllerutil.RemoveFinalizer(obj, consumerFinalizer) {
+		patch := client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{})
+		if err := h.GetClient().Patch(ctx, obj, patch); err != nil {
+			return fmt.Errorf("failed to remove consumer finalizer from %s: %w", obj.GetName(), err)
+		}
+		h.GetLogger().Info("Removed consumer finalizer", "object", obj.GetName(), "finalizer", consumerFinalizer)
+	}
+	return nil
+}
+
+// ManageConsumerFinalizer adds consumerFinalizer to newObj and removes it from oldObj.
+//
+//	If both refer to the same object, returns early without mutating.
+func ManageConsumerFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+	newObj client.Object,
+	oldObj client.Object,
+	consumerFinalizer string,
+) error {
+	if newObj != nil && oldObj != nil &&
+		newObj.GetNamespace() == oldObj.GetNamespace() &&
+		newObj.GetName() == oldObj.GetName() {
+		return nil
+	}
+
+	if newObj != nil {
+		if err := AddConsumerFinalizer(ctx, h, newObj, consumerFinalizer); err != nil {
+			return err
+		}
+	}
+
+	if oldObj != nil {
+		if err := RemoveConsumerFinalizer(ctx, h, oldObj, consumerFinalizer); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
