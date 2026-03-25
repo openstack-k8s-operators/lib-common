@@ -22,12 +22,12 @@ import (
 )
 
 // PasswordValidator implements the Validator interface
-type PasswordValidator struct{}
-
-// Validate - implements the Validator interface and calls the underlying
-// ValidatePassword
-func (v PasswordValidator) Validate(value string) error {
-	return ValidatePassword(value)
+// +kubebuilder:object:generate=false
+type PasswordValidator struct {
+	// Patterns that the password should adhere to
+	Requirements *[]Rule
+	// Patterns that are forbidden for the password
+	Rejects *[]Rule
 }
 
 // Rule - pattern to match when rejecting or accepting a string
@@ -76,22 +76,32 @@ var (
 	ErrPasswordRequirements = errors.New("password does not meet the requirements")
 )
 
-// ValidatePassword validates a password against security requirements
-// Returns error when invalid/rejected
-func ValidatePassword(pwd string) error {
+// Validate - implements the Validator interface
+// If requirements or rejects rules are not specified in the
+// structure, the function uses the default rule set defined
+// in this package.
+func (v PasswordValidator) Validate(value string) error {
 	// Check if password is empty
-	if pwd == "" {
+	if value == "" {
 		return ErrEmptyPassword
 	}
 
-	for _, rule := range requirements {
-		if !rule.pattern.MatchString(pwd) {
+	reqs := &requirements
+	if v.Requirements != nil {
+		reqs = v.Requirements
+	}
+	for _, rule := range *reqs {
+		if !rule.pattern.MatchString(value) {
 			return ErrPasswordRequirements
 		}
 	}
 
-	for _, rule := range rejects {
-		if rule.pattern.MatchString(pwd) {
+	rejs := &rejects
+	if v.Rejects != nil {
+		rejs = v.Rejects
+	}
+	for _, rule := range *rejs {
+		if rule.pattern.MatchString(value) {
 			return ErrPasswordRequirements
 		}
 	}

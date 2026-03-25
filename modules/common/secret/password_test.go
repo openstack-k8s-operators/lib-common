@@ -17,10 +17,11 @@ limitations under the License.
 package secret
 
 import (
-	. "github.com/onsi/gomega" // nolint:revive
 	"regexp"
 	"slices"
 	"testing"
+
+	. "github.com/onsi/gomega" // nolint:revive
 )
 
 const ErrMsg string = "password does not meet the requirements"
@@ -279,16 +280,143 @@ func TestValidatePassword(t *testing.T) {
 		alphaNumPattern,
 		fernetPattern,
 	)
+
+	validator := PasswordValidator{}
+
 	// Execute ValidatePassword against the generated TestVector
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := NewWithT(t)
 
-			err := ValidatePassword(tt.password)
+			err := validator.Validate(tt.password)
 
 			if tt.wantErr {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tt.errMsg))
+			} else {
+				g.Expect(err).ToNot(HaveOccurred())
+			}
+		})
+	}
+}
+
+func TestValidatePasswordWithCustomRules(t *testing.T) {
+	// Define custom requirements (strict rules)
+	customRequirements := []Rule{
+		{
+			description: "Must only contain alphanumerical and safe special characters",
+			pattern:     *regexp.MustCompile(`^[a-zA-Z0-9@#%^*-_=+:,.!~]+$`),
+		},
+	}
+
+	// Define custom rejects (forbid specific patterns)
+	customRejects := []Rule{
+		{
+			description: "Must not contain carriage return",
+			pattern:     *regexp.MustCompile(`[\n]`),
+		},
+	}
+
+	tests := []struct {
+		name      string
+		validator PasswordValidator
+		password  string
+		wantErr   bool
+		errMsg    string
+	}{
+		// Test with nil rules (should use defaults)
+		{
+			name:      "nil rules uses defaults - valid",
+			validator: PasswordValidator{},
+			password:  "ValidPassword123",
+			wantErr:   false,
+		},
+		{
+			name:      "nil rules uses defaults - shell expansion rejected",
+			validator: PasswordValidator{},
+			password:  "Password123$HOME",
+			wantErr:   true,
+			errMsg:    ErrMsg,
+		},
+		{
+			name:      "nil rules uses defaults - empty password rejected",
+			validator: PasswordValidator{},
+			password:  "",
+			wantErr:   true,
+			errMsg:    "empty password not allowed",
+		},
+
+		// Test with custom requirements only
+		{
+			name: "custom requirements - safe special characters",
+			validator: PasswordValidator{
+				Requirements: &customRequirements,
+			},
+			password: "#S3cure!Pass#",
+			wantErr:  false,
+		},
+
+		// Test with custom rejects only
+		{
+			name: "custom rejects - must not contains '\n'",
+			validator: PasswordValidator{
+				Rejects: &customRejects,
+			},
+			password: "MyPASSWORD123\n",
+			wantErr:  true,
+			errMsg:   ErrMsg,
+		},
+
+		// Test with both custom requirements and rejects
+		{
+			name: "custom both - fully valid password",
+			validator: PasswordValidator{
+				Requirements: &customRequirements,
+				Rejects:      &customRejects,
+			},
+			password: "MyS3cure!Pass",
+			wantErr:  false,
+		},
+
+		// Test empty requirements/rejects slices
+		{
+			name: "empty requirements slice - allows any non-empty password",
+			validator: PasswordValidator{
+				Requirements: &[]Rule{},
+			},
+			password: "a",
+			wantErr:  false,
+		},
+		{
+			name: "empty rejects slice - no rejections",
+			validator: PasswordValidator{
+				Rejects: &[]Rule{},
+			},
+			password: "anything$HOME$(cmd)`test`",
+			wantErr:  false,
+		},
+		{
+			name: "both empty - allows any non-empty password",
+			validator: PasswordValidator{
+				Requirements: &[]Rule{},
+				Rejects:      &[]Rule{},
+			},
+			password: "x",
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			err := tt.validator.Validate(tt.password)
+
+			if tt.wantErr {
+				g.Expect(err).To(HaveOccurred())
+				if tt.errMsg != "" {
+					g.Expect(err.Error()).To(ContainSubstring(tt.errMsg))
+				}
 			} else {
 				g.Expect(err).ToNot(HaveOccurred())
 			}
