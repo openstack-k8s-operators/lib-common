@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"maps"
 	"sort"
 	"strings"
 )
@@ -34,9 +35,7 @@ func MergeStringMaps(baseMap map[string]string, extraMaps ...map[string]string) 
 	mergedMap := make(map[string]string)
 
 	// Copy from the original map to the target map
-	for key, value := range baseMap {
-		mergedMap[key] = value
-	}
+	maps.Copy(mergedMap, baseMap)
 
 	for _, extraMap := range extraMaps {
 		for key, value := range extraMap {
@@ -88,9 +87,7 @@ func SortStringMapByValue(in map[string]string) List {
 // NOTE: In case a key exists, the value in the first map is preserved.
 func MergeMaps[K comparable, V any](baseMap map[K]V, extraMaps ...map[K]V) map[K]V {
 	mergedMap := make(map[K]V)
-	for key, value := range baseMap {
-		mergedMap[key] = value
-	}
+	maps.Copy(mergedMap, baseMap)
 
 	for _, extraMap := range extraMaps {
 		for key, value := range extraMap {
