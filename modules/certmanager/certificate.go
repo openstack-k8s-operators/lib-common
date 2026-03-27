@@ -24,6 +24,7 @@ import (
 
 	certmgrv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmgrmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/backup"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/net"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/secret"
@@ -270,7 +271,7 @@ func EnsureCert(
 }
 
 // EnsureCertForServicesWithSelector - creates certificate for k8s services identified
-// by a label selector
+// by a label selector. Optional extraLabels are merged into the certificate request labels.
 func EnsureCertForServicesWithSelector(
 	ctx context.Context,
 	helper *helper.Helper,
@@ -278,6 +279,7 @@ func EnsureCertForServicesWithSelector(
 	selector map[string]string,
 	issuer string,
 	owner client.Object,
+	extraLabels ...map[string]string,
 ) (map[string]string, ctrl.Result, error) {
 	certs := map[string]string{}
 	svcs, err := service.GetServicesListWithLabel(
@@ -292,12 +294,23 @@ func EnsureCertForServicesWithSelector(
 
 	for _, svc := range svcs.Items {
 		hostname := fmt.Sprintf("%s.%s.svc", svc.Name, namespace)
+		certName := fmt.Sprintf("%s-svc", svc.Name)
+		// Merge service labels with extra labels, then apply cert secret
+		// backup annotation overrides so cert-manager's SecretTemplate
+		// propagates the correct labels.
+		labels, err := backup.GetCertSecretBackupLabels(
+			ctx, helper.GetClient(), certName, namespace,
+			util.MergeMaps(svc.Labels, extraLabels...),
+		)
+		if err != nil {
+			return nil, ctrl.Result{}, err
+		}
 		// create cert for the service
 		certRequest := CertificateRequest{
 			IssuerName: issuer,
-			CertName:   fmt.Sprintf("%s-svc", svc.Name),
+			CertName:   certName,
 			Hostnames:  []string{hostname},
-			Labels:     svc.Labels,
+			Labels:     labels,
 		}
 		certSecret, ctrlResult, err := EnsureCert(
 			ctx,
@@ -317,7 +330,8 @@ func EnsureCertForServicesWithSelector(
 }
 
 // EnsureCertForServiceWithSelector - creates certificate for a k8s service identified
-// by a label selector. The label selector must match a single service
+// by a label selector. The label selector must match a single service.
+// Optional extraLabels are merged into the certificate request labels.
 // Note: Returns an NotFound error if <1 or >1 service found using the selector
 func EnsureCertForServiceWithSelector(
 	ctx context.Context,
@@ -326,6 +340,7 @@ func EnsureCertForServiceWithSelector(
 	selector map[string]string,
 	issuer string,
 	owner client.Object,
+	extraLabels ...map[string]string,
 ) (string, ctrl.Result, error) {
 	var cert string
 	svcs, err := service.GetServicesListWithLabel(
@@ -346,7 +361,7 @@ func EnsureCertForServiceWithSelector(
 	}
 
 	certs, ctrlResult, err := EnsureCertForServicesWithSelector(
-		ctx, helper, namespace, selector, issuer, owner)
+		ctx, helper, namespace, selector, issuer, owner, extraLabels...)
 	if err != nil {
 		return cert, ctrlResult, err
 	} else if (ctrlResult != ctrl.Result{}) {
