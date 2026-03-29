@@ -25,7 +25,7 @@ import (
 	ocp_config "github.com/openshift/api/config/v1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	k8s_utils "k8s.io/utils/net"
 )
@@ -67,8 +67,8 @@ func HasIPv6ClusterNetwork(ctx context.Context, h *helper.Helper) (bool, error) 
 		return false, nil
 	}
 
-	// Fallback for MicroShift: check if error is NotFound
-	if !k8serrors.IsNotFound(err) {
+	// Fallback for MicroShift: check if Network CRD is not available
+	if !meta.IsNoMatchError(err) {
 		return false, err
 	}
 
@@ -106,8 +106,8 @@ func FirstClusterNetworkIsIPv6(ctx context.Context, h *helper.Helper) (bool, err
 		return false, nil
 	}
 
-	// Fallback for MicroShift: check if error is NotFound
-	if !k8serrors.IsNotFound(err) {
+	// Fallback for MicroShift: check if Network CRD is not available
+	if !meta.IsNoMatchError(err) {
 		return false, err
 	}
 
