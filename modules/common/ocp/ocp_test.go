@@ -25,11 +25,14 @@ import (
 	. "github.com/onsi/gomega"
 	ocp_config "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 func setupHelper(objs ...client.Object) (*helper.Helper, error) {
@@ -42,6 +45,39 @@ func setupHelper(objs ...client.Object) (*helper.Helper, error) {
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(s).
 		WithObjects(objs...).
+		Build()
+
+	// Create a minimal namespace object for helper
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-namespace",
+		},
+	}
+
+	return helper.NewHelper(ns, fakeClient, nil, s, ctrl.Log)
+}
+
+func setupHelperWithoutOCPScheme(objs ...client.Object) (*helper.Helper, error) {
+	s := scheme.Scheme
+	err := ocp_config.AddToScheme(s)
+	if err != nil {
+		return nil, err
+	}
+
+	fakeClient := fake.NewClientBuilder().
+		WithScheme(s).
+		WithObjects(objs...).
+		WithInterceptorFuncs(interceptor.Funcs{
+			Get: func(ctx context.Context, client client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+				if _, ok := obj.(*ocp_config.Network); ok {
+					return &meta.NoKindMatchError{
+						GroupKind:        schema.GroupKind{Group: "config.openshift.io", Kind: "Network"},
+						SearchedVersions: []string{"v1"},
+					}
+				}
+				return client.Get(ctx, key, obj, opts...)
+			},
+		}).
 		Build()
 
 	// Create a minimal namespace object for helper
@@ -135,7 +171,7 @@ func TestHasIPv6ClusterNetwork_MicroShift_IPv4_NodePodCIDR(t *testing.T) {
 		},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	hasIPv6, err := HasIPv6ClusterNetwork(context.TODO(), h)
@@ -155,7 +191,7 @@ func TestHasIPv6ClusterNetwork_MicroShift_IPv6_NodePodCIDR(t *testing.T) {
 		},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	hasIPv6, err := HasIPv6ClusterNetwork(context.TODO(), h)
@@ -175,7 +211,7 @@ func TestHasIPv6ClusterNetwork_MicroShift_DualStack_NodePodCIDRs(t *testing.T) {
 		},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	hasIPv6, err := HasIPv6ClusterNetwork(context.TODO(), h)
@@ -193,7 +229,7 @@ func TestHasIPv6ClusterNetwork_MicroShift_NoPodCIDR(t *testing.T) {
 		Spec: corev1.NodeSpec{},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	hasIPv6, err := HasIPv6ClusterNetwork(context.TODO(), h)
@@ -259,7 +295,7 @@ func TestFirstClusterNetworkIsIPv6_MicroShift_IPv4First(t *testing.T) {
 		},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	isIPv6, err := FirstClusterNetworkIsIPv6(context.TODO(), h)
@@ -279,7 +315,7 @@ func TestFirstClusterNetworkIsIPv6_MicroShift_IPv6First(t *testing.T) {
 		},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	isIPv6, err := FirstClusterNetworkIsIPv6(context.TODO(), h)
@@ -297,7 +333,7 @@ func TestFirstClusterNetworkIsIPv6_MicroShift_NoPodCIDR(t *testing.T) {
 		Spec: corev1.NodeSpec{},
 	}
 
-	h, err := setupHelper(node)
+	h, err := setupHelperWithoutOCPScheme(node)
 	g.Expect(err).NotTo(HaveOccurred())
 
 	isIPv6, err := FirstClusterNetworkIsIPv6(context.TODO(), h)
