@@ -156,6 +156,57 @@ func CreateOrPatchSecret(
 	return secretHash, op, err
 }
 
+// CreateOrPatchSecretPreserve creates a secret on first creation and preserves
+// existing Data keys on subsequent reconciles. This is useful for generated
+// credentials (passwords, cookies) that should only be set once and not
+// rotated on every reconcile. Labels and annotations are always updated.
+// When skipSetOwner is true, no controller reference is set on the Secret.
+func CreateOrPatchSecretPreserve(
+	ctx context.Context,
+	h *helper.Helper,
+	obj client.Object,
+	secret *corev1.Secret,
+	skipSetOwner bool,
+) (string, controllerutil.OperationResult, error) {
+	s := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+		},
+	}
+
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), s, func() error {
+		s.Annotations = util.MergeStringMaps(s.Annotations, secret.Annotations)
+		s.Labels = util.MergeStringMaps(s.Labels, secret.Labels)
+
+		// Only set data on initial creation (when the object has no data yet)
+		if len(s.Data) == 0 {
+			s.Immutable = secret.Immutable
+			s.Type = secret.Type
+			s.Data = secret.Data
+			s.StringData = secret.StringData
+		}
+
+		if !skipSetOwner {
+			err := controllerutil.SetControllerReference(obj, s, h.GetScheme())
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", op, fmt.Errorf("error create/updating secret: %w", err)
+	}
+
+	secretHash, err := Hash(s)
+	if err != nil {
+		return "", "", fmt.Errorf("error calculating configuration hash: %w", err)
+	}
+
+	return secretHash, op, err
+}
+
 // createOrUpdateSecret - create or update existing secrte if it already exists
 // finally return configuration hash
 func createOrUpdateSecret(

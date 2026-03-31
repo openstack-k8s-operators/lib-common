@@ -56,33 +56,43 @@ func (s *StatefulSet) CreateOrPatch(
 	}
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), statefulset, func() error {
-		// selector and VolumeClaimTemplates are immutable so we set this value only if
-		// a new object is going to be created
-		if statefulset.CreationTimestamp.IsZero() {
-			statefulset.Spec.Selector = s.statefulset.Spec.Selector
-			statefulset.Spec.VolumeClaimTemplates = s.statefulset.Spec.VolumeClaimTemplates
-		}
-
-		statefulset.Annotations = util.MergeStringMaps(statefulset.Annotations, s.statefulset.Annotations)
 		statefulset.Labels = util.MergeStringMaps(statefulset.Labels, s.statefulset.Labels)
-		// We need to copy the Spec field by field as Selector and VolumeClaimTemplates are not updatable
-		// This list needs to be synced StatefulSet to gain ability to set
-		// those new fields via lib-common
-		statefulset.Spec.Replicas = s.statefulset.Spec.Replicas
-		statefulset.Spec.Template = s.statefulset.Spec.Template
-		statefulset.Spec.ServiceName = s.statefulset.Spec.ServiceName
-		statefulset.Spec.PodManagementPolicy = s.statefulset.Spec.PodManagementPolicy
-		statefulset.Spec.UpdateStrategy = s.statefulset.Spec.UpdateStrategy
-		statefulset.Spec.RevisionHistoryLimit = s.statefulset.Spec.RevisionHistoryLimit
-		statefulset.Spec.MinReadySeconds = s.statefulset.Spec.MinReadySeconds
-		statefulset.Spec.PersistentVolumeClaimRetentionPolicy = s.statefulset.Spec.PersistentVolumeClaimRetentionPolicy
+		statefulset.Annotations = util.MergeStringMaps(statefulset.Annotations, s.statefulset.Annotations)
 
-		err := controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
-		if err != nil {
-			return err
+		// Selector and VolumeClaimTemplates are immutable after creation.
+		// Preserve the existing values so the full Spec overwrite below
+		// does not trigger an API error on update.
+		if !statefulset.CreationTimestamp.IsZero() {
+			s.statefulset.Spec.Selector = statefulset.Spec.Selector
+			s.statefulset.Spec.VolumeClaimTemplates = statefulset.Spec.VolumeClaimTemplates
 		}
 
-		return nil
+		// Save existing containers before overwriting the Spec so we can
+		// merge them below to preserve server-defaulted fields.
+		existingContainers := statefulset.Spec.Template.Spec.Containers
+		existingInitContainers := statefulset.Spec.Template.Spec.InitContainers
+
+		// Overwrite the entire Spec with the desired state. This ensures
+		// any new Kubernetes fields are picked up automatically without
+		// needing to add individual field copies.
+		statefulset.Spec = s.statefulset.Spec
+
+		// Merge containers by name to preserve server-defaulted fields
+		// (e.g. TerminationMessagePath, ImagePullPolicy) and avoid
+		// unnecessary reconcile loops. Falls back to full replacement if
+		// container sets don't match by name.
+		statefulset.Spec.Template.Spec.Containers = existingContainers
+		MergeContainersByName(
+			&statefulset.Spec.Template.Spec.Containers,
+			s.statefulset.Spec.Template.Spec.Containers,
+		)
+		statefulset.Spec.Template.Spec.InitContainers = existingInitContainers
+		MergeContainersByName(
+			&statefulset.Spec.Template.Spec.InitContainers,
+			s.statefulset.Spec.Template.Spec.InitContainers,
+		)
+
+		return controllerutil.SetControllerReference(h.GetBeforeObject(), statefulset, h.GetScheme())
 	})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {

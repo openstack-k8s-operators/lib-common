@@ -199,6 +199,50 @@ func EnsureConfigMaps(
 	return nil
 }
 
+// CreateOrPatchRawConfigMap creates or patches a ConfigMap from raw data
+// (map[string]string) without template rendering. Returns the config hash and
+// operation result. This is a simpler alternative to EnsureConfigMaps when the
+// caller already has the data and doesn't need template machinery.
+// When skipSetOwner is true, no controller reference is set on the ConfigMap.
+func CreateOrPatchRawConfigMap(
+	ctx context.Context,
+	h *helper.Helper,
+	obj client.Object,
+	cm *corev1.ConfigMap,
+	skipSetOwner bool,
+) (string, controllerutil.OperationResult, error) {
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cm.Name,
+			Namespace: cm.Namespace,
+		},
+	}
+
+	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), configMap, func() error {
+		configMap.Annotations = util.MergeStringMaps(configMap.Annotations, cm.Annotations)
+		configMap.Labels = util.MergeStringMaps(configMap.Labels, cm.Labels)
+		configMap.Data = cm.Data
+
+		if !skipSetOwner {
+			err := controllerutil.SetControllerReference(obj, configMap, h.GetScheme())
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", op, fmt.Errorf("error create/updating configmap: %w", err)
+	}
+
+	configMapHash, err := Hash(configMap)
+	if err != nil {
+		return "", op, fmt.Errorf("error calculating configuration hash: %w", err)
+	}
+
+	return configMapHash, op, nil
+}
+
 // GetConfigMaps - get all configmaps required, verify they exist and add the hash to env and status
 func GetConfigMaps(
 	ctx context.Context,
