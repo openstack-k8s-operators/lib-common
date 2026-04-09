@@ -25,4 +25,8 @@ var (
 	ErrNoPodSubdomain = errors.New("no subdomain or hostname")
 	// ErrPodsInterfaces indicates that pod interfaces aren't configured
 	ErrPodsInterfaces = errors.New("not all pods have interfaces")
+	// ErrTemplateSubdirUnset indicates no template subdir for a non-none template type
+	ErrTemplateSubdirUnset = errors.New("template subdir not set")
+	// ErrInstanceTypeUnsetWithMultiTemplateDir indicates InstanceType is empty while MultiTemplateDir is set
+	ErrInstanceTypeUnsetWithMultiTemplateDir = errors.New("instance type not set")
 )

@@ -59,6 +59,7 @@ type Template struct {
 	ConfigOptions      map[string]interface{} // map of parameters as input data to render the templates
 	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
 	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
+	MultiTemplateDir   string                 // templates dir for multi-group operators, e.g. nova/api; requires InstanceType to be set
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -83,20 +84,21 @@ func GetTemplatesPath() (string, error) {
 
 // GetAllTemplates - get all template files
 //
-// The structur of the folder is, base path, the kind (CRD in lower case),
+// The structure of the folder is, base path, subdir, templateType, version
 //   - path - base path of the templates folder
-//   - kind - sub folder for the CRDs templates
+//   - subdir - directory under that root: one segment (legacy InstanceType, e.g. NovaAPI) or
+//     multi-segment (e.g. nova/api from MultiTemplateDir)
 //   - templateType - TType of the templates. When the templates got rendered and added to a CM
 //     this information is e.g. used for the permissions they get mounted into the pod
 //   - version - if there need to be templates for different versions, they can be stored in a version subdir
 //
 // Sub directories inside the specified directory with the above parameters get ignored.
-func GetAllTemplates(path string, kind string, templateType string, version string) []string {
+func GetAllTemplates(path string, subdir string, templateType string, version string) []string {
 
-	templatePath := filepath.Join(path, strings.ToLower(kind), templateType, "*")
+	templatePath := filepath.Join(path, subdir, templateType, "*")
 
 	if version != "" {
-		templatePath = filepath.Join(path, strings.ToLower(kind), templateType, version, "*")
+		templatePath = filepath.Join(path, subdir, templateType, version, "*")
 	}
 
 	templatesFiles, err := filepath.Glob(templatePath)
@@ -293,8 +295,24 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	data := make(map[string]string)
 
 	if t.Type != TemplateTypeNone {
-		// get all scripts templates which are in ../templesPath/cr.Kind/CMType/<OSPVersion - optional>
-		templatesFiles := GetAllTemplates(templatesPath, t.InstanceType, string(t.Type), string(t.Version))
+		// If MultiTemplateDir is set but InstanceType is not, return an error
+		// though we do not use InstanceType here, but it is used in secret.go
+		if t.MultiTemplateDir != "" && t.InstanceType == "" {
+			return nil, ErrInstanceTypeUnsetWithMultiTemplateDir
+		}
+
+		var templateSubdir string
+		// if MultiTemplateDir is set, it will take precedence over InstanceType
+		// otherwise, InstanceType is used to create the template subdir based on CRD name
+		if t.MultiTemplateDir != "" {
+			templateSubdir = t.MultiTemplateDir
+		} else {
+			templateSubdir = strings.ToLower(t.InstanceType)
+		}
+		if templateSubdir == "" {
+			return nil, fmt.Errorf("%w: type is %q", ErrTemplateSubdirUnset, t.Type)
+		}
+		templatesFiles := GetAllTemplates(templatesPath, templateSubdir, string(t.Type), string(t.Version))
 
 		// render all template files
 		for _, file := range templatesFiles {

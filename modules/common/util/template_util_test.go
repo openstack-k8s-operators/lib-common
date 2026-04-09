@@ -300,14 +300,14 @@ func TestGetAllTemplates(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		kind     string
+		subdir   string
 		tmplType TType
 		version  string
 		want     []string
 	}{
 		{
 			name:     "Get TemplateTypeConfig templates with no version",
-			kind:     "testservice",
+			subdir:   "testservice",
 			tmplType: TemplateTypeConfig,
 			version:  "",
 			want: []string{
@@ -318,7 +318,7 @@ func TestGetAllTemplates(t *testing.T) {
 		},
 		{
 			name:     "Get TemplateTypeScripts templates with version",
-			kind:     "testservice",
+			subdir:   "testservice",
 			tmplType: TemplateTypeScripts,
 			version:  "1.0",
 			want: []string{
@@ -334,7 +334,7 @@ func TestGetAllTemplates(t *testing.T) {
 			p, _ := GetTemplatesPath()
 			g.Expect(p).To(BeADirectory())
 
-			templatesFiles := GetAllTemplates(p, tt.kind, string(tt.tmplType), tt.version)
+			templatesFiles := GetAllTemplates(p, tt.subdir, string(tt.tmplType), tt.version)
 
 			g.Expect(templatesFiles).To(HaveLen(len(tt.want)))
 			g.Expect(templatesFiles).Should(HaveEach(BeARegularFile()))
@@ -366,7 +366,7 @@ func TestGetTemplateData(t *testing.T) {
 				Name:         "testservice",
 				Namespace:    "somenamespace",
 				Type:         TemplateTypeConfig,
-				InstanceType: "testservice",
+				InstanceType: "TestService",
 				Version:      "",
 				ConfigOptions: map[string]interface{}{
 					"ServiceUser": "foo",
@@ -381,6 +381,75 @@ func TestGetTemplateData(t *testing.T) {
 				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
 			},
 			error: false,
+		},
+		{
+			name: "Render TemplateTypeConfig using MultiTemplateDir with InstanceType",
+			tmpl: Template{
+				Name:             "testservice",
+				Namespace:        "somenamespace",
+				Type:             TemplateTypeConfig,
+				InstanceType:     "wrong-unused",
+				MultiTemplateDir: "testservice",
+				Version:          "",
+				ConfigOptions: map[string]interface{}{
+					"ServiceUser": "foo",
+					"Count":       1,
+					"Upper":       "BAR",
+				},
+				AdditionalTemplate: map[string]string{},
+			},
+			want: map[string]string{
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\nsome_parameter_with_brackets=[test]\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
+				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
+				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
+			},
+			error: false,
+		},
+		{
+			name: "Render TemplateTypeConfig using MultiTemplateDir test/service with InstanceType",
+			tmpl: Template{
+				Name:             "testservice",
+				Namespace:        "somenamespace",
+				Type:             TemplateTypeConfig,
+				InstanceType:     "wrong-unused",
+				MultiTemplateDir: "test/service",
+				Version:          "",
+				ConfigOptions: map[string]interface{}{
+					"ServiceUser": "foo",
+					"Count":       1,
+					"Upper":       "BAR",
+				},
+				AdditionalTemplate: map[string]string{},
+			},
+			want: map[string]string{
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\nsome_parameter_with_brackets=[test]\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
+				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
+				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
+			},
+			error: false,
+		},
+		{
+			name: "TemplateTypeConfig with MultiTemplateDir and empty InstanceType errors",
+			tmpl: Template{
+				Name:             "testservice",
+				Namespace:        "somenamespace",
+				Type:             TemplateTypeConfig,
+				MultiTemplateDir: "testservice",
+				ConfigOptions:    map[string]interface{}{"ServiceUser": "foo"},
+			},
+			want:  map[string]string{},
+			error: true,
+		},
+		{
+			name: "TemplateTypeConfig with empty InstanceType and MultiTemplateDir errors",
+			tmpl: Template{
+				Name:          "testservice",
+				Namespace:     "somenamespace",
+				Type:          TemplateTypeConfig,
+				ConfigOptions: map[string]interface{}{"ServiceUser": "foo"},
+			},
+			want:  map[string]string{},
+			error: true,
 		},
 		{
 			name: "Render TemplateTypeScripts templates with version",
