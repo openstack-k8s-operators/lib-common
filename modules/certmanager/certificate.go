@@ -165,7 +165,10 @@ func (c *Certificate) Delete(
 	return nil
 }
 
-// EnsureCert - creates a certificate, ensures the secret has the required key/cert and return the secret
+// EnsureCert - creates a certificate, ensures the secret has the required key/cert and return the secret.
+// The cert secret is labeled with backup.openstack.org/restore=false by default, so service
+// certs are not restored from backup (cert-manager reissues them from the restored CA).
+// Callers that need restore=true (e.g., CA cert secrets) should set it in request.Labels.
 func EnsureCert(
 	ctx context.Context,
 	helper *helper.Helper,
@@ -197,6 +200,14 @@ func EnsureCert(
 		}
 	}
 
+	// Default cert secrets to restore=false. Service certs are reissued by
+	// cert-manager from the restored CA after restore. Callers that need
+	// restore=true (e.g., CA cert secrets) override this in request.Labels.
+	certLabels := util.MergeMaps(
+		request.Labels,
+		map[string]string{backup.BackupRestoreLabel: "false"},
+	)
+
 	certSecretName := "cert-" + request.CertName
 	certSpec := certmgrv1.CertificateSpec{
 		Duration: &metav1.Duration{
@@ -210,7 +221,7 @@ func EnsureCert(
 		SecretName: certSecretName,
 		SecretTemplate: &certmgrv1.CertificateSecretTemplate{
 			Annotations: request.Annotations,
-			Labels:      request.Labels,
+			Labels:      certLabels,
 		},
 		Subject: request.Subject,
 		Usages:  request.Usages,
