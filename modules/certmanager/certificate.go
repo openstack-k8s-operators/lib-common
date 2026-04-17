@@ -208,7 +208,20 @@ func EnsureCert(
 		map[string]string{backup.BackupRestoreLabel: "false"},
 	)
 
+	// If the cert secret already exists, check for backup annotation overrides.
+	// This ensures cert-manager's SecretTemplate reflects user-set annotations
+	// (e.g., backup.openstack.org/restore=true) so they are not overwritten.
 	certSecretName := "cert-" + request.CertName
+	existingSecret := &k8s_corev1.Secret{}
+	if err := helper.GetClient().Get(ctx, types.NamespacedName{
+		Name: certSecretName, Namespace: namespace,
+	}, existingSecret); err != nil {
+		if !k8s_errors.IsNotFound(err) {
+			return nil, ctrl.Result{}, fmt.Errorf("failed to get cert secret %s/%s: %w", namespace, certSecretName, err)
+		}
+	} else {
+		backup.ApplyAnnotationOverrides(existingSecret.GetAnnotations(), certLabels)
+	}
 	certSpec := certmgrv1.CertificateSpec{
 		Duration: &metav1.Duration{
 			Duration: *request.Duration,
