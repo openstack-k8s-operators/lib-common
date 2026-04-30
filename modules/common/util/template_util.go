@@ -142,19 +142,6 @@ func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 	return renderedTemplate, nil
 }
 
-// template functions
-var tmpl *template.Template
-
-// template function which allows to execute a template from within
-// a template file.
-// name - name of the template as defined with `{{define "some-template"}}your template{{end}}
-// data - data to pass into to render the template for all can use `.`
-func execTempl(name string, data interface{}) (string, error) {
-	buf := &bytes.Buffer{}
-	err := tmpl.ExecuteTemplate(buf, name, data)
-	return buf.String(), err
-}
-
 // template function to indent the template with n tabs
 func indent(n int, in string) string {
 	var out string
@@ -231,6 +218,18 @@ func lower(s string) string {
 // ExecuteTemplateData creates a template from string and
 // execute it with the specified data
 func ExecuteTemplateData(templateData string, data interface{}) (string, error) {
+	// template functions
+	var tmpl *template.Template
+
+	// template function which allows to execute a template from within
+	// a template file.
+	// name - name of the template as defined with `{{define "some-template"}}your template{{end}}
+	// data - data to pass into to render the template for all can use `.`
+	execTempl := func(name string, data interface{}) (string, error) {
+		buf := &bytes.Buffer{}
+		err := tmpl.ExecuteTemplate(buf, name, data)
+		return buf.String(), err
+	}
 
 	var buff bytes.Buffer
 	var err error
