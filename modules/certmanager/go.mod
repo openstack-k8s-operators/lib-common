@@ -9,7 +9,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.28.2
 	github.com/onsi/gomega v1.40.0
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.3.1-0.20240122120141-2eff3281aef1
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 	k8s.io/api v0.31.14
 	k8s.io/apimachinery v0.31.14
