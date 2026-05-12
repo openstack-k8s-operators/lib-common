@@ -61,6 +61,28 @@ func newTestSchemeAndMapper() (*runtime.Scheme, meta.RESTMapper) {
 	return s, mapper
 }
 
+func TestAreSecretHashesInSync_CRDNotInstalled(t *testing.T) {
+	s := runtime.NewScheme()
+	_ = corev1.AddToScheme(s)
+
+	// Empty mapper — NodeSet GVK is not registered, simulating a cluster
+	// where the OpenStackDataPlaneNodeSet CRD is not installed.
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{})
+
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		WithRESTMapper(mapper).
+		Build()
+
+	inSync, info, err := AreSecretHashesInSync(context.Background(), c, "test")
+	if err != nil {
+		t.Errorf("AreSecretHashesInSync() unexpected error: %v", err)
+	}
+	if !inSync {
+		t.Errorf("AreSecretHashesInSync() inSync = false, want true when CRD not installed (info: %s)", info)
+	}
+}
+
 func TestAreSecretHashesInSync(t *testing.T) {
 	currentSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
