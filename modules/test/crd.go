@@ -133,6 +133,28 @@ func GetCRDDirFromModule(moduleName string, goModPath string, relativeCRDPath st
 	return path, nil
 }
 
+// GetDataPlaneCRDDir returns the absolute path of the directory holding the
+// dataplane custom resource definitions. It will look the CRD path up from
+// the lib-common test module, similar to GetOpenShiftCRDDir.
+func GetDataPlaneCRDDir(goModPath string) (string, error) {
+	libCommon := "github.com/openstack-k8s-operators/lib-common/modules/test"
+	libCommon, version, err := getDependencyVersion(libCommon, goModPath)
+	if err != nil {
+		return "", err
+	}
+	versionedModule := fmt.Sprintf("%s@%s", libCommon, version)
+	path := filepath.Join(build.Default.GOPATH, "pkg", "mod", versionedModule, "dataplane_crds")
+
+	if runtime.GOOS != "darwin" {
+		path, err = encodePath(path)
+		if err != nil {
+			return path, err
+		}
+	}
+
+	return path, nil
+}
+
 // GetOpenShiftCRDDir returns the absolute path of the directory holding the
 // OpenShift custom resource definition. It will look the CRD path up from
 // lib-common module.
