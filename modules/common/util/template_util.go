@@ -19,7 +19,9 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -28,6 +30,9 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 )
+
+//go:embed templates/common/config/*
+var commonTemplates embed.FS
 
 // TType - TemplateType
 type TType string
@@ -343,4 +348,35 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	}
 
 	return data, nil
+}
+
+// GetCommonTemplates renders the common config templates (ssl.conf, etc.)
+// shipped with lib-common using the provided configOptions, and returns
+// map[filename]renderedContent.
+// Callers merge the result into their Template.CustomData before calling
+// EnsureSecrets/EnsureConfigMaps so that common templates are included in the
+// generated Secret/ConfigMaps without each operator duplicating the files.
+func GetCommonTemplates(configOptions map[string]any) (map[string]string, error) {
+	dir := "templates/common/config"
+	entries, err := fs.ReadDir(commonTemplates, dir)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]string, len(entries))
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		data, err := fs.ReadFile(commonTemplates, path.Join(dir, e.Name()))
+		if err != nil {
+			return nil, err
+		}
+		rendered, err := ExecuteTemplateData(string(data), configOptions)
+		if err != nil {
+			return nil, err
+		}
+		result[e.Name()] = rendered
+	}
+	return result, nil
 }

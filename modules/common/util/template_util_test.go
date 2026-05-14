@@ -618,3 +618,16 @@ baz=1
 
 	g.Expect(cleaned2).To(Equal(cleaned))
 }
+
+func TestGetCommonTemplates(t *testing.T) {
+	t.Run("Returns ssl.conf", func(t *testing.T) {
+		g := NewWithT(t)
+
+		result, err := GetCommonTemplates(map[string]interface{}{})
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(result).To(HaveKey("ssl.conf"))
+		g.Expect(result["ssl.conf"]).To(ContainSubstring("mod_ssl"))
+		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLProtocol"))
+		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLCipherSuite"))
+	})
+}
