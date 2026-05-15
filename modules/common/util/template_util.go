@@ -65,6 +65,7 @@ type Template struct {
 	SkipSetOwner       bool                   // skip setting ownership on the associated configmap
 	Version            string                 // optional version string to separate templates inside the InstanceType/Type directory. E.g. placementapi/config/18.0
 	MultiTemplateDir   string                 // templates dir for multi-group operators, e.g. nova/api; requires InstanceType to be set
+	CommonTemplates    []string               // list of common embedded templates to include (e.g. []string{"ssl.conf"}).
 }
 
 // GetTemplatesPath get path to templates, either running local or deployed as container
@@ -297,6 +298,24 @@ func GetTemplateData(t Template) (map[string]string, error) {
 	}
 
 	data := make(map[string]string)
+
+	// Render requested common embedded templates as fallback defaults.
+	// Note that local operator templates rendered below overwrite the common
+	// ones: if they share the same filename, service operators definition take
+	// precedence
+	if len(t.CommonTemplates) > 0 {
+		commonData, err := GetCommonTemplates(opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range t.CommonTemplates {
+			v, ok := commonData[name]
+			if !ok {
+				return nil, fmt.Errorf("%w: %s", ErrCommonTemplateNotFound, name)
+			}
+			data[name] = v
+		}
+	}
 
 	if t.Type != TemplateTypeNone {
 		// If MultiTemplateDir is set but InstanceType is not, return an error

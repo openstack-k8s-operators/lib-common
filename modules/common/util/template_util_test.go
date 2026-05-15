@@ -575,6 +575,66 @@ function common_func {
 			want:  map[string]string{},
 			error: true,
 		},
+		{
+			name: "CommonTemplates are injected",
+			tmpl: Template{
+				Name:            "testservice",
+				Namespace:       "somenamespace",
+				Type:            TemplateTypeConfig,
+				InstanceType:    "testservice",
+				CommonTemplates: []string{"ssl.conf"},
+				ConfigOptions: map[string]any{
+					"ServiceUser": "foo",
+					"Count":       1,
+					"Upper":       "BAR",
+				},
+			},
+			want: map[string]string{
+				"bar.conf":    "[DEFAULT]\nstate_path = /var/lib/nova\ndebug=true\nsome_parameter_with_brackets=[test]\ncompute_driver = libvirt.LibvirtDriver\n\n[oslo_concurrency]\nlock_path = /var/lib/nova/tmp\n",
+				"config.json": "{\n    \"command\": \"/usr/sbin/httpd -DFOREGROUND\",\n}\n",
+				"foo.conf":    "username = foo\ncount = 1\nadd = 3\nlower = bar\n",
+				"ssl.conf":    "", // placeholder, replaced below
+			},
+			error: false,
+		},
+		{
+			name: "Unknown CommonTemplate returns error",
+			tmpl: Template{
+				Name:            "testservice",
+				Namespace:       "somenamespace",
+				Type:            TemplateTypeConfig,
+				InstanceType:    "testservice",
+				CommonTemplates: []string{"sls.conf"},
+			},
+			want:  nil,
+			error: true,
+		},
+		{
+			name: "Local service templates take precedence",
+			tmpl: Template{
+				Name:            "override",
+				Namespace:       "somenamespace",
+				Type:            TemplateTypeConfig,
+				InstanceType:    "override",
+				CommonTemplates: []string{"ssl.conf"},
+				ConfigOptions:   map[string]any{},
+			},
+			want: map[string]string{
+				"ssl.conf": "# operator-specific ssl.conf override\nSSLProtocol -all +TLSv1.3\n",
+			},
+			error: false,
+		},
+	}
+
+	// Fill in the expected ssl.conf content for the CommonTemplates test
+	commonTmpls, err := GetCommonTemplates(map[string]any{})
+	if err != nil {
+		panic("Failed to get common templates: " + err.Error())
+	}
+	for i, tt := range tests {
+		if v, ok := tt.want["ssl.conf"]; ok && v == "" {
+			tests[i].want["ssl.conf"] = commonTmpls["ssl.conf"]
+		}
 	}
 
 	for _, tt := range tests {
