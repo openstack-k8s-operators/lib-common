@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package edpm
+package unstructured
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8s_unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,8 +42,8 @@ var NodeSetGVK = schema.GroupVersionKind{
 
 // NewNodeSetObject returns an unstructured OpenStackDataPlaneNodeSet object,
 // suitable for use with controller-runtime Watches.
-func NewNodeSetObject() *unstructured.Unstructured {
-	obj := &unstructured.Unstructured{}
+func NewNodeSetObject() *k8s_unstructured.Unstructured {
+	obj := &k8s_unstructured.Unstructured{}
 	obj.SetGroupVersionKind(NodeSetGVK)
 	return obj
 }
@@ -64,7 +64,7 @@ func AreSecretHashesInSync(
 ) (inSync bool, info string, err error) {
 	Log := log.FromContext(ctx)
 
-	nodesetList := &unstructured.UnstructuredList{}
+	nodesetList := &k8s_unstructured.UnstructuredList{}
 	nodesetList.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   NodeSetGVK.Group,
 		Version: NodeSetGVK.Version,
@@ -92,7 +92,7 @@ func AreSecretHashesInSync(
 			return false, "", fmt.Errorf("context cancelled during nodeset check: %w", err)
 		}
 
-		secretHashes, found, err := unstructured.NestedStringMap(item.Object, "status", "secretHashes")
+		secretHashes, found, err := k8s_unstructured.NestedStringMap(item.Object, "status", "secretHashes")
 		if err != nil {
 			return false, "", fmt.Errorf("failed to read secretHashes from nodeset %s/%s: %w",
 				item.GetNamespace(), item.GetName(), err)
@@ -132,4 +132,36 @@ func AreSecretHashesInSync(
 	Log.Info("All nodeset secret hashes match - secrets in sync",
 		"namespace", namespace, "nodesetsChecked", len(nodesetList.Items))
 	return true, "", nil
+}
+
+// HaveNodeSets returns true if any OpenStackDataPlaneNodeSets with non-empty
+// status.secretHashes exist in the given namespace. Returns false when no
+// NodeSets exist, none have secretHashes, or the CRD is not installed.
+func HaveNodeSets(ctx context.Context, c client.Client, namespace string) (bool, error) {
+	nodesetList := &k8s_unstructured.UnstructuredList{}
+	nodesetList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   NodeSetGVK.Group,
+		Version: NodeSetGVK.Version,
+		Kind:    NodeSetGVK.Kind + "List",
+	})
+
+	if err := c.List(ctx, nodesetList, client.InNamespace(namespace)); err != nil {
+		if meta.IsNoMatchError(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to list OpenStackDataPlaneNodeSets: %w", err)
+	}
+
+	for i := range nodesetList.Items {
+		item := &nodesetList.Items[i]
+		secretHashes, found, err := k8s_unstructured.NestedStringMap(item.Object, "status", "secretHashes")
+		if err != nil {
+			return false, fmt.Errorf("failed to read secretHashes from nodeset %s: %w", item.GetName(), err)
+		}
+		if found && len(secretHashes) > 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

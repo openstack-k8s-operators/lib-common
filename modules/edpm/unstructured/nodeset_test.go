@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package edpm
+package unstructured
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8s_unstructured "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -32,17 +32,17 @@ import (
 	oko_secret "github.com/openstack-k8s-operators/lib-common/modules/common/secret"
 )
 
-func makeNodeSet(name, namespace string, secretHashes map[string]string) *unstructured.Unstructured {
-	obj := &unstructured.Unstructured{}
+func makeNodeSet(name, namespace string, secretHashes map[string]string) *k8s_unstructured.Unstructured {
+	obj := &k8s_unstructured.Unstructured{}
 	obj.SetGroupVersionKind(NodeSetGVK)
 	obj.SetName(name)
 	obj.SetNamespace(namespace)
 	if len(secretHashes) > 0 {
-		hashes := map[string]interface{}{}
+		hashes := map[string]any{}
 		for k, v := range secretHashes {
 			hashes[k] = v
 		}
-		obj.Object["status"] = map[string]interface{}{
+		obj.Object["status"] = map[string]any{
 			"secretHashes": hashes,
 		}
 	}
@@ -95,7 +95,7 @@ func TestAreSecretHashesInSync(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		nodesets       []*unstructured.Unstructured
+		nodesets       []*k8s_unstructured.Unstructured
 		secrets        []*corev1.Secret
 		wantInSync     bool
 		wantInfoSubstr string
@@ -107,7 +107,7 @@ func TestAreSecretHashesInSync(t *testing.T) {
 		},
 		{
 			name: "nodeset with stale secrets is out of sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("test-nodeset", "test", map[string]string{
 					"nova-cell1-compute-config": "old-stale-hash",
 				}),
@@ -118,7 +118,7 @@ func TestAreSecretHashesInSync(t *testing.T) {
 		},
 		{
 			name: "nodeset with current secrets is in sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("test-nodeset", "test", map[string]string{
 					"nova-cell1-compute-config": currentHash,
 				}),
@@ -128,14 +128,14 @@ func TestAreSecretHashesInSync(t *testing.T) {
 		},
 		{
 			name: "nodeset with empty SecretHashes is in sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("never-deployed-nodeset", "test", map[string]string{}),
 			},
 			wantInSync: true,
 		},
 		{
 			name: "deployed secret deleted is out of sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("test-nodeset", "test", map[string]string{
 					"deleted-secret": "some-hash",
 				}),
@@ -146,7 +146,7 @@ func TestAreSecretHashesInSync(t *testing.T) {
 		},
 		{
 			name: "transport URL secret updated after credential change is out of sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("edpm-compute", "test", map[string]string{
 					"nova-cell1-transport": "hash-with-old-credentials",
 				}),
@@ -162,7 +162,7 @@ func TestAreSecretHashesInSync(t *testing.T) {
 		},
 		{
 			name: "multiple nodesets - one stale blocks sync",
-			nodesets: []*unstructured.Unstructured{
+			nodesets: []*k8s_unstructured.Unstructured{
 				makeNodeSet("up-to-date-nodeset", "test", map[string]string{
 					"nova-cell1-compute-config": currentHash,
 				}),
@@ -214,6 +214,85 @@ func TestAreSecretHashesInSync(t *testing.T) {
 				} else if !strings.Contains(info, tt.wantInfoSubstr) {
 					t.Errorf("AreSecretHashesInSync() info = %q, want substring %q", info, tt.wantInfoSubstr)
 				}
+			}
+		})
+	}
+}
+
+func TestHaveNodeSets_CRDNotInstalled(t *testing.T) {
+	s := runtime.NewScheme()
+	_ = corev1.AddToScheme(s)
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{})
+
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		WithRESTMapper(mapper).
+		Build()
+
+	have, err := HaveNodeSets(context.Background(), c, "test")
+	if err != nil {
+		t.Errorf("HaveNodeSets() unexpected error: %v", err)
+	}
+	if have {
+		t.Error("HaveNodeSets() = true, want false when CRD not installed")
+	}
+}
+
+func TestHaveNodeSets(t *testing.T) {
+	tests := []struct {
+		name     string
+		nodesets []*k8s_unstructured.Unstructured
+		want     bool
+	}{
+		{
+			name: "no nodesets",
+			want: false,
+		},
+		{
+			name: "nodeset with empty secretHashes",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("empty-ns", "test", map[string]string{}),
+			},
+			want: false,
+		},
+		{
+			name: "nodeset with secretHashes",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("test-nodeset", "test", map[string]string{
+					"secret-a": "hash-a",
+				}),
+			},
+			want: true,
+		},
+		{
+			name: "mixed - one empty, one with hashes",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("empty-ns", "test", map[string]string{}),
+				makeNodeSet("has-hashes", "test", map[string]string{"s1": "h1"}),
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, mapper := newTestSchemeAndMapper()
+			builder := fake.NewClientBuilder().
+				WithScheme(s).
+				WithRESTMapper(mapper)
+
+			for _, ns := range tt.nodesets {
+				builder = builder.WithObjects(ns)
+			}
+			c := builder.Build()
+
+			have, err := HaveNodeSets(context.Background(), c, "test")
+			if err != nil {
+				t.Errorf("HaveNodeSets() error = %v", err)
+				return
+			}
+			if have != tt.want {
+				t.Errorf("HaveNodeSets() = %v, want %v", have, tt.want)
 			}
 		})
 	}
