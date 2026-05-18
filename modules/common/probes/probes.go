@@ -30,12 +30,23 @@ import (
 	"strings"
 )
 
-func (p *ProbeConf) merge(overrides ProbeConf) {
-	// Override path if provided
+// Merge applies non-zero override values onto the receiver
+func (p *ProbeConf) Merge(overrides ProbeConf) {
+	if overrides.Type != "" {
+		p.Type = overrides.Type
+	}
 	if overrides.Path != "" {
 		p.Path = overrides.Path
 	}
-	// Override timing values if they are non-zero
+	if len(overrides.Command) > 0 {
+		p.Command = overrides.Command
+	}
+	if overrides.Port > 0 {
+		p.Port = overrides.Port
+	}
+	if overrides.Scheme != nil {
+		p.Scheme = overrides.Scheme
+	}
 	if overrides.InitialDelaySeconds > 0 {
 		p.InitialDelaySeconds = overrides.InitialDelaySeconds
 	}
@@ -50,70 +61,61 @@ func (p *ProbeConf) merge(overrides ProbeConf) {
 	}
 }
 
-// CreateProbeSet - creates all probes at once using the interface
+// CreateProbeSet creates all probes at once using the interface.
+// Port and scheme are applied to all probes as HTTP GET handler parameters.
+// For mixed probe types (e.g. HTTP and exec), use CreateProbeSetV2 instead
+// with Port/Scheme set in the individual ProbeConf defaults.
 func CreateProbeSet(
 	port int32,
 	scheme *v1.URIScheme,
 	overrides ProbeOverrides,
 	defaults OverrideSpec,
 ) (*ProbeSet, error) {
+	for _, p := range []*ProbeConf{defaults.LivenessProbes, defaults.ReadinessProbes, defaults.StartupProbes} {
+		if p != nil {
+			p.Port = port
+			p.Scheme = scheme
+		}
+	}
+	return CreateProbeSetV2(overrides, defaults)
+}
 
-	livenessProbe, err := SetProbeConf(
-		port,
-		scheme,
-		func() ProbeConf {
-			if defaults.LivenessProbes == nil {
-				defaults.LivenessProbes = &ProbeConf{}
-			}
-			baseConf := *defaults.LivenessProbes
-			if p := overrides.GetLivenessProbes(); p != nil {
-				baseConf.merge(*p)
-			}
-			return baseConf
-		}(),
+// CreateProbeSetV2 creates all probes at once using the interface.
+// Each probe's handler type, port, scheme, path, and command are determined
+// by the ProbeConf fields in the defaults and overrides.
+func CreateProbeSetV2(
+	overrides ProbeOverrides,
+	defaults OverrideSpec,
+) (*ProbeSet, error) {
+
+	mergeConf := func(base *ProbeConf, override *ProbeConf) ProbeConf {
+		if base == nil {
+			base = &ProbeConf{}
+		}
+		conf := *base
+		if override != nil {
+			conf.Merge(*override)
+		}
+		return conf
+	}
+
+	livenessProbe, err := SetProbeConfV2(
+		mergeConf(defaults.LivenessProbes, overrides.GetLivenessProbes()),
 	)
-
-	// Could not process probes config
 	if err != nil {
 		return nil, err
 	}
 
-	readinessProbe, err := SetProbeConf(
-		port,
-		scheme,
-		func() ProbeConf {
-			if defaults.ReadinessProbes == nil {
-				defaults.ReadinessProbes = &ProbeConf{}
-			}
-			baseConf := *defaults.ReadinessProbes
-			if p := overrides.GetReadinessProbes(); p != nil {
-				baseConf.merge(*p)
-			}
-			return baseConf
-		}(),
+	readinessProbe, err := SetProbeConfV2(
+		mergeConf(defaults.ReadinessProbes, overrides.GetReadinessProbes()),
 	)
-
-	// Could not process probes config
 	if err != nil {
 		return nil, err
 	}
 
-	startupProbe, err := SetProbeConf(
-		port,
-		scheme,
-		func() ProbeConf {
-			if defaults.StartupProbes == nil {
-				defaults.StartupProbes = &ProbeConf{}
-			}
-			baseConf := *defaults.StartupProbes
-			if p := overrides.GetStartupProbes(); p != nil {
-				baseConf.merge(*p)
-			}
-			return baseConf
-		}(),
+	startupProbe, err := SetProbeConfV2(
+		mergeConf(defaults.StartupProbes, overrides.GetStartupProbes()),
 	)
-
-	// Could not process probes config
 	if err != nil {
 		return nil, err
 	}
@@ -125,72 +127,99 @@ func CreateProbeSet(
 	}, nil
 }
 
-// SetProbeConf configures and returns liveness and readiness probes based on
-// the provided settings
+// SetProbeConf configures and returns an HTTP GET probe based on the provided
+// settings. For exec-based probes, use SetProbeConfV2 instead.
 func SetProbeConf(port int32, scheme *v1.URIScheme, config ProbeConf) (*v1.Probe, error) {
-	if port < 1 || port > 65535 {
-		return nil, fmt.Errorf("%w: %d", util.ErrInvalidPort, port)
+	config.Port = port
+	config.Scheme = scheme
+	if config.Type == "" {
+		config.Type = ProbeHandlerHTTP
 	}
+	return SetProbeConfV2(config)
+}
+
+// SetProbeConfV2 configures and returns a probe based on the ProbeConf
+// settings. The probe handler type is determined by ProbeConf.Type:
+// ProbeHandlerExec creates an exec probe using ProbeConf.Command, while
+// ProbeHandlerHTTP (or unset) creates an HTTP GET probe using ProbeConf.Port,
+// ProbeConf.Path, and ProbeConf.Scheme.
+func SetProbeConfV2(config ProbeConf) (*v1.Probe, error) {
 	probe := &v1.Probe{
-		ProbeHandler: v1.ProbeHandler{
-			HTTPGet: &v1.HTTPGetAction{
-				Path: config.Path,
-				Port: intstr.FromInt32(port),
-			},
-		},
 		InitialDelaySeconds: config.InitialDelaySeconds,
 		TimeoutSeconds:      config.TimeoutSeconds,
 		PeriodSeconds:       config.PeriodSeconds,
 		FailureThreshold:    config.FailureThreshold,
 	}
-	if scheme != nil {
-		probe.HTTPGet.Scheme = *scheme
+
+	switch config.Type {
+	case ProbeHandlerExec:
+		if len(config.Command) == 0 {
+			return nil, util.ErrExecProbeCommandRequired
+		}
+		probe.ProbeHandler = v1.ProbeHandler{
+			Exec: &v1.ExecAction{
+				Command: config.Command,
+			},
+		}
+	default:
+		if config.Port < 1 || config.Port > 65535 {
+			return nil, fmt.Errorf("%w: %d", util.ErrInvalidPort, config.Port)
+		}
+		probe.ProbeHandler = v1.ProbeHandler{
+			HTTPGet: &v1.HTTPGetAction{
+				Path: config.Path,
+				Port: intstr.FromInt32(config.Port),
+			},
+		}
+		if config.Scheme != nil {
+			probe.HTTPGet.Scheme = *config.Scheme
+		}
 	}
 	return probe, nil
 }
 
-// ValidateProbeConf - This function can be used at webhooks level to explicitly
-// validate the overrides
+// ValidateProbeConf validates probe configuration overrides for use at the
+// webhook level
 func ValidateProbeConf(basePath *field.Path, config *ProbeConf) field.ErrorList {
 	errorList := field.ErrorList{}
-	// nothing to validate, return an empty errorList
 	if config == nil {
 		return errorList
 	}
-	// Path validation: fail is explicitly set as an empty string
-	// or the endpoint does't start with "/"
-	if config.Path != "" && !strings.HasPrefix(config.Path, "/") {
-		err := field.Invalid(basePath.Child("path"), config.Path,
-			"path must start with '/' if specified")
-		errorList = append(errorList, err)
+
+	switch config.Type {
+	case ProbeHandlerExec:
+		if len(config.Command) == 0 {
+			errorList = append(errorList, field.Required(basePath.Child("command"),
+				"command is required for exec probe type"))
+		}
+	case "", ProbeHandlerHTTP:
+		if config.Path != "" && !strings.HasPrefix(config.Path, "/") {
+			errorList = append(errorList, field.Invalid(basePath.Child("path"), config.Path,
+				"path must start with '/' if specified"))
+		}
+	default:
+		errorList = append(errorList, field.Invalid(basePath.Child("type"), config.Type,
+			"type must be one of: HTTP, Exec, or unset"))
 	}
 
-	// InitialDelaySeconds validation: must be > 0
 	if config.InitialDelaySeconds < 0 {
-		err := field.Invalid(basePath.Child("initialDelaySeconds"), config.InitialDelaySeconds,
-			"initialDelaySeconds must be non-negative")
-		errorList = append(errorList, err)
+		errorList = append(errorList, field.Invalid(basePath.Child("initialDelaySeconds"), config.InitialDelaySeconds,
+			"initialDelaySeconds must be non-negative"))
 	}
 
-	// TimeoutSeconds validation: fail if it's a negative number
 	if config.TimeoutSeconds != 0 && config.TimeoutSeconds < 1 {
-		err := field.Invalid(basePath.Child("timeoutSeconds"), config.TimeoutSeconds,
-			"timeoutSeconds must be at least 1 second when set")
-		errorList = append(errorList, err)
+		errorList = append(errorList, field.Invalid(basePath.Child("timeoutSeconds"), config.TimeoutSeconds,
+			"timeoutSeconds must be at least 1 second when set"))
 	}
 
-	// PeriodSeconds validation: fail if it's set as a negative number
 	if config.PeriodSeconds != 0 && config.PeriodSeconds < 1 {
-		err := field.Invalid(basePath.Child("periodSeconds"), config.PeriodSeconds,
-			"periodSeconds must be at least 1 second when set")
-		errorList = append(errorList, err)
+		errorList = append(errorList, field.Invalid(basePath.Child("periodSeconds"), config.PeriodSeconds,
+			"periodSeconds must be at least 1 second when set"))
 	}
 
-	// FailureThreshold validation: fail if it's set as a negative number
 	if config.FailureThreshold != 0 && config.FailureThreshold < 1 {
-		err := field.Invalid(basePath.Child("failureThreshold"), config.FailureThreshold,
-			"failureThreshold must be at least 1 when set")
-		errorList = append(errorList, err)
+		errorList = append(errorList, field.Invalid(basePath.Child("failureThreshold"), config.FailureThreshold,
+			"failureThreshold must be at least 1 when set"))
 	}
 
 	return errorList
