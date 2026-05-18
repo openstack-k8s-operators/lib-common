@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/storage
 go 1.24.4
 
 require (
-	github.com/onsi/gomega v1.40.0
+	github.com/onsi/gomega v1.41.0
 	k8s.io/api v0.31.14
 )
 
