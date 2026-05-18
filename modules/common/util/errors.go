@@ -31,4 +31,6 @@ var (
 	ErrInstanceTypeUnsetWithMultiTemplateDir = errors.New("instance type not set")
 	// ErrCommonTemplateNotFound indicates a requested common template does not exist
 	ErrCommonTemplateNotFound = errors.New("common template not found")
+	// ErrExecProbeCommandRequired indicates that an exec probe has no command
+	ErrExecProbeCommandRequired = errors.New("exec probe requires a non-empty command")
 )
