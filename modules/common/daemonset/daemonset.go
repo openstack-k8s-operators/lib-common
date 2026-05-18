@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -63,8 +64,28 @@ func (d *DaemonSet) CreateOrPatch(
 		}
 		daemonset.Annotations = util.MergeStringMaps(daemonset.Annotations, d.daemonset.Annotations)
 		daemonset.Labels = util.MergeStringMaps(daemonset.Labels, d.daemonset.Labels)
+
+		// Save existing containers before overwriting the Template so we
+		// can merge them below to preserve server-defaulted fields.
+		existingContainers := daemonset.Spec.Template.Spec.Containers
+		existingInitContainers := daemonset.Spec.Template.Spec.InitContainers
+
 		daemonset.Spec.Template = d.daemonset.Spec.Template
 		daemonset.Spec.UpdateStrategy = d.daemonset.Spec.UpdateStrategy
+
+		// Merge containers by name to preserve server-defaulted fields
+		// (e.g. TerminationMessagePath, ImagePullPolicy) and avoid
+		// unnecessary reconcile loops.
+		daemonset.Spec.Template.Spec.Containers = existingContainers
+		pod.MergeContainersByName(
+			&daemonset.Spec.Template.Spec.Containers,
+			d.daemonset.Spec.Template.Spec.Containers,
+		)
+		daemonset.Spec.Template.Spec.InitContainers = existingInitContainers
+		pod.MergeContainersByName(
+			&daemonset.Spec.Template.Spec.InitContainers,
+			d.daemonset.Spec.Template.Spec.InitContainers,
+		)
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), daemonset, h.GetScheme())
 		if err != nil {
