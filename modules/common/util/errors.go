@@ -29,4 +29,6 @@ var (
 	ErrTemplateSubdirUnset = errors.New("template subdir not set")
 	// ErrInstanceTypeUnsetWithMultiTemplateDir indicates InstanceType is empty while MultiTemplateDir is set
 	ErrInstanceTypeUnsetWithMultiTemplateDir = errors.New("instance type not set")
+	// ErrCommonTemplateNotFound indicates a requested common template does not exist
+	ErrCommonTemplateNotFound = errors.New("common template not found")
 )
