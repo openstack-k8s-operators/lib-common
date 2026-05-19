@@ -24,15 +24,30 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
+// ProbeHandlerType defines the type of probe handler
+// +kubebuilder:validation:Enum=HTTP;Exec;""
+type ProbeHandlerType string
+
+const (
+	// ProbeHandlerHTTP configures an HTTP GET probe handler
+	ProbeHandlerHTTP ProbeHandlerType = "HTTP"
+	// ProbeHandlerExec configures an exec probe handler
+	ProbeHandlerExec ProbeHandlerType = "Exec"
+)
+
 // ProbeConf - the configuration for liveness and readiness probes
-// LivenessPath - Endpoint path for the liveness probe
-// ReadinessPath - Endpoint path for the readiness probe
-// InitialDelaySeconds - Number of seconds after the container starts before liveness/readiness probes are initiated
-// TimeoutSeconds - Number of seconds after which the probe times out
-// PeriodSeconds - How often (in seconds) to perform the probe
 type ProbeConf struct {
+	// +kubebuilder:validation:Optional
+	Type ProbeHandlerType `json:"type,omitempty"`
 	// +kubebuilder:validation:Pattern=`^(/.*)?$`
 	Path string `json:"path,omitempty"`
+	// +listType=atomic
+	Command []string `json:"command,omitempty"`
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port,omitempty"`
+	// +kubebuilder:validation:Optional
+	Scheme *v1.URIScheme `json:"scheme,omitempty"`
 	// +kubebuilder:validation:Minimum=0
 	InitialDelaySeconds int32 `json:"initialDelaySeconds,omitempty"`
 	// +kubebuilder:validation:Minimum=1
