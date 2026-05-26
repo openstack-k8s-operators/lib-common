@@ -230,6 +230,15 @@ func createOrUpdateSecret(
 		secret.Type = st.SecretType
 	}
 
+	// If this template includes common templates (e.g. ssl.conf), try to read
+	// the well-known openstack-ssl-profile Secret and merge its values as
+	// defaults into ConfigOptions. This allows the openstack-operator to set
+	// cluster-wide TLS cipher/protocol settings that are picked up
+	// transparently by all service operators.
+	if len(st.CommonTemplates) > 0 {
+		mergeSSLProfileDefaults(ctx, h, st.Namespace, &st)
+	}
+
 	// create or update the CM
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
 		secret.Labels = util.MergeStringMaps(secret.Labels, st.Labels)
@@ -566,4 +575,30 @@ func VerifySecretFields(
 	}
 
 	return hash, ctrl.Result{}, nil
+}
+
+const sslProfileSecretName = "openstack-ssl-profile"
+
+// mergeSSLProfileDefaults reads the well-known openstack-ssl-profile Secret and
+// merges its data into the Template's ConfigOptions as defaults. Existing keys
+// in ConfigOptions take precedence. If the Secret does not exist, this is a
+// no-op — ssl.conf falls back to its hardcoded defaults.
+func mergeSSLProfileDefaults(ctx context.Context, h *helper.Helper, namespace string, st *util.Template) {
+	sslSecret := &corev1.Secret{}
+	err := h.GetClient().Get(ctx, types.NamespacedName{
+		Name:      sslProfileSecretName,
+		Namespace: namespace,
+	}, sslSecret)
+	if err != nil {
+		return
+	}
+
+	if st.ConfigOptions == nil {
+		st.ConfigOptions = make(map[string]interface{})
+	}
+	for k, v := range sslSecret.Data {
+		if _, exists := st.ConfigOptions[k]; !exists {
+			st.ConfigOptions[k] = string(v)
+		}
+	}
 }
