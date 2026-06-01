@@ -219,6 +219,176 @@ func TestAreSecretHashesInSync(t *testing.T) {
 	}
 }
 
+func TestIsSecretHashInSync_CRDNotInstalled(t *testing.T) {
+	s := runtime.NewScheme()
+	_ = corev1.AddToScheme(s)
+	mapper := meta.NewDefaultRESTMapper([]schema.GroupVersion{})
+
+	c := fake.NewClientBuilder().
+		WithScheme(s).
+		WithRESTMapper(mapper).
+		Build()
+
+	inSync, info, err := IsSecretHashInSync(context.Background(), c, "test", "any-secret")
+	if err != nil {
+		t.Errorf("IsSecretHashInSync() unexpected error: %v", err)
+	}
+	if !inSync {
+		t.Errorf("IsSecretHashInSync() inSync = false, want true when CRD not installed (info: %s)", info)
+	}
+}
+
+func TestIsSecretHashInSync(t *testing.T) {
+	hmacSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "instanceha-0-heartbeat-hmac",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{"hmac-key": []byte("current-key")},
+	}
+	hmacHash, _ := oko_secret.Hash(hmacSecret)
+
+	otherSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "nova-cell1-compute-config",
+			Namespace: "test",
+		},
+		Data: map[string][]byte{"config": []byte("nova-config")},
+	}
+
+	tests := []struct {
+		name           string
+		secretName     string
+		nodesets       []*k8s_unstructured.Unstructured
+		secrets        []*corev1.Secret
+		wantInSync     bool
+		wantInfoSubstr string
+	}{
+		{
+			name:       "no nodesets exist",
+			secretName: "instanceha-0-heartbeat-hmac",
+			wantInSync: true,
+		},
+		{
+			name:       "secret not tracked by any nodeset",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("ns1", "test", map[string]string{
+					"nova-cell1-compute-config": "some-hash",
+				}),
+			},
+			secrets:    []*corev1.Secret{hmacSecret, otherSecret},
+			wantInSync: true,
+		},
+		{
+			name:       "secret in sync",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("ns1", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": hmacHash,
+					"nova-cell1-compute-config":   "stale-hash",
+				}),
+			},
+			secrets:    []*corev1.Secret{hmacSecret, otherSecret},
+			wantInSync: true,
+		},
+		{
+			name:       "secret out of sync",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("ns1", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": "old-hash",
+				}),
+			},
+			secrets:        []*corev1.Secret{hmacSecret},
+			wantInSync:     false,
+			wantInfoSubstr: "has changed since last deployment",
+		},
+		{
+			name:       "secret deleted",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("ns1", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": "some-hash",
+				}),
+			},
+			secrets:        []*corev1.Secret{},
+			wantInSync:     false,
+			wantInfoSubstr: "no longer exists",
+		},
+		{
+			name:       "multiple nodesets - one stale for this secret",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("up-to-date", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": hmacHash,
+				}),
+				makeNodeSet("stale", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": "old-hash",
+				}),
+			},
+			secrets:        []*corev1.Secret{hmacSecret},
+			wantInSync:     false,
+			wantInfoSubstr: "has changed since last deployment",
+		},
+		{
+			name:       "other secret stale does not affect this secret",
+			secretName: "instanceha-0-heartbeat-hmac",
+			nodesets: []*k8s_unstructured.Unstructured{
+				makeNodeSet("ns1", "test", map[string]string{
+					"instanceha-0-heartbeat-hmac": hmacHash,
+					"unrelated-secret":            "stale-hash",
+				}),
+			},
+			secrets:    []*corev1.Secret{hmacSecret},
+			wantInSync: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, mapper := newTestSchemeAndMapper()
+
+			builder := fake.NewClientBuilder().
+				WithScheme(s).
+				WithRESTMapper(mapper)
+
+			for _, ns := range tt.nodesets {
+				builder = builder.WithObjects(ns)
+			}
+			for _, sec := range tt.secrets {
+				builder = builder.WithObjects(sec)
+			}
+
+			c := builder.Build()
+
+			inSync, info, err := IsSecretHashInSync(
+				context.Background(),
+				c,
+				"test",
+				tt.secretName,
+			)
+
+			if err != nil {
+				t.Errorf("IsSecretHashInSync() unexpected error: %v", err)
+				return
+			}
+
+			if inSync != tt.wantInSync {
+				t.Errorf("IsSecretHashInSync() inSync = %v, want %v (info: %s)", inSync, tt.wantInSync, info)
+			}
+
+			if tt.wantInfoSubstr != "" {
+				if info == "" {
+					t.Errorf("IsSecretHashInSync() info is empty, want substring %q", tt.wantInfoSubstr)
+				} else if !strings.Contains(info, tt.wantInfoSubstr) {
+					t.Errorf("IsSecretHashInSync() info = %q, want substring %q", info, tt.wantInfoSubstr)
+				}
+			}
+		})
+	}
+}
+
 func TestHaveNodeSets_CRDNotInstalled(t *testing.T) {
 	s := runtime.NewScheme()
 	_ = corev1.AddToScheme(s)
