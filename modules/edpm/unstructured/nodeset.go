@@ -134,6 +134,83 @@ func AreSecretHashesInSync(
 	return true, "", nil
 }
 
+// IsSecretHashInSync checks whether a single named secret's hash matches what
+// is deployed across all OpenStackDataPlaneNodeSets in the given namespace.
+// Unlike AreSecretHashesInSync, it ignores all other secrets — useful when a
+// controller needs to track deployment of one specific secret without being
+// affected by unrelated secret changes.
+//
+// Returns:
+//   - inSync=true when the secret's hash matches in every NodeSet that tracks
+//     it, when no NodeSets exist, when no NodeSet tracks this secret, or when
+//     the OpenStackDataPlaneNodeSet CRD is not installed.
+//   - inSync=false with info describing the first mismatch.
+func IsSecretHashInSync(
+	ctx context.Context,
+	c client.Client,
+	namespace string,
+	secretName string,
+) (inSync bool, info string, err error) {
+	Log := log.FromContext(ctx)
+
+	nodesetList := &k8s_unstructured.UnstructuredList{}
+	nodesetList.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   NodeSetGVK.Group,
+		Version: NodeSetGVK.Version,
+		Kind:    NodeSetGVK.Kind + "List",
+	})
+
+	if err := c.List(ctx, nodesetList, client.InNamespace(namespace)); err != nil {
+		if meta.IsNoMatchError(err) {
+			return true, "", nil
+		}
+		return false, "", fmt.Errorf("failed to list OpenStackDataPlaneNodeSets: %w", err)
+	}
+
+	for i := range nodesetList.Items {
+		item := &nodesetList.Items[i]
+
+		secretHashes, found, err := k8s_unstructured.NestedStringMap(item.Object, "status", "secretHashes")
+		if err != nil {
+			return false, "", fmt.Errorf("failed to read secretHashes from nodeset %s/%s: %w",
+				item.GetNamespace(), item.GetName(), err)
+		}
+		if !found {
+			continue
+		}
+
+		deployedHash, tracked := secretHashes[secretName]
+		if !tracked {
+			continue
+		}
+
+		currentSecret := &corev1.Secret{}
+		if err := c.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, currentSecret); err != nil {
+			if k8s_errors.IsNotFound(err) {
+				info := fmt.Sprintf("nodeset %s/%s: deployed secret %s no longer exists",
+					item.GetNamespace(), item.GetName(), secretName)
+				return false, info, nil
+			}
+			return false, "", fmt.Errorf("failed to get secret %s: %w", secretName, err)
+		}
+
+		currentHash, hashErr := oko_secret.Hash(currentSecret)
+		if hashErr != nil {
+			return false, "", fmt.Errorf("failed to hash secret %s: %w", secretName, hashErr)
+		}
+
+		if currentHash != deployedHash {
+			info := fmt.Sprintf("nodeset %s/%s: secret %s has changed since last deployment",
+				item.GetNamespace(), item.GetName(), secretName)
+			Log.Info("Secret hash out of sync", "secret", secretName,
+				"nodeset", item.GetName(), "deployed", deployedHash, "current", currentHash)
+			return false, info, nil
+		}
+	}
+
+	return true, "", nil
+}
+
 // HaveNodeSets returns true if any OpenStackDataPlaneNodeSets with non-empty
 // status.secretHashes exist in the given namespace. Returns false when no
 // NodeSets exist, none have secretHashes, or the CRD is not installed.
