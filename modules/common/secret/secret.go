@@ -594,7 +594,7 @@ func mergeSSLProfileDefaults(ctx context.Context, h *helper.Helper, namespace st
 	}
 
 	if st.ConfigOptions == nil {
-		st.ConfigOptions = make(map[string]interface{})
+		st.ConfigOptions = make(map[string]any)
 	}
 	for k, v := range sslSecret.Data {
 		if _, exists := st.ConfigOptions[k]; !exists {
