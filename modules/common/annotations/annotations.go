@@ -29,6 +29,10 @@ const (
 	// a reconciliation. Changing its value forces a new reconcile event.
 	// Used in multiple operators, therefore defined as a shared constant.
 	ReconcileTriggerAnnotation = "openstack.org/reconcile-trigger"
+
+	// SkipValidationAnnotation is set on a resource to skip webhook validation.
+	// The annotation key presence is what matters; the value is ignored.
+	SkipValidationAnnotation = "openstack.org/skip-webhook-validation"
 )
 
 // IsPaused returns true if the PausedAnnotation key is present on the object.
@@ -38,5 +42,15 @@ func IsPaused(obj metav1.Object) bool {
 		return false
 	}
 	_, exists := annotations[PausedAnnotation]
+	return exists
+}
+
+// SkipValidation returns true if the SkipValidationAnnotation key is present on the object.
+func SkipValidation(obj metav1.Object) bool {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		return false
+	}
+	_, exists := annotations[SkipValidationAnnotation]
 	return exists
 }

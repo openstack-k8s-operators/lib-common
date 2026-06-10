@@ -69,3 +69,48 @@ func TestIsPaused(t *testing.T) {
 		g.Expect(IsPaused(obj)).To(BeTrue())
 	})
 }
+
+func TestSkipValidation(t *testing.T) {
+	t.Run("returns false when annotations are nil", func(t *testing.T) {
+		g := NewWithT(t)
+		obj := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test",
+			},
+		}
+		g.Expect(SkipValidation(obj)).To(BeFalse())
+	})
+
+	t.Run("returns false when annotation is not present", func(t *testing.T) {
+		g := NewWithT(t)
+		obj := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test",
+				Annotations: map[string]string{"other": "value"},
+			},
+		}
+		g.Expect(SkipValidation(obj)).To(BeFalse())
+	})
+
+	t.Run("returns true when annotation is present with empty value", func(t *testing.T) {
+		g := NewWithT(t)
+		obj := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test",
+				Annotations: map[string]string{SkipValidationAnnotation: ""},
+			},
+		}
+		g.Expect(SkipValidation(obj)).To(BeTrue())
+	})
+
+	t.Run("returns true when annotation is present with any value", func(t *testing.T) {
+		g := NewWithT(t)
+		obj := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "test",
+				Annotations: map[string]string{SkipValidationAnnotation: "true"},
+			},
+		}
+		g.Expect(SkipValidation(obj)).To(BeTrue())
+	})
+}
