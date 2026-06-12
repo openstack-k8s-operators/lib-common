@@ -687,8 +687,8 @@ func TestGetCommonTemplates(t *testing.T) {
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(result).To(HaveKey("ssl.conf"))
 		g.Expect(result["ssl.conf"]).To(ContainSubstring("mod_ssl"))
-		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5:!RC4:!3DES"))
-		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLProtocol all -SSLv2 -SSLv3 -TLSv1"))
+		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLCipherSuite ECDHE+AESGCM:DHE+AESGCM:!aNULL:!MD5:!RC4:!3DES\n"))
+		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLProtocol all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1\n"))
 	})
 
 	t.Run("SSLCipherSuite and SSLProtocol can be overridden", func(t *testing.T) {
@@ -702,7 +702,7 @@ func TestGetCommonTemplates(t *testing.T) {
 		g.Expect(result).To(HaveKey("ssl.conf"))
 		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLCipherSuite ECDHE+AESGCM:ECDHE+CHACHA20"))
 		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLProtocol -all +TLSv1.3"))
-		g.Expect(result["ssl.conf"]).NotTo(ContainSubstring("HIGH:MEDIUM"))
+		g.Expect(result["ssl.conf"]).NotTo(ContainSubstring("ECDHE+AESGCM:DHE+AESGCM:!aNULL:!MD5:!RC4:!3DES"))
 		g.Expect(result["ssl.conf"]).NotTo(ContainSubstring("all -SSLv2"))
 	})
 }
