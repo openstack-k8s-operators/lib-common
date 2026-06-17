@@ -152,9 +152,11 @@ func (s *StatefulSet) Delete(
 
 // IsReady - validates when deployment is ready deployed to whats being requested
 // - the requested replicas in the spec matches the ReadyReplicas of the status
+// - all pods run the current spec (UpdatedReplicas == requested replicas)
 // - both when the Generatation of the object matches the ObservedGeneration of the Status
 func IsReady(deployment appsv1.StatefulSet) bool {
 	return deployment.Spec.Replicas != nil &&
 		*deployment.Spec.Replicas == deployment.Status.ReadyReplicas &&
+		*deployment.Spec.Replicas == deployment.Status.UpdatedReplicas &&
 		deployment.Generation == deployment.Status.ObservedGeneration
 }

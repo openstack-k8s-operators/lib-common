@@ -132,10 +132,12 @@ func GetDeploymentWithName(
 // IsReady - validates when deployment is ready deployed to whats being requested
 // - the requested replicas in the spec matches the ReadyReplicas of the status
 // - the Status.Replicas match Status.ReadyReplicas. if a deployment update is in progress, Replicas > ReadyReplicas
+// - all pods run the current spec (UpdatedReplicas == requested replicas)
 // - both when the Generatation of the object matches the ObservedGeneration of the Status
 func IsReady(deployment appsv1.Deployment) bool {
 	return deployment.Spec.Replicas != nil &&
 		*deployment.Spec.Replicas == deployment.Status.ReadyReplicas &&
+		*deployment.Spec.Replicas == deployment.Status.UpdatedReplicas &&
 		deployment.Status.Replicas == deployment.Status.ReadyReplicas &&
 		deployment.Generation == deployment.Status.ObservedGeneration
 }
