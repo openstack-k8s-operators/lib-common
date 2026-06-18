@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -128,6 +129,8 @@ func (j *Job) DoJob(
 ) (ctrl.Result, error) {
 	var ctrlResult ctrl.Result
 	var err error
+
+	pod.SetPullPolicyDefaults(&j.expectedJob.Spec.Template.Spec)
 
 	// We intentionally only include the PodTemplate Spec in the hash of the Job.
 	// PodTemplate metadata is excluded as it can be altered by k8s (labels specifically).

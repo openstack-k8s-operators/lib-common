@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -64,6 +65,7 @@ func (d *DaemonSet) CreateOrPatch(
 		daemonset.Annotations = util.MergeStringMaps(daemonset.Annotations, d.daemonset.Annotations)
 		daemonset.Labels = util.MergeStringMaps(daemonset.Labels, d.daemonset.Labels)
 		daemonset.Spec.Template = d.daemonset.Spec.Template
+		pod.SetPullPolicyDefaults(&daemonset.Spec.Template.Spec)
 		daemonset.Spec.UpdateStrategy = d.daemonset.Spec.UpdateStrategy
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), daemonset, h.GetScheme())

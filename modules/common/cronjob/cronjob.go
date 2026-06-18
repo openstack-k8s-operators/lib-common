@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -52,6 +53,7 @@ func (cj *CronJob) CreateOrPatch(
 
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), cronjob, func() error {
 		cronjob.Spec = cj.cronjob.Spec
+		pod.SetPullPolicyDefaults(&cronjob.Spec.JobTemplate.Spec.Template.Spec)
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), cronjob, h.GetScheme())
 		if err != nil {
 			return err
