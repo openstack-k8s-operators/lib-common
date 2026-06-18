@@ -85,6 +85,8 @@ func AreSecretHashesInSync(
 		return true, "", nil
 	}
 
+	hashCache := map[string]string{}
+
 	for i := range nodesetList.Items {
 		item := &nodesetList.Items[i]
 
@@ -102,23 +104,28 @@ func AreSecretHashesInSync(
 		}
 
 		for secretName, deployedHash := range secretHashes {
-			currentSecret := &corev1.Secret{}
-			err := c.Get(ctx, types.NamespacedName{
-				Name:      secretName,
-				Namespace: namespace,
-			}, currentSecret)
-			if err != nil {
-				if k8s_errors.IsNotFound(err) {
-					info := fmt.Sprintf("nodeset %s/%s: deployed secret %s no longer exists",
-						item.GetNamespace(), item.GetName(), secretName)
-					return false, info, nil
+			currentHash, ok := hashCache[secretName]
+			if !ok {
+				currentSecret := &corev1.Secret{}
+				err := c.Get(ctx, types.NamespacedName{
+					Name:      secretName,
+					Namespace: namespace,
+				}, currentSecret)
+				if err != nil {
+					if k8s_errors.IsNotFound(err) {
+						info := fmt.Sprintf("nodeset %s/%s: deployed secret %s no longer exists",
+							item.GetNamespace(), item.GetName(), secretName)
+						return false, info, nil
+					}
+					return false, "", fmt.Errorf("failed to get secret %s: %w", secretName, err)
 				}
-				return false, "", fmt.Errorf("failed to get secret %s: %w", secretName, err)
-			}
 
-			currentHash, hashErr := oko_secret.Hash(currentSecret)
-			if hashErr != nil {
-				return false, "", fmt.Errorf("failed to hash secret %s: %w", secretName, hashErr)
+				h, hashErr := oko_secret.Hash(currentSecret)
+				if hashErr != nil {
+					return false, "", fmt.Errorf("failed to hash secret %s: %w", secretName, hashErr)
+				}
+				currentHash = h
+				hashCache[secretName] = currentHash
 			}
 
 			if currentHash != deployedHash {
@@ -167,6 +174,9 @@ func IsSecretHashInSync(
 		return false, "", fmt.Errorf("failed to list OpenStackDataPlaneNodeSets: %w", err)
 	}
 
+	var currentHash string
+	var hashResolved bool
+
 	for i := range nodesetList.Items {
 		item := &nodesetList.Items[i]
 
@@ -184,19 +194,23 @@ func IsSecretHashInSync(
 			continue
 		}
 
-		currentSecret := &corev1.Secret{}
-		if err := c.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, currentSecret); err != nil {
-			if k8s_errors.IsNotFound(err) {
-				info := fmt.Sprintf("nodeset %s/%s: deployed secret %s no longer exists",
-					item.GetNamespace(), item.GetName(), secretName)
-				return false, info, nil
+		if !hashResolved {
+			currentSecret := &corev1.Secret{}
+			if err := c.Get(ctx, types.NamespacedName{Name: secretName, Namespace: namespace}, currentSecret); err != nil {
+				if k8s_errors.IsNotFound(err) {
+					info := fmt.Sprintf("nodeset %s/%s: deployed secret %s no longer exists",
+						item.GetNamespace(), item.GetName(), secretName)
+					return false, info, nil
+				}
+				return false, "", fmt.Errorf("failed to get secret %s: %w", secretName, err)
 			}
-			return false, "", fmt.Errorf("failed to get secret %s: %w", secretName, err)
-		}
 
-		currentHash, hashErr := oko_secret.Hash(currentSecret)
-		if hashErr != nil {
-			return false, "", fmt.Errorf("failed to hash secret %s: %w", secretName, hashErr)
+			h, hashErr := oko_secret.Hash(currentSecret)
+			if hashErr != nil {
+				return false, "", fmt.Errorf("failed to hash secret %s: %w", secretName, hashErr)
+			}
+			currentHash = h
+			hashResolved = true
 		}
 
 		if currentHash != deployedHash {
