@@ -29,6 +29,23 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+// SetPullPolicyDefaults sets ImagePullPolicy to PullIfNotPresent on every
+// container in the PodSpec that does not already have an explicit policy.
+// Without an explicit policy, Kubernetes defaults to PullAlways when the
+// image tag is "latest" or unset.
+func SetPullPolicyDefaults(podSpec *corev1.PodSpec) {
+	for i := range podSpec.InitContainers {
+		if podSpec.InitContainers[i].ImagePullPolicy == "" {
+			podSpec.InitContainers[i].ImagePullPolicy = corev1.PullIfNotPresent
+		}
+	}
+	for i := range podSpec.Containers {
+		if podSpec.Containers[i].ImagePullPolicy == "" {
+			podSpec.Containers[i].ImagePullPolicy = corev1.PullIfNotPresent
+		}
+	}
+}
+
 // GetPodListWithLabel - Get all pods in namespace of the obj matching label selector
 func GetPodListWithLabel(
 	ctx context.Context,

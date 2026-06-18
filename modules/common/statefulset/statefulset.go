@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -76,6 +77,8 @@ func (s *StatefulSet) CreateOrPatch(
 		// any new Kubernetes fields are picked up automatically without
 		// needing to add individual field copies.
 		statefulset.Spec = s.statefulset.Spec
+
+		pod.SetPullPolicyDefaults(&statefulset.Spec.Template.Spec)
 
 		// Merge containers by name to preserve server-defaulted fields
 		// (e.g. TerminationMessagePath, ImagePullPolicy) and avoid

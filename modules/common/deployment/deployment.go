@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	appsv1 "k8s.io/api/apps/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -64,6 +65,7 @@ func (d *Deployment) CreateOrPatch(
 		deployment.Annotations = util.MergeStringMaps(deployment.Annotations, d.deployment.Annotations)
 		deployment.Labels = util.MergeStringMaps(deployment.Labels, d.deployment.Labels)
 		deployment.Spec.Template = d.deployment.Spec.Template
+		pod.SetPullPolicyDefaults(&deployment.Spec.Template.Spec)
 		deployment.Spec.Replicas = d.deployment.Spec.Replicas
 		deployment.Spec.Strategy = d.deployment.Spec.Strategy
 
