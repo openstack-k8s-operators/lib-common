@@ -20,6 +20,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -174,4 +175,24 @@ func (s *Volume) ToCoreVolume() (*corev1.Volume, error) {
 		VolumeSource: *volSource,
 	}
 	return coreVolume, nil
+}
+
+// DuplicateExtraMountCheck - This function takes an ExtraMount as input and validates that there are no duplicate
+// mounts that could cause conflicts when we try to define Kubernetes objects.
+// If any duplcates are found, we will return an error so that this function can be used in a webhook.
+func DuplicateExtraMountCheck(volMounts []VolMounts) error {
+
+	var errors error
+	var existingMountPaths []string
+
+	for _, vol := range volMounts {
+		for _, mount := range vol.Mounts {
+			if slices.Contains(existingMountPaths, mount.MountPath) {
+				return fmt.Errorf("mountPaths must be unique for each extraMount. Duplicate found: %s", mount.MountPath)
+			}
+			existingMountPaths = append(existingMountPaths, mount.MountPath)
+		}
+	}
+
+	return errors
 }
