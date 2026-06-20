@@ -124,3 +124,20 @@ func TestGetLabels(t *testing.T) {
 		})
 	}
 }
+
+// Given a map[string]string, get the corresponding labelSelectors and compare
+// them via the EqualLabelSelectors utility
+func TestEqualLabelSelectors(t *testing.T) {
+	t.Run("Compare labelSelectors", func(t *testing.T) {
+		g := NewWithT(t)
+
+		l0 := GetLabelSelector(map[string]string{})
+		l1 := GetLabelSelector(map[string]string{"app": "foo", "version": "v1", "property": "bar"})
+		l2 := l1
+		l3 := GetLabelSelector(map[string]string{"app": "api", "version": "v1"})
+
+		g.Expect(EqualLabelSelectors(l1, l0)).To(BeFalse())
+		g.Expect(EqualLabelSelectors(l1, l2)).To(BeTrue())
+		g.Expect(EqualLabelSelectors(l1, l3)).To(BeFalse())
+	})
+}
