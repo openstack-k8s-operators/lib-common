@@ -33,6 +33,10 @@ const (
 	// SkipValidationAnnotation is set on a resource to skip webhook validation.
 	// The annotation key presence is what matters; the value is ignored.
 	SkipValidationAnnotation = "openstack.org/skip-webhook-validation"
+
+	// RotationGraceAnnotation is set on an object to track when a
+	// credential rotation grace period started.
+	RotationGraceAnnotation = "openstack.org/rotation-grace-until"
 )
 
 // IsPaused returns true if the PausedAnnotation key is present on the object.

@@ -52,6 +52,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
+		ss.Status.CurrentRevision = fmt.Sprintf("%s-rev", name.Name)
+		ss.Status.UpdateRevision = fmt.Sprintf("%s-rev", name.Name)
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
@@ -115,6 +117,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
+		ss.Status.CurrentRevision = fmt.Sprintf("%s-rev", name.Name)
+		ss.Status.UpdateRevision = fmt.Sprintf("%s-rev", name.Name)
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
