@@ -87,10 +87,20 @@ func (d *Deployment) CreateOrPatch(
 		h.GetLogger().Info(fmt.Sprintf("Deployment %s - %s", deployment.Name, op))
 	}
 
-	// update the deployment object of the deployment type
-	d.deployment, err = GetDeploymentWithName(ctx, h, deployment.GetName(), deployment.GetNamespace())
-	if err != nil {
-		return ctrl.Result{}, err
+	if op == controllerutil.OperationResultNone {
+		// Re-read from cache to pick up status updates from the
+		// Deployment controller (e.g. updated ReadyReplicas).
+		d.deployment, err = GetDeploymentWithName(ctx, h, deployment.GetName(), deployment.GetNamespace())
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		// After a create/update the informer cache may still hold the
+		// previous version where Generation == ObservedGeneration. Using
+		// the server-returned object preserves the correct (bumped)
+		// Generation so that callers' readiness checks do not pass on
+		// stale data.
+		d.deployment = deployment
 	}
 
 	return ctrl.Result{}, nil

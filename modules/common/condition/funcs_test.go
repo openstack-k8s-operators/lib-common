@@ -351,6 +351,41 @@ func TestIsMethods(t *testing.T) {
 	g.Expect(conditions.IsUnknown("unknownB")).To(BeTrue())
 }
 
+func TestServiceInstanceIsReady(t *testing.T) {
+	g := NewWithT(t)
+
+	readyConditions := CreateList(
+		TrueCondition(DeploymentReadyCondition, "deployment ready"),
+	)
+
+	notReadyConditions := CreateList(
+		FalseCondition(DeploymentReadyCondition, InitReason, SeverityInfo, "creating"),
+	)
+
+	g.Expect(ServiceInstanceIsReady(2, 2, 3, 3, &readyConditions)).To(BeTrue())
+	g.Expect(ServiceInstanceIsReady(2, 1, 3, 3, &readyConditions)).To(BeFalse())
+	g.Expect(ServiceInstanceIsReady(2, 2, 2, 3, &readyConditions)).To(BeFalse())
+	g.Expect(ServiceInstanceIsReady(2, 2, 3, 3, &notReadyConditions)).To(BeFalse())
+	g.Expect(ServiceInstanceIsReady(1, 1, 0, 0, &notReadyConditions)).To(BeTrue())
+	g.Expect(ServiceInstanceIsReady(1, 1, 0, 0, nil)).To(BeFalse())
+}
+
+func TestCredentialRotationGuardReady(t *testing.T) {
+	g := NewWithT(t)
+
+	conditions := Conditions{}
+	conditions.Init(nil)
+	conditions.MarkTrue("a", "ready")
+	conditions.MarkTrue("b", "ready")
+
+	g.Expect(CredentialRotationGuardReady(true, &conditions)).To(BeTrue())
+	conditions.MarkFalse("a", InitReason, SeverityInfo, "not ready")
+	g.Expect(CredentialRotationGuardReady(true, &conditions)).To(BeFalse())
+	conditions.MarkTrue("a", "ready")
+	g.Expect(CredentialRotationGuardReady(false, &conditions)).To(BeFalse())
+	g.Expect(CredentialRotationGuardReady(true, nil)).To(BeFalse())
+}
+
 func TestAllSubConditionIsTrue(t *testing.T) {
 	conditions := Conditions{}
 

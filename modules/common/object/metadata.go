@@ -22,15 +22,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"time"
 
+	commonannotations "github.com/openstack-k8s-operators/lib-common/modules/common/annotations"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
+	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // CheckOwnerRefExist - returns true if the owner is already in the owner ref list
@@ -180,4 +183,163 @@ func ManageConsumerFinalizer(
 	}
 
 	return nil
+}
+
+// ManageSecretConsumerFinalizer ensures consumerFinalizer is present on the
+// secret identified by secretName. It is a no-op when secretName is empty.
+func ManageSecretConsumerFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	secretName string,
+	consumerFinalizer string,
+) error {
+	if secretName == "" {
+		return nil
+	}
+
+	secret := &corev1.Secret{}
+	key := types.NamespacedName{Name: secretName, Namespace: namespace}
+	if err := h.GetClient().Get(ctx, key, secret); err != nil {
+		return fmt.Errorf("failed to get secret %s: %w", secretName, err)
+	}
+
+	return AddConsumerFinalizer(ctx, h, secret, consumerFinalizer)
+}
+
+// RemoveSecretConsumerFinalizer removes consumerFinalizer from the secret
+// identified by secretName. It is a no-op when secretName is empty or the
+// secret no longer exists.
+func RemoveSecretConsumerFinalizer(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	secretName string,
+	consumerFinalizer string,
+) error {
+	if secretName == "" {
+		return nil
+	}
+
+	secret := &corev1.Secret{}
+	key := types.NamespacedName{Name: secretName, Namespace: namespace}
+	if err := h.GetClient().Get(ctx, key, secret); err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get secret %s: %w", secretName, err)
+	}
+	return RemoveConsumerFinalizer(ctx, h, secret, consumerFinalizer)
+}
+
+// FinalizeSecretRotation handles the rotation guard for a credential secret
+// (transport URL, application credential, or any other rotating secret).
+// It detects whether rotation is in progress and:
+//   - If no rotation (statusSecretName == currentSecretName or statusSecretName
+//     is empty): returns currentSecretName
+//   - If rotation detected and guardReady is true: removes the consumer
+//     finalizer from the old secret and returns currentSecretName
+//   - If rotation detected and guardReady is false: returns
+//     statusSecretName unchanged (finalizer held, rotation pending)
+//
+// Compute guardReady with condition.CredentialRotationGuardReady from lib-common.
+func FinalizeSecretRotation(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	statusSecretName string,
+	currentSecretName string,
+	consumerFinalizer string,
+	guardReady bool,
+) (string, error) {
+	if statusSecretName == "" || statusSecretName == currentSecretName {
+		return currentSecretName, nil
+	}
+
+	if !guardReady {
+		return statusSecretName, nil
+	}
+
+	if err := RemoveSecretConsumerFinalizer(
+		ctx, h, namespace, statusSecretName, consumerFinalizer,
+	); err != nil {
+		return statusSecretName, err
+	}
+	return currentSecretName, nil
+}
+
+// ManageRotationGracePeriod manages a time-based grace period during
+// credential rotation. When rotationPending is true and no grace period
+// is active, it sets a timestamp annotation and returns (requeue, true, nil).
+// While the grace period is active, it returns (requeue, true, nil) with
+// the remaining time. After the grace period expires, it returns
+// ({}, false, nil) so the caller can evaluate the rotation guard.
+// When rotationPending is false, it clears any existing annotation.
+//
+// This gives sub-CRs time to detect config changes, update their
+// Deployments/StatefulSets, and roll pods before the guard releases
+// the old secret's consumer finalizer.
+func ManageRotationGracePeriod(
+	ctx context.Context,
+	c client.Client,
+	obj client.Object,
+	rotationPending bool,
+	gracePeriod time.Duration,
+) (ctrl.Result, bool, error) {
+	annotations := obj.GetAnnotations()
+
+	if !rotationPending {
+		if annotations != nil {
+			if _, has := annotations[commonannotations.RotationGraceAnnotation]; has {
+				before := obj.DeepCopyObject().(client.Object)
+				delete(annotations, commonannotations.RotationGraceAnnotation)
+				obj.SetAnnotations(annotations)
+				if err := c.Patch(ctx, obj, client.MergeFrom(before)); err != nil {
+					return ctrl.Result{}, false, err
+				}
+			}
+		}
+		return ctrl.Result{}, false, nil
+	}
+
+	graceUntilStr := ""
+	if annotations != nil {
+		graceUntilStr = annotations[commonannotations.RotationGraceAnnotation]
+	}
+
+	if graceUntilStr == "" {
+		before := obj.DeepCopyObject().(client.Object)
+		graceUntil := time.Now().Add(gracePeriod)
+		if annotations == nil {
+			annotations = map[string]string{}
+		}
+		annotations[commonannotations.RotationGraceAnnotation] = graceUntil.Format(time.RFC3339)
+		obj.SetAnnotations(annotations)
+		if err := c.Patch(ctx, obj, client.MergeFrom(before)); err != nil {
+			return ctrl.Result{}, false, err
+		}
+		return ctrl.Result{RequeueAfter: gracePeriod}, true, nil
+	}
+
+	graceUntil, err := time.Parse(time.RFC3339, graceUntilStr)
+	if err != nil {
+		before := obj.DeepCopyObject().(client.Object)
+		delete(annotations, commonannotations.RotationGraceAnnotation)
+		obj.SetAnnotations(annotations)
+		if patchErr := c.Patch(ctx, obj, client.MergeFrom(before)); patchErr != nil {
+			return ctrl.Result{}, false, patchErr
+		}
+		return ctrl.Result{}, false, nil
+	}
+
+	if time.Now().Before(graceUntil) {
+		remaining := time.Until(graceUntil)
+		return ctrl.Result{RequeueAfter: remaining}, true, nil
+	}
+
+	// Grace period expired — let the caller evaluate the guard.
+	// The annotation stays until rotationPending becomes false
+	// (after FinalizeSecretRotation updates the status), at which
+	// point the !rotationPending branch above clears it.
+	return ctrl.Result{}, false, nil
 }
