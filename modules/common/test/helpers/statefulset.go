@@ -105,9 +105,18 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		}
 		netStatusAnnotation, err := json.Marshal(netStatus)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		if pod.Annotations == nil {
+			pod.Annotations = map[string]string{}
+		}
 		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 
-		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		existingPod := &corev1.Pod{}
+		if tc.K8sClient.Get(tc.Ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, existingPod) == nil {
+			existingPod.Annotations = pod.Annotations
+			gomega.Expect(tc.K8sClient.Update(tc.Ctx, existingPod)).Should(gomega.Succeed())
+		} else {
+			gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		}
 	}
 
 	gomega.Eventually(func(g gomega.Gomega) {
