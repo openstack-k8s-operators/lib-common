@@ -108,10 +108,20 @@ func (s *StatefulSet) CreateOrPatch(
 		h.GetLogger().Info(fmt.Sprintf("StatefulSet %s - %s", statefulset.Name, op))
 	}
 
-	// update the statefulset object of the statefulset type
-	s.statefulset, err = GetStatefulSetWithName(ctx, h, statefulset.GetName(), statefulset.GetNamespace())
-	if err != nil {
-		return ctrl.Result{}, err
+	if op == controllerutil.OperationResultNone {
+		// Re-read from cache to pick up status updates from the
+		// StatefulSet controller (e.g. updated ReadyReplicas).
+		s.statefulset, err = GetStatefulSetWithName(ctx, h, statefulset.GetName(), statefulset.GetNamespace())
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		// After a create/update the informer cache may still hold the
+		// previous version where Generation == ObservedGeneration. Using
+		// the server-returned object preserves the correct (bumped)
+		// Generation so that callers' readiness checks do not pass on
+		// stale data.
+		s.statefulset = statefulset
 	}
 
 	return ctrl.Result{}, nil
@@ -157,9 +167,11 @@ func (s *StatefulSet) Delete(
 // - the requested replicas in the spec matches the ReadyReplicas of the status
 // - all pods run the current spec (UpdatedReplicas == requested replicas)
 // - both when the Generatation of the object matches the ObservedGeneration of the Status
+// - the rollout is complete (CurrentRevision == UpdateRevision)
 func IsReady(deployment appsv1.StatefulSet) bool {
 	return deployment.Spec.Replicas != nil &&
 		*deployment.Spec.Replicas == deployment.Status.ReadyReplicas &&
 		*deployment.Spec.Replicas == deployment.Status.UpdatedReplicas &&
-		deployment.Generation == deployment.Status.ObservedGeneration
+		deployment.Generation == deployment.Status.ObservedGeneration &&
+		deployment.Status.CurrentRevision == deployment.Status.UpdateRevision
 }

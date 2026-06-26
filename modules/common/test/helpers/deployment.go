@@ -108,7 +108,8 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 			Spec:       depl.Spec.Template.Spec,
 		}
 		pod.Namespace = name.Namespace
-		pod.GenerateName = name.Name
+		pod.Name = fmt.Sprintf("%s-%d", name.Name, i)
+		pod.GenerateName = ""
 		// NOTE(gibi): If there is a mount that refers to a volume created via
 		// persistent volume claim then that mount won't have a corresponding
 		// volume created in EnvTest as we are not simulating the k8s volume
@@ -136,10 +137,19 @@ func (tc *TestHelper) SimulateDeploymentReadyWithPods(name types.NamespacedName,
 			}
 			netStatusAnnotation, err := json.Marshal(netStatus)
 			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			if pod.Annotations == nil {
+				pod.Annotations = map[string]string{}
+			}
 			pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 		}
 
-		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		existingPod := &corev1.Pod{}
+		if tc.K8sClient.Get(tc.Ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, existingPod) == nil {
+			existingPod.Annotations = pod.Annotations
+			gomega.Expect(tc.K8sClient.Update(tc.Ctx, existingPod)).Should(gomega.Succeed())
+		} else {
+			gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		}
 	}
 
 	gomega.Eventually(func(g gomega.Gomega) {

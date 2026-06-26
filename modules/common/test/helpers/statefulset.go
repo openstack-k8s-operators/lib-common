@@ -52,6 +52,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReady(name types.NamespacedName)
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
+		ss.Status.CurrentRevision = fmt.Sprintf("%s-rev", name.Name)
+		ss.Status.UpdateRevision = fmt.Sprintf("%s-rev", name.Name)
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
@@ -103,9 +105,18 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		}
 		netStatusAnnotation, err := json.Marshal(netStatus)
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		if pod.Annotations == nil {
+			pod.Annotations = map[string]string{}
+		}
 		pod.Annotations[networkv1.NetworkStatusAnnot] = string(netStatusAnnotation)
 
-		gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		existingPod := &corev1.Pod{}
+		if tc.K8sClient.Get(tc.Ctx, types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, existingPod) == nil {
+			existingPod.Annotations = pod.Annotations
+			gomega.Expect(tc.K8sClient.Update(tc.Ctx, existingPod)).Should(gomega.Succeed())
+		} else {
+			gomega.Expect(tc.K8sClient.Create(tc.Ctx, pod)).Should(gomega.Succeed())
+		}
 	}
 
 	gomega.Eventually(func(g gomega.Gomega) {
@@ -115,6 +126,8 @@ func (tc *TestHelper) SimulateStatefulSetReplicaReadyWithPods(name types.Namespa
 		ss.Status.ReadyReplicas = *ss.Spec.Replicas
 		ss.Status.UpdatedReplicas = *ss.Spec.Replicas
 		ss.Status.ObservedGeneration = ss.Generation
+		ss.Status.CurrentRevision = fmt.Sprintf("%s-rev", name.Name)
+		ss.Status.UpdateRevision = fmt.Sprintf("%s-rev", name.Name)
 		g.Expect(tc.K8sClient.Status().Update(tc.Ctx, ss)).To(gomega.Succeed())
 
 	}, tc.Timeout, tc.Interval).Should(gomega.Succeed())
