@@ -310,7 +310,28 @@ func (s *Service) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
 		service.Labels = util.MergeStringMaps(s.service.Labels, service.Labels)
 		service.Annotations = util.MergeStringMaps(s.service.Annotations, service.Annotations)
-		service.Spec = s.service.Spec
+
+		// Copy only operator-controlled fields from the desired spec.
+		// The existing spec is kept as the base so that
+		// server-defaulted fields (e.g. SessionAffinity,
+		// IPFamilyPolicy, InternalTrafficPolicy, ClusterIPs) are
+		// preserved automatically, avoiding unnecessary reconcile
+		// loops. If Kubernetes adds new defaulted fields in the
+		// future, they are preserved without code changes here.
+		service.Spec.Selector = s.service.Spec.Selector
+		service.Spec.Type = s.service.Spec.Type
+		service.Spec.ClusterIP = s.service.Spec.ClusterIP
+		service.Spec.PublishNotReadyAddresses = s.service.Spec.PublishNotReadyAddresses
+		service.Spec.ExternalTrafficPolicy = s.service.Spec.ExternalTrafficPolicy
+		service.Spec.LoadBalancerClass = s.service.Spec.LoadBalancerClass
+		service.Spec.LoadBalancerSourceRanges = s.service.Spec.LoadBalancerSourceRanges
+		service.Spec.AllocateLoadBalancerNodePorts = s.service.Spec.AllocateLoadBalancerNodePorts
+
+		// Merge ports by name to preserve server-defaulted fields
+		// (e.g. TargetPort, Protocol) and avoid unnecessary reconcile
+		// loops. Falls back to full replacement if port sets don't
+		// match by name.
+		MergeServicePorts(&service.Spec.Ports, s.service.Spec.Ports)
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())
 		if err != nil {
