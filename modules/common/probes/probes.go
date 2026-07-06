@@ -80,9 +80,9 @@ func CreateProbeSet(
 	return CreateProbeSetV2(overrides, defaults)
 }
 
-// CreateProbeSetV2 creates all probes at once using the interface.
-// Each probe's handler type, port, scheme, path, and command are determined
-// by the ProbeConf fields in the defaults and overrides.
+// CreateProbeSetV2 creates configured probes using defaults and overrides.
+// Each probe is built only when present in defaults or overrides; unset probe
+// types are omitted from the returned ProbeSet.
 func CreateProbeSetV2(
 	overrides ProbeOverrides,
 	defaults OverrideSpec,
@@ -99,32 +99,43 @@ func CreateProbeSetV2(
 		return conf
 	}
 
-	livenessProbe, err := SetProbeConfV2(
-		mergeConf(defaults.LivenessProbes, overrides.GetLivenessProbes()),
-	)
-	if err != nil {
-		return nil, err
+	result := &ProbeSet{}
+
+	if probeConfigured(defaults.LivenessProbes, overrides.GetLivenessProbes()) {
+		livenessProbe, err := SetProbeConfV2(
+			mergeConf(defaults.LivenessProbes, overrides.GetLivenessProbes()),
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.Liveness = livenessProbe
 	}
 
-	readinessProbe, err := SetProbeConfV2(
-		mergeConf(defaults.ReadinessProbes, overrides.GetReadinessProbes()),
-	)
-	if err != nil {
-		return nil, err
+	if probeConfigured(defaults.ReadinessProbes, overrides.GetReadinessProbes()) {
+		readinessProbe, err := SetProbeConfV2(
+			mergeConf(defaults.ReadinessProbes, overrides.GetReadinessProbes()),
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.Readiness = readinessProbe
 	}
 
-	startupProbe, err := SetProbeConfV2(
-		mergeConf(defaults.StartupProbes, overrides.GetStartupProbes()),
-	)
-	if err != nil {
-		return nil, err
+	if probeConfigured(defaults.StartupProbes, overrides.GetStartupProbes()) {
+		startupProbe, err := SetProbeConfV2(
+			mergeConf(defaults.StartupProbes, overrides.GetStartupProbes()),
+		)
+		if err != nil {
+			return nil, err
+		}
+		result.Startup = startupProbe
 	}
 
-	return &ProbeSet{
-		Liveness:  livenessProbe,
-		Readiness: readinessProbe,
-		Startup:   startupProbe,
-	}, nil
+	return result, nil
+}
+
+func probeConfigured(defaults *ProbeConf, override *ProbeConf) bool {
+	return defaults != nil || override != nil
 }
 
 // SetProbeConfV2 configures and returns a probe based on the ProbeConf

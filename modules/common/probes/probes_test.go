@@ -633,6 +633,88 @@ func TestCreateProbeSetV2(t *testing.T) {
 	})
 }
 
+func TestCreateProbeSetV2OptionalProbes(t *testing.T) {
+	scheme := v1.URISchemeHTTP
+	command := []string{"/usr/bin/pgrep", "nova-scheduler"}
+
+	t.Run("liveness and readiness only", func(t *testing.T) {
+		defaults := OverrideSpec{
+			LivenessProbes: &ProbeConf{
+				TimeoutSeconds:      30,
+				PeriodSeconds:       30,
+				InitialDelaySeconds: 5,
+			},
+			ReadinessProbes: &ProbeConf{
+				TimeoutSeconds:      30,
+				PeriodSeconds:       30,
+				InitialDelaySeconds: 5,
+			},
+		}
+
+		probeSet, err := CreateProbeSet(8778, &scheme, OverrideSpec{}, defaults)
+		if err != nil {
+			t.Fatalf("CreateProbeSet() unexpected error: %v", err)
+		}
+		if probeSet.Liveness == nil || probeSet.Readiness == nil {
+			t.Fatal("expected liveness and readiness probes")
+		}
+		if probeSet.Startup != nil {
+			t.Fatal("startup probe should be omitted when not configured")
+		}
+	})
+
+	t.Run("liveness and startup exec only", func(t *testing.T) {
+		defaults := OverrideSpec{
+			LivenessProbes: &ProbeConf{
+				Type:                ProbeHandlerExec,
+				Command:             command,
+				TimeoutSeconds:      10,
+				PeriodSeconds:       20,
+				InitialDelaySeconds: 15,
+			},
+			StartupProbes: &ProbeConf{
+				Type:                ProbeHandlerExec,
+				Command:             command,
+				TimeoutSeconds:      10,
+				PeriodSeconds:       10,
+				InitialDelaySeconds: 20,
+				FailureThreshold:    12,
+			},
+		}
+
+		probeSet, err := CreateProbeSetV2(OverrideSpec{}, defaults)
+		if err != nil {
+			t.Fatalf("CreateProbeSetV2() unexpected error: %v", err)
+		}
+		if probeSet.Liveness == nil || probeSet.Startup == nil {
+			t.Fatal("expected liveness and startup probes")
+		}
+		if probeSet.Readiness != nil {
+			t.Fatal("readiness probe should be omitted when not configured")
+		}
+	})
+
+	t.Run("override only", func(t *testing.T) {
+		overrides := OverrideSpec{
+			LivenessProbes: &ProbeConf{
+				Path: "/healthcheck",
+				Port: 8080,
+			},
+		}
+
+		probeSet, err := CreateProbeSetV2(overrides, OverrideSpec{})
+		if err != nil {
+			t.Fatalf("CreateProbeSetV2() unexpected error: %v", err)
+		}
+		if probeSet.Liveness == nil {
+			t.Fatal("expected liveness probe from override only")
+		}
+		if probeSet.Readiness != nil || probeSet.Startup != nil {
+			t.Fatal("expected only liveness probe")
+		}
+	})
+}
+
 func TestValidateProbeConfExec(t *testing.T) {
 	tests := []struct {
 		name      string
