@@ -300,6 +300,21 @@ func TestValidatePassword(t *testing.T) {
 	}
 }
 
+func TestNewRule(t *testing.T) {
+	g := NewWithT(t)
+
+	rule := NewRule("only lowercase letters", *regexp.MustCompile(`^[a-z]+$`))
+	g.Expect(rule.description).To(Equal("only lowercase letters"))
+	g.Expect(rule.pattern.String()).To(Equal(`^[a-z]+$`))
+
+	validator := PasswordValidator{
+		Requirements: &[]Rule{rule},
+		Rejects:      &[]Rule{},
+	}
+	g.Expect(validator.Validate("abc")).To(Succeed())
+	g.Expect(validator.Validate("ABC")).To(MatchError(ContainSubstring(ErrMsg)))
+}
+
 func TestValidatePasswordWithCustomRules(t *testing.T) {
 	// Define custom requirements (strict rules)
 	customRequirements := []Rule{
