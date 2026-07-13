@@ -76,6 +76,13 @@ var (
 	ErrPasswordRequirements = errors.New("password does not meet the requirements")
 )
 
+// NewRule creates a Rule for use with PasswordValidator.Requirements or
+// PasswordValidator.Rejects. Callers outside this package must use this
+// constructor since Rule's fields are unexported.
+func NewRule(description string, pattern regexp.Regexp) Rule {
+	return Rule{description: description, pattern: pattern}
+}
+
 // Validate - implements the Validator interface
 // If requirements or rejects rules are not specified in the
 // structure, the function uses the default rule set defined
