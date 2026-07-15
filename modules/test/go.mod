@@ -11,7 +11,7 @@ require (
 require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
-	github.com/rogpeppe/go-internal v1.13.1 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
@@ -22,6 +22,6 @@ replace github.com/openstack-k8s-operators/lib-common/modules/common => ../commo
 
 replace github.com/openstack-k8s-operators/lib-common/modules/openstack => ../openstack
 
-// mschuppert: map to latest commit from release-4.18 tag
+// mschuppert: map to latest commit from release-4.20 tag
 // must consistent within modules and service operators
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20250711200046-c86d80652a9e
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260710141509-36dec0bfafe4
