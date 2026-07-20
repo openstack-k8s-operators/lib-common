@@ -1,30 +1,30 @@
 {
-	"extends": [
-		"github>openstack-k8s-operators/renovate-config:default.json5"
-	],
-	"baseBranchPatterns": [
-		"main"
-	],
-	"useBaseBranchConfig": "merge",
-	"packageRules": [
-		{
-			"matchPackageNames": [
-				"github.com/openstack-k8s-operators/lib-common/modules/common"
-			],
-			"enabled": false
-		}
-	],
-	"postUpgradeTasks": {
-		"commands": [
-			"make gowork",
-			"make tidy"
-		],
-		"fileFilters": [
-			"**/go.mod",
-			"**/go.sum",
-			"**/*.go",
-			"**/*.yaml"
-		],
-		"executionMode": "update"
-	}
+  "extends": [
+    "github>openstack-k8s-operators/renovate-config:18-stable.json5"
+  ],
+  "baseBranchPatterns": [
+    "18-stable"
+  ],
+  "useBaseBranchConfig": "merge",
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "github.com/openstack-k8s-operators/lib-common/modules/common"
+      ],
+      "enabled": false
+    }
+  ],
+  "postUpgradeTasks": {
+    "commands": [
+      "make gowork",
+      "make tidy"
+    ],
+    "fileFilters": [
+      "**/go.mod",
+      "**/go.sum",
+      "**/*.go",
+      "**/*.yaml"
+    ],
+    "executionMode": "update"
+  }
 }
