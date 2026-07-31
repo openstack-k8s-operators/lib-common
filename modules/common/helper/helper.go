@@ -205,6 +205,24 @@ func (h *Helper) PatchInstance(ctx context.Context, instance client.Object) erro
 	changes := h.GetChanges()
 	patch := client.MergeFrom(h.GetBeforeObject())
 
+	// Pre-compute status patch data while instance still holds in-memory
+	// changes. The metadata patch below overwrites instance with the server
+	// response, which carries the server's current status and wipes any
+	// in-memory status modifications (e.g. RegisteredCells deletions).
+	var statusPatch client.Patch
+	if changes["status"] {
+		if changes["metadata"] {
+			patchData, patchErr := patch.Data(instance)
+			if patchErr != nil {
+				l.Error(patchErr, "Failed to compute status patch data")
+				return patchErr
+			}
+			statusPatch = client.RawPatch(patch.Type(), patchData)
+		} else {
+			statusPatch = patch
+		}
+	}
+
 	if changes["metadata"] {
 		err = h.GetClient().Patch(ctx, instance, patch)
 		if k8s_errors.IsConflict(err) {
@@ -217,7 +235,7 @@ func (h *Helper) PatchInstance(ctx context.Context, instance client.Object) erro
 	}
 
 	if changes["status"] {
-		err = h.GetClient().Status().Patch(ctx, instance, patch)
+		err = h.GetClient().Status().Patch(ctx, instance, statusPatch)
 		if k8s_errors.IsConflict(err) {
 			l.Info("Status update conflict")
 			return err
