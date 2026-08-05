@@ -19,6 +19,13 @@ repos:
       entry: make
       args: ['golangci']
       pass_filenames: false
+    - id: make-verify-uids-gids
+      name: make-verify-uids-gids
+      language: system
+      entry: make
+      args: ['verify-uids-gids']
+      pass_filenames: false
+      files: ^modules/users/registry\.go$
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0

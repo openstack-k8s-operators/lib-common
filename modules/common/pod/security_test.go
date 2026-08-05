@@ -112,6 +112,17 @@ func TestPrivilegedSecurityContext(t *testing.T) {
 	}
 }
 
+func TestPrivilegedSecurityContextRootUser(t *testing.T) {
+	sc := PrivilegedSecurityContext(0, 42408)
+
+	if sc.RunAsUser == nil || *sc.RunAsUser != 0 {
+		t.Errorf("expected RunAsUser 0, got %v", sc.RunAsUser)
+	}
+	if sc.RunAsNonRoot == nil || *sc.RunAsNonRoot {
+		t.Error("expected RunAsNonRoot false when uid is 0")
+	}
+}
+
 func TestRestrictiveSecurityContextNoAddCaps(t *testing.T) {
 	sc := RestrictiveSecurityContext(42457, 42457)
 	if sc.Capabilities.Add != nil {

@@ -44,8 +44,6 @@ const (
 	HomeDirCacheSubdir = ".cache"
 )
 
-var configSecretMode int32 = 0440
-
 // WritableDirVolume returns an emptyDir Volume. Used for any path that needs
 // to be writable by a non-root service user: /run/httpd (PID file),
 // /var/log/httpd, /var/log/<service>, /tmp, service home-dir subdirs, etc.
@@ -91,6 +89,7 @@ func WritableDirSubPathMounts(volumeName, baseDir string, subdirs ...string) []c
 // names, each mounted read-only at /var/lib/config-data/secret-{idx} with
 // DefaultMode 0440.
 func ConfigSecretVolumes(secretNames []string) ([]corev1.Volume, []corev1.VolumeMount) {
+	var configSecretMode int32 = 0440
 	volumes := make([]corev1.Volume, 0, len(secretNames))
 	mounts := make([]corev1.VolumeMount, 0, len(secretNames))
 

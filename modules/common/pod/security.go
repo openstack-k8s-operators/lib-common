@@ -83,12 +83,15 @@ func RestrictiveSecurityContextWithGID(uid, gid int64, addCapabilities ...corev1
 // management via nsenter'd host binaries) and therefore cannot use
 // RestrictiveSecurityContext — Privileged is incompatible with
 // ReadOnlyRootFilesystem and capability dropping. RunAsUser is set to uid,
-// RunAsGroup to gid.
+// RunAsGroup to gid. RunAsNonRoot is only set when uid is non-zero, since
+// Kubernetes rejects a pod at admission if RunAsNonRoot is true while
+// RunAsUser is 0 — some privileged host tooling genuinely needs to run as
+// root.
 func PrivilegedSecurityContext(uid, gid int64) *corev1.SecurityContext {
 	return &corev1.SecurityContext{
 		RunAsUser:    ptr.To(uid),
 		RunAsGroup:   ptr.To(gid),
-		RunAsNonRoot: ptr.To(true),
+		RunAsNonRoot: ptr.To(uid != 0),
 		Privileged:   ptr.To(true),
 	}
 }
