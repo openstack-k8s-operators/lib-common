@@ -23,6 +23,8 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/go-logr/logr"
+	"github.com/openstack-k8s-operators/lib-common/modules/common/condition"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,7 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // CheckOwnerRefExist - returns true if the owner is already in the owner ref list
@@ -180,4 +185,114 @@ func ManageConsumerFinalizer(
 	}
 
 	return nil
+}
+
+// IsOwnerReady checks if the controller owner of this object is ready.
+// It reads the owner via the supplied client.Reader — callers should pass an
+// uncached (API-server) reader to avoid stale informer data and phantom
+// informers for cross-operator types the calling controller does not watch.
+// Returns true if the owner is ready, false if not ready, and error only for
+// unexpected failures.
+// If there's no owner with controller=true, it returns true (safe to proceed).
+func IsOwnerReady(
+	ctx context.Context,
+	reader client.Reader,
+	log logr.Logger,
+	obj client.Object,
+) (bool, error) {
+	var ownerRef *metav1.OwnerReference
+	for _, owner := range obj.GetOwnerReferences() {
+		if owner.Controller != nil && *owner.Controller {
+			ownerRef = &owner
+			break
+		}
+	}
+
+	if ownerRef == nil {
+		log.V(1).Info("No controller owner found, owner is considered ready")
+		return true, nil
+	}
+
+	gv, err := schema.ParseGroupVersion(ownerRef.APIVersion)
+	if err != nil {
+		log.Error(err, "Failed to parse owner APIVersion", "apiVersion", ownerRef.APIVersion)
+		return false, err
+	}
+
+	owner := &unstructured.Unstructured{}
+	owner.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gv.Group,
+		Version: gv.Version,
+		Kind:    ownerRef.Kind,
+	})
+
+	err = reader.Get(ctx, types.NamespacedName{
+		Name:      ownerRef.Name,
+		Namespace: obj.GetNamespace(),
+	}, owner)
+
+	if err != nil {
+		if k8s_errors.IsNotFound(err) || apimeta.IsNoMatchError(err) {
+			log.V(1).Info("Owner resource not found, owner is considered ready",
+				"kind", ownerRef.Kind, "name", ownerRef.Name)
+			return true, nil
+		}
+		log.Error(err, "Failed to fetch owner resource",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, err
+	}
+
+	conditions, found, err := unstructured.NestedSlice(owner.Object, "status", "conditions")
+	if err != nil || !found {
+		log.V(1).Info("No conditions found in owner status, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	conditionsJSON, err := json.Marshal(conditions)
+	if err != nil {
+		log.V(1).Info("Failed to marshal owner conditions, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	var ownerConditions condition.Conditions
+	err = json.Unmarshal(conditionsJSON, &ownerConditions)
+	if err != nil {
+		log.V(1).Info("Failed to unmarshal owner conditions, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	if !ownerConditions.IsTrue(condition.ReadyCondition) {
+		log.V(1).Info("Owner not ready, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	generation, foundGen, err := unstructured.NestedInt64(owner.Object, "metadata", "generation")
+	if err != nil || !foundGen {
+		log.V(1).Info("Could not get owner generation, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	observedGeneration, foundObsGen, err := unstructured.NestedInt64(owner.Object, "status", "observedGeneration")
+	if err != nil || !foundObsGen {
+		log.V(1).Info("Could not get owner observedGeneration, waiting",
+			"kind", ownerRef.Kind, "name", ownerRef.Name)
+		return false, nil
+	}
+
+	if observedGeneration != generation {
+		log.V(1).Info("Owner has not reconciled yet, waiting",
+			"kind", ownerRef.Kind,
+			"name", ownerRef.Name,
+			"generation", generation,
+			"observedGeneration", observedGeneration)
+		return false, nil
+	}
+
+	log.Info("Owner is ready", "kind", ownerRef.Kind, "name", ownerRef.Name)
+	return true, nil
 }
