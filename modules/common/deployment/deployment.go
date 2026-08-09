@@ -64,10 +64,30 @@ func (d *Deployment) CreateOrPatch(
 		}
 		deployment.Annotations = util.MergeStringMaps(deployment.Annotations, d.deployment.Annotations)
 		deployment.Labels = util.MergeStringMaps(deployment.Labels, d.deployment.Labels)
+
+		// Save existing containers before overwriting the Template so we
+		// can merge them below to preserve server-defaulted fields.
+		existingContainers := deployment.Spec.Template.Spec.Containers
+		existingInitContainers := deployment.Spec.Template.Spec.InitContainers
+
 		deployment.Spec.Template = d.deployment.Spec.Template
 		pod.SetPullPolicyDefaults(&deployment.Spec.Template.Spec)
 		deployment.Spec.Replicas = d.deployment.Spec.Replicas
 		deployment.Spec.Strategy = d.deployment.Spec.Strategy
+
+		// Merge containers by name to preserve server-defaulted fields
+		// (e.g. TerminationMessagePath, ImagePullPolicy) and avoid
+		// unnecessary reconcile loops.
+		deployment.Spec.Template.Spec.Containers = existingContainers
+		pod.MergeContainersByName(
+			&deployment.Spec.Template.Spec.Containers,
+			d.deployment.Spec.Template.Spec.Containers,
+		)
+		deployment.Spec.Template.Spec.InitContainers = existingInitContainers
+		pod.MergeContainersByName(
+			&deployment.Spec.Template.Spec.InitContainers,
+			d.deployment.Spec.Template.Spec.InitContainers,
+		)
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), deployment, h.GetScheme())
 		if err != nil {

@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package statefulset
+package pod
 
 import (
-	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -30,9 +29,34 @@ import (
 //
 // When container counts differ or a desired container name is not found in
 // existing, the existing slice is replaced with the desired containers.
-//
-// Deprecated: Use pod.MergeContainersByName instead. This function is kept
-// for backward compatibility.
 func MergeContainersByName(existing *[]corev1.Container, desired []corev1.Container) {
-	pod.MergeContainersByName(existing, desired)
+	if len(*existing) != len(desired) {
+		*existing = desired
+		return
+	}
+
+	existingByName := make(map[string]int, len(*existing))
+	for i := range *existing {
+		existingByName[(*existing)[i].Name] = i
+	}
+
+	for _, d := range desired {
+		idx, ok := existingByName[d.Name]
+		if !ok {
+			*existing = desired
+			return
+		}
+		// Preserve server-defaulted fields from the existing container
+		// only when the desired spec doesn't explicitly set them.
+		if d.ImagePullPolicy == "" {
+			d.ImagePullPolicy = (*existing)[idx].ImagePullPolicy
+		}
+		if d.TerminationMessagePath == "" {
+			d.TerminationMessagePath = (*existing)[idx].TerminationMessagePath
+		}
+		if d.TerminationMessagePolicy == "" {
+			d.TerminationMessagePolicy = (*existing)[idx].TerminationMessagePolicy
+		}
+		(*existing)[idx] = d
+	}
 }
