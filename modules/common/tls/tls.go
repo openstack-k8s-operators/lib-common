@@ -21,7 +21,13 @@ package tls
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"time"
 
@@ -442,4 +448,234 @@ func (c *Ca) CreateVolume() corev1.Volume {
 	}
 
 	return volume
+}
+
+type TLSAnalysis struct {
+	// SupportsTLS13 indicates if TLS 1.3 is supported
+	SupportsTLS13 bool
+	// MinTLSVersion is the minimum TLS version supported
+	MinTLSVersion uint16
+	// MaxTLSVersion is the maximum TLS version supported
+	MaxTLSVersion uint16
+	// IsPQCSafe indicates whether the certificate uses post-quantum safe algorithms
+	IsPQCSafe bool
+	// SignatureAlgorithm is the signature algorithm used by the certificate
+	SignatureAlgorithm string
+	// KeyAlgorithm is the public key algorithm used
+	KeyAlgorithm string
+	// KeySize is the size of the public key in bits
+	KeySize int
+	// CipherSuites lists the cipher suites that would be used
+	CipherSuites []string
+}
+
+var pqcSafeAlgorithms = map[x509.SignatureAlgorithm]bool{
+	x509.SHA256WithRSA:    false, // Depends on key size
+	x509.SHA384WithRSA:    false, // Depends on key size
+	x509.SHA512WithRSA:    false, // Depends on key size
+	x509.ECDSAWithSHA256:  false, // Depends on key size
+	x509.ECDSAWithSHA384:  true,  // P-384 is transitionally safe
+	x509.ECDSAWithSHA512:  true,  // P521 is transitionally safe
+	x509.SHA256WithRSAPSS: false, // Depends on key size
+	x509.SHA384WithRSAPSS: false, // Depends on key size
+	x509.SHA512WithRSAPSS: false, // Depends on key size
+	x509.PureEd25519:      false, // Ed25519 is not PQC-safe
+}
+
+// Minimum key sizes required for transitional PQC safety (see NIST SP 800-57)
+const (
+	minPQCSafeRSAKeySize   = 3072
+	minPQCSafeECDSAKeySize = 384 // P-384 curve
+	minTLS13RSAKeySize     = 2048
+	minTLS13ECDSAKeySize   = 256
+)
+
+// AnalyzeCertificate analyzes a certificate for TLS 1.3 enablement and PQC-safe algorithm usage
+func AnalyzeCertificate(certPEM []byte) (*TLSAnalysis, error) {
+	// Decode the PEM block
+	block, _ := pem.Decode(certPEM)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block")
+	}
+
+	// Parse the certificate
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	analysis := &TLSAnalysis{
+		SignatureAlgorithm: cert.SignatureAlgorithm.String(),
+	}
+
+	// Determine if we're PQC-safe based on algorithm and key size
+	analysis.IsPQCSafe = isPQCSafe(cert)
+
+	// Determine algorithm and key size
+	switch pubKey := cert.PublicKey.(type) {
+	case *rsa.PublicKey:
+		analysis.KeyAlgorithm = "RSA"
+		analysis.KeySize = pubKey.N.BitLen()
+	case *ecdsa.PublicKey:
+		analysis.KeyAlgorithm = "ECDSA"
+		analysis.KeySize = pubKey.Curve.Params().BitSize
+	case ed25519.PublicKey:
+		analysis.KeyAlgorithm = "Ed25519"
+		analysis.KeySize = ed25519.PublicKeySize * 8 // PublicKeySize is in bytes
+	default:
+		analysis.KeyAlgorithm = "Unknown"
+	}
+
+	// Check TLS 1.3 support
+	// The Certificate itself doesn't dictate TLS version, but we can see if it's compatible with
+	// TLS 1.3 requirements.
+	analysis.SupportsTLS13 = isTLS13Compatible(cert)
+
+	// Set version info (these typically come from server config, not the certificate)
+	analysis.MinTLSVersion = tls.VersionTLS12
+	analysis.MaxTLSVersion = tls.VersionTLS13
+
+	// Get the recommended cipher suites
+	analysis.CipherSuites = getRecommendedCipherSuites(analysis.IsPQCSafe)
+
+	return analysis, nil
+}
+
+// isPQCSafe determines if a certificate is PQC-safe through using a PQC-safe algorithm or a
+// large enough key size
+func isPQCSafe(cert *x509.Certificate) bool {
+	// Check the signature algorithm
+	baseSafe, exists := pqcSafeAlgorithms[cert.SignatureAlgorithm]
+
+	// For algorithms where PQC-safety depends on key length
+	if exists && !baseSafe {
+		switch pubKey := cert.PublicKey.(type) {
+		case *rsa.PublicKey:
+			// RSA keys need to be >= 3072 bits for PQC transitional safety
+			return pubKey.N.BitLen() >= minPQCSafeRSAKeySize
+		case *ecdsa.PublicKey:
+			// ECDSA needs a P-384 or P-521 curve
+			return pubKey.Curve.Params().BitSize >= minPQCSafeECDSAKeySize
+		}
+	}
+
+	return baseSafe
+}
+
+// isTLS13Compatible checks if a certificate is compatible with TLS 1.3
+func isTLS13Compatible(cert *x509.Certificate) bool {
+	// TLS 1.3 removed support for RSA-PSS and requires specific signature algorithms.
+	// Generally, certificates with RSA >= 2048, ECDSA with curves P-256+,
+	// or Ed25519 are compatible.
+	// NOTE: TLS 1.3 compatibility does NOT necessarily mean that it's PQC-safe!
+	switch pubKey := cert.PublicKey.(type) {
+	case *rsa.PublicKey:
+		return pubKey.N.BitLen() >= minTLS13RSAKeySize
+	case *ecdsa.PublicKey:
+		return pubKey.Curve.Params().BitSize >= minTLS13ECDSAKeySize
+	case ed25519.PublicKey:
+		return true
+	default:
+		return false
+	}
+}
+
+// getRecommendedCipherSuites returns the recommended cipher suites depending on whether we want
+// PQC ciphers or not.
+func getRecommendedCipherSuites(pqcSafe bool) []string {
+	// TLS 1.3 cipher suites (these are always used for TLS 1.3)
+	tls13Suites := []string{
+		"TLS_AES_128_GCM_SHA256",
+		"TLS_AES_256_GCM_SHA384",
+		"TLS_CHACHA20_POLY1305_SHA256",
+	}
+
+	if pqcSafe {
+		// For PQC-safe configs, prefer stronger ciphers
+		return append([]string{
+			"TLS_AES_256_GCM_SHA384",
+		}, tls13Suites...)
+	}
+
+	return tls13Suites
+}
+
+// AnalyzeCertSecret analyzes a certificate stored in a Kubernetes secret
+func AnalyzeCertSecret(
+	ctx context.Context,
+	c client.Client,
+	secretName types.NamespacedName,
+) (*TLSAnalysis, error) {
+	// Get the secret
+	certSecret := &corev1.Secret{}
+	err := c.Get(ctx, secretName, certSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get certificate secret: %w", err)
+	}
+
+	// Get the certificate's data
+	certData, exists := certSecret.Data[CertKey]
+	if !exists {
+		return nil, fmt.Errorf("certificate data not found in secret")
+	}
+
+	// Analyze the certificate
+	return AnalyzeCertificate(certData)
+}
+
+// IsTLS13Enabled checks if TLS 1.3 is enabled for a service
+func (s *Service) IsTLS13Enabled(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+) (bool, error) {
+	if s.SecretName == "" {
+		return false, fmt.Errorf("no certificate configured")
+	}
+
+	analysis, err := AnalyzeCertSecret(
+		ctx,
+		h.GetClient(),
+		types.NamespacedName{Name: s.SecretName, Namespace: namespace},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return analysis.SupportsTLS13, nil
+}
+
+// IsPQCSafe checks if the certificate uses PQC-safe algorithms/key lengths
+func (s *Service) IsPQCSafe(ctx context.Context, h *helper.Helper, namespace string) (bool, error) {
+	if s.SecretName == "" {
+		return false, fmt.Errorf("no certificate configured")
+	}
+
+	analysis, err := AnalyzeCertSecret(
+		ctx,
+		h.GetClient(),
+		types.NamespacedName{Name: s.SecretName, Namespace: namespace},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return analysis.IsPQCSafe, nil
+}
+
+// GetTLSAnalysis returns a comprehensive TLS analysis for a service
+func (s *Service) GetTLSAnalysis(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+) (*TLSAnalysis, error) {
+	if s.SecretName == "" {
+		return nil, fmt.Errorf("no certificate configured")
+	}
+
+	return AnalyzeCertSecret(
+		ctx,
+		h.GetClient(),
+		types.NamespacedName{Name: s.SecretName, Namespace: namespace},
+	)
 }
