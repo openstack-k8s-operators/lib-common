@@ -166,6 +166,37 @@ func (conditions *Conditions) IsUnknown(t Type) bool {
 	return true
 }
 
+// ServiceInstanceIsReady reports whether a service sub-CR has finished
+// reconciling its current spec and its deployment is ready to serve
+// requests. It implements the generation/observedGeneration guard used
+// by OpenStack service operators during credential rotation rollouts.
+func ServiceInstanceIsReady(generation, observedGeneration int64, readyCount, replicas int32, conditions *Conditions) bool {
+	if conditions == nil {
+		return false
+	}
+	if generation != observedGeneration || readyCount != replicas {
+		return false
+	}
+	if replicas == 0 {
+		return true
+	}
+	return conditions.IsTrue(DeploymentReadyCondition)
+}
+
+// CredentialRotationGuardReady reports whether it is safe to remove a
+// consumer finalizer from an old transport URL or application credential
+// secret. The guard requires all sub-CR specs to be stable (no pending
+// CreateOrPatch updates) and all parent sub-conditions to be True.
+// Note: ReadyCondition is NOT checked because operators reset conditions
+// via Init() at the top of each Reconcile, so ReadyCondition is Unknown
+// until the very end. AllSubConditionIsTrue covers the same safety.
+func CredentialRotationGuardReady(allSubCRsStable bool, conditions *Conditions) bool {
+	if conditions == nil {
+		return false
+	}
+	return allSubCRsStable && conditions.AllSubConditionIsTrue()
+}
+
 // AllSubConditionIsTrue validates if all subconditions are True
 // It assumes that all conditions report success via the True status
 func (conditions *Conditions) AllSubConditionIsTrue() bool {
