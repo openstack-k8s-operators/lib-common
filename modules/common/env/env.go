@@ -33,6 +33,36 @@ type Setter func(*corev1.EnvVar)
 // SetterMap - env setter map
 type SetterMap map[string]Setter
 
+// ConfigHashEnvVar is the environment variable that operators inject into pod
+// templates to track which configuration revision the workload runs.
+const ConfigHashEnvVar = "CONFIG_HASH"
+
+// ConfigHashMatches reports whether any container in the given pod spec carries
+// a CONFIG_HASH environment variable whose literal value equals configHash. It
+// scans both init and regular containers.
+//
+// An empty configHash never matches: a not-yet-computed (or cleared) hash must
+// not be treated as "applied", which would otherwise report a premature ready
+// result. Only the literal EnvVar.Value is compared; a CONFIG_HASH sourced via
+// ValueFrom (fieldRef/configMapKeyRef/secretKeyRef) is intentionally treated as
+// not matching, following the operator convention of injecting the hash as a
+// literal value.
+func ConfigHashMatches(podSpec corev1.PodSpec, configHash string) bool {
+	if configHash == "" {
+		return false
+	}
+	for _, containers := range [][]corev1.Container{podSpec.InitContainers, podSpec.Containers} {
+		for _, c := range containers {
+			for _, e := range c.Env {
+				if e.Name == ConfigHashEnvVar && e.Value == configHash {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // MergeEnvs - merge envs
 func MergeEnvs(envs []corev1.EnvVar, newEnvs SetterMap) []corev1.EnvVar {
 
