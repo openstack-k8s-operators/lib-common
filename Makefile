@@ -98,8 +98,22 @@ ginkgo: $(GINKGO) ## Download ginkgo locally if necessary.
 $(GINKGO): $(LOCALBIN)
 	test -s $(LOCALBIN)/ginkgo || GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo
 
+.PHONY: generate-uids-gids
+generate-uids-gids: ## Regenerate modules/users/zz_generated_uid_gid.yaml from Go constants.
+	cd modules/users && go run ./cmd/gen-uid-gid-yaml
+
+.PHONY: verify-uids-gids
+verify-uids-gids: ## Verify modules/users/zz_generated_uid_gid.yaml is up-to-date (fails if regeneration produces a diff).
+	@cp modules/users/zz_generated_uid_gid.yaml modules/users/zz_generated_uid_gid.yaml.bak
+	@$(MAKE) generate-uids-gids
+	@diff modules/users/zz_generated_uid_gid.yaml.bak modules/users/zz_generated_uid_gid.yaml || \
+		(echo ""; echo "ERROR: modules/users/zz_generated_uid_gid.yaml is out of date. Run 'make generate-uids-gids' and commit the result."; \
+		 mv modules/users/zz_generated_uid_gid.yaml.bak modules/users/zz_generated_uid_gid.yaml; exit 1)
+	@rm -f modules/users/zz_generated_uid_gid.yaml.bak
+	@echo "modules/users/zz_generated_uid_gid.yaml is up-to-date."
+
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+generate: controller-gen generate-uids-gids ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./$$mod/..." ; \
 	done

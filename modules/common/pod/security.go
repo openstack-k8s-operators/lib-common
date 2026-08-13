@@ -22,17 +22,15 @@ import (
 )
 
 // RestrictiveSecurityContext returns a hardened container SecurityContext
-// suitable for unprivileged workloads. It sets RunAsNonRoot, drops all
-// capabilities, disables privilege escalation, and applies the RuntimeDefault
-// seccomp profile. The provided uid is used for both RunAsUser and RunAsGroup.
+// suitable for unprivileged workloads. It sets RunAsUser to uid, RunAsGroup
+// to gid, RunAsNonRoot, drops all capabilities, disables privilege escalation,
+// and applies the RuntimeDefault seccomp profile.
 // Optional addCapabilities are added back after dropping ALL.
-func RestrictiveSecurityContext(uid int64, addCapabilities ...corev1.Capability) *corev1.SecurityContext {
-	return RestrictiveSecurityContextWithGID(uid, uid, addCapabilities...)
-}
-
-// RestrictiveSecurityContextWithGID is like RestrictiveSecurityContext but
-// allows specifying a different GID.
-func RestrictiveSecurityContextWithGID(uid, gid int64, addCapabilities ...corev1.Capability) *corev1.SecurityContext {
+//
+// Does not set ReadOnlyRootFilesystem -- a future RestrictiveReadOnlySecurityContext
+// is the intended way for an individual service to opt into that later, without
+// changing this function's behavior for every existing caller.
+func RestrictiveSecurityContext(uid, gid int64, addCapabilities ...corev1.Capability) *corev1.SecurityContext {
 	caps := &corev1.Capabilities{
 		Drop: []corev1.Capability{"ALL"},
 	}
@@ -43,11 +41,57 @@ func RestrictiveSecurityContextWithGID(uid, gid int64, addCapabilities ...corev1
 		RunAsUser:                ptr.To(uid),
 		RunAsGroup:               ptr.To(gid),
 		RunAsNonRoot:             ptr.To(true),
-		ReadOnlyRootFilesystem:   ptr.To(true),
 		AllowPrivilegeEscalation: ptr.To(false),
 		Capabilities:             caps,
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},
+	}
+}
+
+// RestrictivePodSecurityContext returns a hardened PodSecurityContext for
+// unprivileged workloads. It sets RunAsUser to uid, RunAsGroup and FSGroup
+// to gid, RunAsNonRoot, and applies the RuntimeDefault seccomp profile.
+// FSGroup ensures that volumes mounted from Secrets/ConfigMaps are
+// group-readable by the service process without needing chown.
+//
+// Optional supplementalGroups grant additional GIDs to the pod — use this
+// when the workload needs to read files not covered by FSGroup, e.g.
+// RPM-shipped configs baked into the container image with restrictive
+// group ownership rather than mounted from a Secret/ConfigMap.
+func RestrictivePodSecurityContext(uid, gid int64, supplementalGroups ...int64) *corev1.PodSecurityContext {
+	return &corev1.PodSecurityContext{
+		RunAsUser:          ptr.To(uid),
+		RunAsGroup:         ptr.To(gid),
+		RunAsNonRoot:       ptr.To(true),
+		FSGroup:            ptr.To(gid),
+		SupplementalGroups: supplementalGroups,
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
+}
+
+// RestrictiveSecurityContextWithGID is an alias for RestrictiveSecurityContext.
+// Deprecated: use RestrictiveSecurityContext directly.
+func RestrictiveSecurityContextWithGID(uid, gid int64, addCapabilities ...corev1.Capability) *corev1.SecurityContext {
+	return RestrictiveSecurityContext(uid, gid, addCapabilities...)
+}
+
+// PrivilegedSecurityContext returns a SecurityContext for a workload that
+// needs full Privileged access to the host (e.g. LVM/iSCSI/multipath device
+// management via nsenter'd host binaries) and therefore cannot use
+// RestrictiveSecurityContext — Privileged is incompatible with
+// ReadOnlyRootFilesystem and capability dropping. RunAsUser is set to uid,
+// RunAsGroup to gid. RunAsNonRoot is only set when uid is non-zero, since
+// Kubernetes rejects a pod at admission if RunAsNonRoot is true while
+// RunAsUser is 0 — some privileged host tooling genuinely needs to run as
+// root.
+func PrivilegedSecurityContext(uid, gid int64) *corev1.SecurityContext {
+	return &corev1.SecurityContext{
+		RunAsUser:    ptr.To(uid),
+		RunAsGroup:   ptr.To(gid),
+		RunAsNonRoot: ptr.To(uid != 0),
+		Privileged:   ptr.To(true),
 	}
 }
