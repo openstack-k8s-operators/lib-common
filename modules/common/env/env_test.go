@@ -82,3 +82,90 @@ func TestMergeEnvs(t *testing.T) {
 		})
 	}
 }
+
+func containerWithEnv(env ...corev1.EnvVar) corev1.Container {
+	return corev1.Container{Name: "c", Env: env}
+}
+
+func TestConfigHashMatches(t *testing.T) {
+	tests := []struct {
+		name       string
+		podSpec    corev1.PodSpec
+		configHash string
+		want       bool
+	}{
+		{
+			name: "matches a literal CONFIG_HASH on a regular container",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: ConfigHashEnvVar, Value: "abc"})},
+			},
+			configHash: "abc",
+			want:       true,
+		},
+		{
+			name: "no CONFIG_HASH env var present",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: "OTHER", Value: "abc"})},
+			},
+			configHash: "abc",
+			want:       false,
+		},
+		{
+			name: "CONFIG_HASH present but value differs",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: ConfigHashEnvVar, Value: "stale"})},
+			},
+			configHash: "abc",
+			want:       false,
+		},
+		{
+			name: "empty configHash never matches even against an empty CONFIG_HASH value",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: ConfigHashEnvVar, Value: ""})},
+			},
+			configHash: "",
+			want:       false,
+		},
+		{
+			name: "empty configHash never matches against a populated CONFIG_HASH value",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: ConfigHashEnvVar, Value: "abc"})},
+			},
+			configHash: "",
+			want:       false,
+		},
+		{
+			name: "matches a literal CONFIG_HASH carried only on an init container",
+			podSpec: corev1.PodSpec{
+				InitContainers: []corev1.Container{containerWithEnv(corev1.EnvVar{Name: ConfigHashEnvVar, Value: "abc"})},
+				Containers:     []corev1.Container{containerWithEnv(corev1.EnvVar{Name: "OTHER", Value: "x"})},
+			},
+			configHash: "abc",
+			want:       true,
+		},
+		{
+			name: "CONFIG_HASH sourced via ValueFrom is not treated as a match",
+			podSpec: corev1.PodSpec{
+				Containers: []corev1.Container{containerWithEnv(corev1.EnvVar{
+					Name:      ConfigHashEnvVar,
+					ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.name"}},
+				})},
+			},
+			configHash: "abc",
+			want:       false,
+		},
+		{
+			name:       "no containers at all",
+			podSpec:    corev1.PodSpec{},
+			configHash: "abc",
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+			g.Expect(ConfigHashMatches(tt.podSpec, tt.configHash)).To(Equal(tt.want))
+		})
+	}
+}

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/env"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/pod"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
@@ -30,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -141,6 +143,12 @@ func GetDeploymentWithName(
 	return depl, nil
 }
 
+// ConfigHashEnvVar is the environment variable that operators inject into
+// pod templates to track which configuration revision the workload runs.
+// The canonical definition lives in the env package; this alias is kept for
+// backward compatibility with existing importers.
+const ConfigHashEnvVar = env.ConfigHashEnvVar
+
 // IsReady - validates when deployment is ready deployed to whats being requested
 // - the requested replicas in the spec matches the ReadyReplicas of the status
 // - the Status.Replicas match Status.ReadyReplicas. if a deployment update is in progress, Replicas > ReadyReplicas
@@ -152,4 +160,28 @@ func IsReady(deployment appsv1.Deployment) bool {
 		*deployment.Spec.Replicas == deployment.Status.UpdatedReplicas &&
 		deployment.Status.Replicas == deployment.Status.ReadyReplicas &&
 		deployment.Generation == deployment.Status.ObservedGeneration
+}
+
+// IsReadyForInput reads a Deployment directly from the provided reader
+// (typically an uncached API reader) and reports whether the workload is
+// fully rolled out with the expected configuration. It returns true only
+// when IsReady passes and env.ConfigHashMatches confirms a container (init or
+// regular) carries a literal CONFIG_HASH equal to configHash. A blank
+// configHash never reports ready.
+func IsReadyForInput(
+	ctx context.Context,
+	reader client.Reader,
+	name types.NamespacedName,
+	configHash string,
+) (bool, error) {
+	depl := &appsv1.Deployment{}
+	if err := reader.Get(ctx, name, depl); err != nil {
+		return false, err
+	}
+
+	if !IsReady(*depl) {
+		return false, nil
+	}
+
+	return env.ConfigHashMatches(depl.Spec.Template.Spec, configHash), nil
 }
