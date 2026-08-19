@@ -232,6 +232,65 @@ func RemoveSecretConsumerFinalizer(
 	return RemoveConsumerFinalizer(ctx, h, secret, consumerFinalizer)
 }
 
+// PruneSecretConsumerFinalizers removes consumerFinalizer from every secret in
+// namespace that still carries it and is not named in keep. Empty names in keep
+// are ignored.
+//
+// It self-heals finalizers stranded on superseded secrets: during rapid rotation
+// (e.g. secret A -> B -> C before the workload becomes ready), the consumer
+// finalizer can be added to an intermediate secret B that the workload never
+// applies. FinalizeSecretRotation only ever releases the single tracked "old"
+// secret, so B's finalizer would otherwise leak and block deletion of its Secret
+// and revocation of the associated backend credential. Callers pass the set of
+// secrets that legitimately hold the finalizer (the applied and current secrets
+// for every rotating input guarded by the same finalizer) as keep, and any other
+// secret carrying it is pruned.
+//
+// The secrets are read through the caller's (cached) client; the prune is
+// idempotent and safe to call every reconcile.
+//
+// keep must enumerate every secret in the namespace that legitimately holds
+// consumerFinalizer: the prune removes it from all others. This assumes a single
+// consumer of consumerFinalizer per namespace (the CR is a namespace singleton,
+// as is the norm for OpenStackControlPlane-managed services). If multiple CR
+// instances sharing the same consumerFinalizer coexist in one namespace, each
+// only knows its own keep set and would prune the others' finalizers; use a
+// per-instance finalizer in that case.
+func PruneSecretConsumerFinalizers(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	consumerFinalizer string,
+	keep ...string,
+) error {
+	keepSet := make(map[string]struct{}, len(keep))
+	for _, name := range keep {
+		if name != "" {
+			keepSet[name] = struct{}{}
+		}
+	}
+
+	secretList := &corev1.SecretList{}
+	if err := h.GetClient().List(ctx, secretList, client.InNamespace(namespace)); err != nil {
+		return fmt.Errorf("failed to list secrets in namespace %s: %w", namespace, err)
+	}
+
+	for i := range secretList.Items {
+		secret := &secretList.Items[i]
+		if _, ok := keepSet[secret.Name]; ok {
+			continue
+		}
+		if !controllerutil.ContainsFinalizer(secret, consumerFinalizer) {
+			continue
+		}
+		if err := RemoveConsumerFinalizer(ctx, h, secret, consumerFinalizer); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // FinalizeSecretRotation handles the rotation guard for a credential secret
 // (transport URL, application credential, or any other rotating secret).
 // It detects whether rotation is in progress and:
