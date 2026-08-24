@@ -242,6 +242,100 @@ func TestFinalizeSecretRotation(t *testing.T) {
 	})
 }
 
+func TestPruneSecretConsumerFinalizers(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	const (
+		namespace = "openstack"
+		finalizer = "openstack.org/test-consumer"
+	)
+
+	secretWithFinalizer := func(name string) *corev1.Secret {
+		s := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		}
+		controllerutil.AddFinalizer(s, finalizer)
+		return s
+	}
+	hasFinalizer := func(g Gomega, h *helper.Helper, name string) bool {
+		s := &corev1.Secret{}
+		g.Expect(h.GetClient().Get(ctx, types.NamespacedName{
+			Name: name, Namespace: namespace,
+		}, s)).To(Succeed())
+		return controllerutil.ContainsFinalizer(s, finalizer)
+	}
+
+	t.Run("prunes superseded intermediate secret, keeps applied and current", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// rotation A -> B -> C before readiness: A is applied, C is current,
+		// B is a stranded intermediate that must have its finalizer pruned.
+		h, err := setupHelper(
+			secretWithFinalizer("secret-a"),
+			secretWithFinalizer("secret-b"),
+			secretWithFinalizer("secret-c"),
+		)
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(PruneSecretConsumerFinalizers(
+			ctx, h, namespace, finalizer, "secret-a", "secret-c",
+		)).To(Succeed())
+
+		g.Expect(hasFinalizer(g, h, "secret-a")).To(BeTrue())
+		g.Expect(hasFinalizer(g, h, "secret-b")).To(BeFalse())
+		g.Expect(hasFinalizer(g, h, "secret-c")).To(BeTrue())
+	})
+
+	t.Run("ignores empty names in keep", func(t *testing.T) {
+		g := NewWithT(t)
+
+		h, err := setupHelper(secretWithFinalizer("secret-a"))
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(PruneSecretConsumerFinalizers(
+			ctx, h, namespace, finalizer, "", "secret-a", "",
+		)).To(Succeed())
+
+		g.Expect(hasFinalizer(g, h, "secret-a")).To(BeTrue())
+	})
+
+	t.Run("leaves secrets without the finalizer untouched", func(t *testing.T) {
+		g := NewWithT(t)
+
+		plain := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{Name: "plain", Namespace: namespace},
+		}
+		h, err := setupHelper(plain, secretWithFinalizer("stale"))
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(PruneSecretConsumerFinalizers(
+			ctx, h, namespace, finalizer, "current",
+		)).To(Succeed())
+
+		g.Expect(hasFinalizer(g, h, "plain")).To(BeFalse())
+		g.Expect(hasFinalizer(g, h, "stale")).To(BeFalse())
+	})
+
+	t.Run("List fails", func(t *testing.T) {
+		g := NewWithT(t)
+
+		h, err := setupHelperWithInterceptor(interceptor.Funcs{
+			List: func(ctx context.Context, c client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
+				if _, ok := list.(*corev1.SecretList); ok {
+					return errSyntheticAPI
+				}
+				return c.List(ctx, list, opts...)
+			},
+		}, secretWithFinalizer("secret-a"))
+		g.Expect(err).NotTo(HaveOccurred())
+
+		g.Expect(PruneSecretConsumerFinalizers(
+			ctx, h, namespace, finalizer, "secret-a",
+		)).To(HaveOccurred())
+	})
+}
+
 func TestManageRotationGracePeriod(t *testing.T) {
 	t.Parallel()
 
