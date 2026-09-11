@@ -62,7 +62,38 @@ type CertificateRequest struct {
 	Annotations map[string]string
 	Labels      map[string]string
 	Usages      []certmgrv1.KeyUsage
-	Subject     *certmgrv1.X509Subject
+	// PrivateKey configures the certificate private key (algorithm, size,
+	// encoding, rotation policy). When nil, cert-manager applies its own defaults
+	// (currently RSA-2048). The private key algorithm also drives the default key
+	// usages (see defaultUsages) when Usages is not set; explicitly provided
+	// Usages are used as-is. See OSPRH-27774 / OSPRH-27806.
+	PrivateKey *certmgrv1.CertificatePrivateKey
+	Subject    *certmgrv1.X509Subject
+}
+
+// defaultUsages returns the default key usages for the given private key
+// algorithm. It is only applied when the caller does not provide Usages;
+// explicitly requested usages are always honored as-is.
+//
+// keyEncipherment is only valid for RSA keys: it is required solely by legacy
+// static RSA key-transport TLS cipher suites (OpenSSL kRSA / TLS_RSA_WITH_*).
+// ECDSA/Ed25519 do not use it and PQC algorithms such as ML-DSA do not support
+// it. An empty algorithm is treated as RSA, matching cert-manager's default, so
+// existing RSA callers keep keyEncipherment and see no certificate change.
+func defaultUsages(algorithm certmgrv1.PrivateKeyAlgorithm) []certmgrv1.KeyUsage {
+	// cert-manager defaults to RSA when no algorithm is set.
+	if algorithm == "" || algorithm == certmgrv1.RSAKeyAlgorithm {
+		return []certmgrv1.KeyUsage{
+			certmgrv1.UsageKeyEncipherment,
+			certmgrv1.UsageDigitalSignature,
+			certmgrv1.UsageServerAuth,
+		}
+	}
+
+	return []certmgrv1.KeyUsage{
+		certmgrv1.UsageDigitalSignature,
+		certmgrv1.UsageServerAuth,
+	}
 }
 
 // NewCertificate returns an initialized Certificate.
@@ -191,13 +222,15 @@ func EnsureCert(
 		request.Duration = ptr.To(time.Hour * 24 * 365)
 	}
 
-	// default to serverAuth
+	// Default the key usages based on the private key algorithm when the caller
+	// does not provide them (RSA keeps keyEncipherment, non-RSA/PQC omit it).
+	// Explicitly requested usages are used as-is. See OSPRH-27774.
 	if request.Usages == nil {
-		request.Usages = []certmgrv1.KeyUsage{
-			certmgrv1.UsageKeyEncipherment,
-			certmgrv1.UsageDigitalSignature,
-			certmgrv1.UsageServerAuth,
+		var algorithm certmgrv1.PrivateKeyAlgorithm
+		if request.PrivateKey != nil {
+			algorithm = request.PrivateKey.Algorithm
 		}
+		request.Usages = defaultUsages(algorithm)
 	}
 
 	// Default cert secrets to restore=false. Service certs are reissued by
@@ -256,6 +289,10 @@ func EnsureCert(
 
 	if request.CommonName != nil {
 		certSpec.CommonName = *request.CommonName
+	}
+
+	if request.PrivateKey != nil {
+		certSpec.PrivateKey = request.PrivateKey
 	}
 
 	certReq := Cert(
