@@ -19,6 +19,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -28,7 +29,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 //go:embed templates/common/config/*
@@ -398,4 +402,108 @@ func GetCommonTemplates(configOptions map[string]any) (map[string]string, error)
 		result[e.Name()] = rendered
 	}
 	return result, nil
+}
+
+// TLSProfileConfigMap is the well-known ConfigMap the openstack-operator
+// maintains from the cluster-wide TLS security profile on the OpenShift
+// APIServer CR. Its keys (e.g. SSLCipherSuite, SSLProtocol) are merged as
+// defaults into the ConfigOptions of every rendered Template, so service
+// operators inherit the cluster TLS settings without any code of their own.
+//
+// It is a ConfigMap rather than a Secret on purpose: cipher suites and protocol
+// lists are derived from a cluster-readable API object and carry nothing
+// sensitive, so they should stay inspectable with `oc get cm`.
+//
+// Its lifecycle belongs entirely to the openstack-operator. lib-common only
+// reads it: it is never created, updated or required here, and if it is absent
+// every Template simply keeps the defaults it had before.
+const TLSProfileConfigMap = "openstack-ssl-profile"
+
+// DefaultTemplateConfigMaps - well-known ConfigMaps whose data is merged into
+// template ConfigOptions as defaults by EnsureSecrets and EnsureConfigMaps.
+// Earlier entries win over later ones; a caller's own ConfigOptions wins over
+// all of them.
+var DefaultTemplateConfigMaps = []string{TLSProfileConfigMap}
+
+// ApplyTemplateDefaults returns a copy of tmpls in which the data of the named
+// ConfigMaps has been merged underneath each Template's ConfigOptions. Keys
+// already present in ConfigOptions are left untouched, so a value set explicitly
+// by a service operator always wins over a cluster-wide default, and earlier
+// ConfigMaps in the list win over later ones. Neither the given slice nor the
+// caller's ConfigOptions maps are modified.
+//
+// A ConfigMap that does not exist contributes nothing: that is the normal case
+// on clusters where no cluster-wide profile has been published, and on plain
+// Kubernetes, leaving templates on their own hardcoded defaults. Any other read
+// error is returned rather than skipped, because rendering a config with
+// silently substituted fallbacks could downgrade settings the cluster
+// administrator mandated.
+func ApplyTemplateDefaults(
+	ctx context.Context,
+	h *helper.Helper,
+	tmpls []Template,
+	configMapNames []string,
+) ([]Template, error) {
+	out := make([]Template, len(tmpls))
+
+	for i, t := range tmpls {
+		// custom templates are not rendered, so they cannot consume defaults
+		if t.Type == TemplateTypeCustom {
+			out[i] = t
+			continue
+		}
+
+		defaults, err := getTemplateDefaults(ctx, h, t.Namespace, configMapNames)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(defaults) > 0 {
+			merged := make(map[string]any, len(defaults)+len(t.ConfigOptions))
+			for k, v := range defaults {
+				merged[k] = v
+			}
+			for k, v := range t.ConfigOptions {
+				merged[k] = v
+			}
+			t.ConfigOptions = merged
+		}
+		out[i] = t
+	}
+
+	return out, nil
+}
+
+// getTemplateDefaults reads the named ConfigMaps from namespace and returns
+// their data as a single map, with earlier ConfigMaps in the list taking
+// precedence over later ones.
+func getTemplateDefaults(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	configMapNames []string,
+) (map[string]any, error) {
+	defaults := map[string]any{}
+
+	for _, name := range configMapNames {
+		cm := &corev1.ConfigMap{}
+		err := h.GetClient().Get(ctx, types.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		}, cm)
+		if err != nil {
+			if k8s_errors.IsNotFound(err) {
+				continue
+			}
+			return nil, fmt.Errorf("error reading template defaults from ConfigMap %s/%s: %w", namespace, name, err)
+		}
+
+		for k, v := range cm.Data {
+			if _, exists := defaults[k]; !exists {
+				defaults[k] = v
+			}
+		}
+	}
+
+	return defaults, nil
 }
