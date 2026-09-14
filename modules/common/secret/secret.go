@@ -230,15 +230,6 @@ func createOrUpdateSecret(
 		secret.Type = st.SecretType
 	}
 
-	// If this template includes common templates (e.g. ssl.conf), read
-	// well-known Secrets and merge their values as defaults into
-	// ConfigOptions. This allows the openstack-operator to set cluster-wide
-	// settings (e.g. TLS cipher/protocol) that are picked up transparently
-	// by all service operators.
-	if len(st.CommonTemplates) > 0 {
-		mergeSecretDefaults(ctx, h, st.Namespace, &st, []string{"openstack-ssl-profile"})
-	}
-
 	// create or update the CM
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), secret, func() error {
 		secret.Labels = util.MergeStringMaps(secret.Labels, st.Labels)
@@ -360,7 +351,13 @@ func EnsureSecrets(
 	sts []util.Template,
 	envVars *map[string]env.Setter,
 ) error {
-	var err error
+	// Well-known ConfigMaps (e.g. the cluster TLS profile) are merged underneath
+	// every Template's ConfigOptions, so operators pick up cluster-wide
+	// settings without having to ask for them.
+	sts, err := util.ApplyTemplateDefaults(ctx, h, sts, util.DefaultTemplateConfigMaps)
+	if err != nil {
+		return err
+	}
 
 	for _, s := range sts {
 		var hash string
@@ -575,29 +572,4 @@ func VerifySecretFields(
 	}
 
 	return hash, ctrl.Result{}, nil
-}
-
-// mergeSecretDefaults reads the named Secrets in order and merges their data
-// into the Template's ConfigOptions as defaults. Existing keys in ConfigOptions
-// take precedence, and earlier secrets in the list take precedence over later
-// ones. If a Secret does not exist, it is silently skipped.
-func mergeSecretDefaults(ctx context.Context, h *helper.Helper, namespace string, st *util.Template, secretNames []string) {
-	if st.ConfigOptions == nil {
-		st.ConfigOptions = make(map[string]any)
-	}
-	for _, name := range secretNames {
-		secret := &corev1.Secret{}
-		err := h.GetClient().Get(ctx, types.NamespacedName{
-			Name:      name,
-			Namespace: namespace,
-		}, secret)
-		if err != nil {
-			continue
-		}
-		for k, v := range secret.Data {
-			if _, exists := st.ConfigOptions[k]; !exists {
-				st.ConfigOptions[k] = string(v)
-			}
-		}
-	}
 }
