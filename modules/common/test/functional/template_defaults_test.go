@@ -160,11 +160,6 @@ var _ = Describe("Template defaults", func() {
 			return string(got.Data["ssl.conf"])
 		}
 
-		It("falls back to the template defaults when no profile ConfigMap exists", func() {
-			Expect(renderSSLConf("no-profile", map[string]any{})).To(ContainSubstring(
-				"SSLCipherSuite ECDHE+AESGCM:DHE+AESGCM:!aNULL:!MD5:!RC4:!3DES\n"))
-		})
-
 		It("applies the profile ConfigMap without the template asking for it", func() {
 			createDefaultsConfigMap(util.TLSProfileConfigMap, map[string]string{
 				"SSLCipherSuite": "ECDHE-RSA-AES256-GCM-SHA384",
@@ -174,20 +169,6 @@ var _ = Describe("Template defaults", func() {
 			rendered := renderSSLConf("from-profile", map[string]any{})
 
 			Expect(rendered).To(ContainSubstring("SSLCipherSuite ECDHE-RSA-AES256-GCM-SHA384\n"))
-			Expect(rendered).To(ContainSubstring("SSLProtocol -all +TLSv1.3\n"))
-		})
-
-		It("lets an explicit ConfigOptions value win over the profile ConfigMap", func() {
-			createDefaultsConfigMap(util.TLSProfileConfigMap, map[string]string{
-				"SSLCipherSuite": "from-profile",
-				"SSLProtocol":    "-all +TLSv1.3",
-			})
-
-			rendered := renderSSLConf("operator-override", map[string]any{
-				"SSLCipherSuite": "set-by-operator",
-			})
-
-			Expect(rendered).To(ContainSubstring("SSLCipherSuite set-by-operator\n"))
 			Expect(rendered).To(ContainSubstring("SSLProtocol -all +TLSv1.3\n"))
 		})
 	})

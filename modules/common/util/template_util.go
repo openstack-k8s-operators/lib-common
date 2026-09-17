@@ -23,6 +23,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,7 +33,12 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 //go:embed templates/common/config/*
@@ -445,6 +451,9 @@ func ApplyTemplateDefaults(
 	configMapNames []string,
 ) ([]Template, error) {
 	out := make([]Template, len(tmpls))
+	// ConfigMaps are read once per namespace: all templates in the same
+	// namespace consume the same defaults.
+	defaultsByNamespace := map[string]map[string]any{}
 
 	for i, t := range tmpls {
 		// custom templates are not rendered, so they cannot consume defaults
@@ -453,19 +462,22 @@ func ApplyTemplateDefaults(
 			continue
 		}
 
-		defaults, err := getTemplateDefaults(ctx, h, t.Namespace, configMapNames)
-		if err != nil {
-			return nil, err
+		defaults, ok := defaultsByNamespace[t.Namespace]
+		if !ok {
+			var err error
+			defaults, err = getTemplateDefaults(ctx, h, t.Namespace, configMapNames)
+			if err != nil {
+				return nil, err
+			}
+			defaultsByNamespace[t.Namespace] = defaults
 		}
 
 		if len(defaults) > 0 {
 			merged := make(map[string]any, len(defaults)+len(t.ConfigOptions))
-			for k, v := range defaults {
-				merged[k] = v
-			}
-			for k, v := range t.ConfigOptions {
-				merged[k] = v
-			}
+			// The second copy wins on purpose: the caller's own ConfigOptions
+			// must override the cluster-wide defaults.
+			maps.Copy(merged, defaults)
+			maps.Copy(merged, t.ConfigOptions)
 			t.ConfigOptions = merged
 		}
 		out[i] = t
@@ -506,4 +518,60 @@ func getTemplateDefaults(
 	}
 
 	return defaults, nil
+}
+
+// isDefaultTemplateConfigMap reports whether obj is one of the well-known
+// ConfigMaps listed in DefaultTemplateConfigMaps. It matches on name only: a
+// ConfigMap with a well-known name is relevant to the service CRs in its own
+// namespace, which the watch set up by WatchDefaultTemplateConfigMap scopes
+// separately.
+func isDefaultTemplateConfigMap(obj client.Object) bool {
+	for _, name := range DefaultTemplateConfigMaps {
+		if obj.GetName() == name {
+			return true
+		}
+	}
+	return false
+}
+
+// WatchDefaultTemplateConfigMap returns an event handler for
+//
+//	ctrl.NewControllerManagedBy(mgr).Watches(&corev1.ConfigMap{}, ...)
+//
+// When one of the well-known ConfigMaps listed in DefaultTemplateConfigMaps
+// is updated or deleted, every CR of the kind of cr in the ConfigMap's
+// namespace is enqueued for reconciliation, so the service re-renders its
+// templates against the new defaults. Events for other ConfigMaps are
+// ignored. Only the kind of cr is used, not its contents.
+func WatchDefaultTemplateConfigMap(c client.Client, cr client.Object) handler.EventHandler {
+	return handler.EnqueueRequestsFromMapFunc(defaultTemplateConfigMapMapFunc(c, cr))
+}
+
+// defaultTemplateConfigMapMapFunc enqueues every CR of the kind of cr in the
+// changed ConfigMap's namespace, but only when the ConfigMap is one of the
+// well-known template-defaults ConfigMaps. It never reads the ConfigMap
+// itself, so it also applies to deletion events.
+func defaultTemplateConfigMapMapFunc(c client.Client, cr client.Object) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		if !isDefaultTemplateConfigMap(obj) {
+			return nil
+		}
+		gvk, err := apiutil.GVKForObject(cr, c.Scheme())
+		if err != nil {
+			return nil
+		}
+		list := &unstructured.UnstructuredList{}
+		list.SetGroupVersionKind(gvk)
+		if err := c.List(ctx, list, client.InNamespace(obj.GetNamespace())); err != nil {
+			return nil
+		}
+		requests := make([]reconcile.Request, 0, len(list.Items))
+		for _, item := range list.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      item.GetName(),
+				Namespace: item.GetNamespace(),
+			}})
+		}
+		return requests
+	}
 }
