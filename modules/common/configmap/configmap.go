@@ -351,7 +351,22 @@ func DeleteConfigMapWithName(
 		},
 	}
 
-	err := h.GetClient().Delete(ctx, configMap, &client.DeleteOptions{})
+	// Look first: the read is served from the client cache, while a Delete is
+	// an API write even when there is nothing to delete. Callers that withdraw
+	// on every reconcile would otherwise pay for a 404 each time.
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, configMap)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Failed to get ConfigMap %s", name),
+			configMap,
+			err,
+		)
+	}
+
+	err = h.GetClient().Delete(ctx, configMap, &client.DeleteOptions{})
 	if err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return nil

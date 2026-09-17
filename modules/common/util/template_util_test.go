@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -8,6 +9,12 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega" // nolint:revive
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 var (
@@ -704,5 +711,55 @@ func TestGetCommonTemplates(t *testing.T) {
 		g.Expect(result["ssl.conf"]).To(ContainSubstring("SSLProtocol -all +TLSv1.3"))
 		g.Expect(result["ssl.conf"]).NotTo(ContainSubstring("ECDHE+AESGCM:DHE+AESGCM:!aNULL:!MD5:!RC4:!3DES"))
 		g.Expect(result["ssl.conf"]).NotTo(ContainSubstring("all -SSLv2"))
+	})
+}
+
+func TestIsDefaultTemplateConfigMap(t *testing.T) {
+	g := NewWithT(t)
+
+	t.Run("well-known ConfigMap is recognized", func(t *testing.T) {
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: TLSProfileConfigMap, Namespace: "openstack"},
+		}
+		g.Expect(isDefaultTemplateConfigMap(cm)).To(BeTrue())
+	})
+
+	t.Run("other ConfigMap is not recognized", func(t *testing.T) {
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "some-service-config", Namespace: "openstack"},
+		}
+		g.Expect(isDefaultTemplateConfigMap(cm)).To(BeFalse())
+	})
+}
+
+func TestDefaultTemplateConfigMapMapFunc(t *testing.T) {
+	g := NewWithT(t)
+
+	// corev1.Service stands in for a service CR: only its kind matters
+	svcA := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "openstack"}}
+	svcB := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "b", Namespace: "openstack"}}
+	svcOther := &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "c", Namespace: "other"}}
+	c := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(svcA, svcB, svcOther).Build()
+	fn := defaultTemplateConfigMapMapFunc(c, &corev1.Service{})
+	profile := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: TLSProfileConfigMap, Namespace: "openstack"},
+	}
+
+	t.Run("updated or deleted well-known ConfigMap enqueues the CRs in its namespace", func(t *testing.T) {
+		// profile is intentionally absent from the fake client: the map func
+		// never reads the ConfigMap, so the result is the same for an update
+		// event and a deletion event
+		reqs := fn(context.Background(), profile)
+		g.Expect(reqs).To(ConsistOf(
+			reconcile.Request{NamespacedName: types.NamespacedName{Name: "a", Namespace: "openstack"}},
+			reconcile.Request{NamespacedName: types.NamespacedName{Name: "b", Namespace: "openstack"}},
+		))
+	})
+
+	t.Run("other ConfigMap enqueues nothing", func(t *testing.T) {
+		other := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: "some-service-config", Namespace: "openstack"},
+		}
+		g.Expect(fn(context.Background(), other)).To(BeEmpty())
 	})
 }
