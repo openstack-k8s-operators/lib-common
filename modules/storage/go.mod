@@ -3,7 +3,7 @@ module github.com/openstack-k8s-operators/lib-common/modules/storage
 go 1.26.3
 
 require (
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/gomega v1.43.1
 	k8s.io/api v0.33.13
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/text v0.38.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
