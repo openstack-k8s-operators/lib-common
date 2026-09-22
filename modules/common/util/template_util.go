@@ -19,6 +19,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -28,7 +29,15 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 //go:embed templates/common/config/*
@@ -398,4 +407,164 @@ func GetCommonTemplates(configOptions map[string]any) (map[string]string, error)
 		result[e.Name()] = rendered
 	}
 	return result, nil
+}
+
+// TLSProfileConfigMap is the well-known ConfigMap the openstack-operator
+// maintains from the cluster-wide TLS security profile on the OpenShift
+// APIServer CR. Its keys (e.g. SSLCipherSuite, SSLProtocol) are merged as
+// defaults into the ConfigOptions of every rendered Template, so service
+// operators inherit the cluster TLS settings without any code of their own.
+//
+// It is a ConfigMap rather than a Secret on purpose: cipher suites and protocol
+// lists are derived from a cluster-readable API object and carry nothing
+// sensitive, so they should stay inspectable with `oc get cm`.
+//
+// Its lifecycle belongs entirely to the openstack-operator. lib-common only
+// reads it: it is never created, updated or required here, and if it is absent
+// every Template simply keeps the defaults it had before.
+const TLSProfileConfigMap = "openstack-ssl-profile"
+
+// DefaultTemplateConfigMaps - well-known ConfigMaps whose data is merged into
+// template ConfigOptions as defaults by EnsureSecrets and EnsureConfigMaps.
+// Earlier entries win over later ones; a caller's own ConfigOptions wins over
+// all of them.
+var DefaultTemplateConfigMaps = []string{TLSProfileConfigMap}
+
+// ApplyTemplateDefaults returns a copy of tmpls in which the data of the named
+// ConfigMaps has been merged underneath each Template's ConfigOptions. Keys
+// already present in ConfigOptions are left untouched, so a value set explicitly
+// by a service operator always wins over a cluster-wide default, and earlier
+// ConfigMaps in the list win over later ones. Neither the given slice nor the
+// caller's ConfigOptions maps are modified.
+//
+// A ConfigMap that does not exist contributes nothing: that is the normal case
+// on clusters where no cluster-wide profile has been published, and on plain
+// Kubernetes, leaving templates on their own hardcoded defaults. Any other read
+// error is returned rather than skipped, because rendering a config with
+// silently substituted fallbacks could downgrade settings the cluster
+// administrator mandated.
+func ApplyTemplateDefaults(
+	ctx context.Context,
+	h *helper.Helper,
+	tmpls []Template,
+	configMapNames []string,
+) ([]Template, error) {
+	out := make([]Template, len(tmpls))
+
+	for i, t := range tmpls {
+		// custom templates are not rendered, so they cannot consume defaults
+		if t.Type == TemplateTypeCustom {
+			out[i] = t
+			continue
+		}
+
+		defaults, err := getTemplateDefaults(ctx, h, t.Namespace, configMapNames)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(defaults) > 0 {
+			merged := make(map[string]any, len(defaults)+len(t.ConfigOptions))
+			for k, v := range defaults {
+				merged[k] = v
+			}
+			for k, v := range t.ConfigOptions {
+				merged[k] = v
+			}
+			t.ConfigOptions = merged
+		}
+		out[i] = t
+	}
+
+	return out, nil
+}
+
+// getTemplateDefaults reads the named ConfigMaps from namespace and returns
+// their data as a single map, with earlier ConfigMaps in the list taking
+// precedence over later ones.
+func getTemplateDefaults(
+	ctx context.Context,
+	h *helper.Helper,
+	namespace string,
+	configMapNames []string,
+) (map[string]any, error) {
+	defaults := map[string]any{}
+
+	for _, name := range configMapNames {
+		cm := &corev1.ConfigMap{}
+		err := h.GetClient().Get(ctx, types.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		}, cm)
+		if err != nil {
+			if k8s_errors.IsNotFound(err) {
+				continue
+			}
+			return nil, fmt.Errorf("error reading template defaults from ConfigMap %s/%s: %w", namespace, name, err)
+		}
+
+		for k, v := range cm.Data {
+			if _, exists := defaults[k]; !exists {
+				defaults[k] = v
+			}
+		}
+	}
+
+	return defaults, nil
+}
+
+// isDefaultTemplateConfigMap reports whether obj is one of the well-known
+// ConfigMaps listed in DefaultTemplateConfigMaps. It matches on name only: a
+// ConfigMap with a well-known name is relevant to the service CRs in its own
+// namespace, which the watch set up by WatchDefaultTemplateConfigMap scopes
+// separately.
+func isDefaultTemplateConfigMap(obj client.Object) bool {
+	for _, name := range DefaultTemplateConfigMaps {
+		if obj.GetName() == name {
+			return true
+		}
+	}
+	return false
+}
+
+// WatchDefaultTemplateConfigMap returns an event handler for
+//
+//	ctrl.NewControllerManagedBy(mgr).Watches(&corev1.ConfigMap{}, ...)
+//
+// When one of the well-known ConfigMaps listed in DefaultTemplateConfigMaps
+// is updated or deleted, every CR of the kind of cr in the ConfigMap's
+// namespace is enqueued for reconciliation, so the service re-renders its
+// templates against the new defaults. Events for other ConfigMaps are
+// ignored. Only the kind of cr is used, not its contents.
+func WatchDefaultTemplateConfigMap(c client.Client, cr client.Object) handler.EventHandler {
+	return handler.EnqueueRequestsFromMapFunc(defaultTemplateConfigMapMapFunc(c, cr))
+}
+
+// defaultTemplateConfigMapMapFunc enqueues every CR of the kind of cr in the
+// changed ConfigMap's namespace, but only when the ConfigMap is one of the
+// well-known template-defaults ConfigMaps. It never reads the ConfigMap
+// itself, so it also applies to deletion events.
+func defaultTemplateConfigMapMapFunc(c client.Client, cr client.Object) handler.MapFunc {
+	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+		if !isDefaultTemplateConfigMap(obj) {
+			return nil
+		}
+		gvk, err := apiutil.GVKForObject(cr, c.Scheme())
+		if err != nil {
+			return nil
+		}
+		list := &unstructured.UnstructuredList{}
+		list.SetGroupVersionKind(gvk)
+		if err := c.List(ctx, list, client.InNamespace(obj.GetNamespace())); err != nil {
+			return nil
+		}
+		requests := make([]reconcile.Request, 0, len(list.Items))
+		for _, item := range list.Items {
+			requests = append(requests, reconcile.Request{NamespacedName: types.NamespacedName{
+				Name:      item.GetName(),
+				Namespace: item.GetNamespace(),
+			}})
+		}
+		return requests
+	}
 }
