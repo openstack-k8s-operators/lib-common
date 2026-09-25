@@ -72,6 +72,35 @@ func RestrictivePodSecurityContext(uid, gid int64, supplementalGroups ...int64) 
 	}
 }
 
+// RestrictiveHostNetworkV2SecurityContext returns a hardened SecurityContext
+// admissible by the OpenShift hostnetwork-v2 SCC, which the consuming
+// operator must grant to the workload service account.
+//
+// RunAsUser/RunAsGroup are unset. The SCC assigns RunAsUser from the
+// namespace range, but no primary group — the container runs as gid 0 and
+// group access comes from the SCC-assigned fsGroup/supplementalGroups. Set
+// RunAsGroup explicitly if the workload needs a specific primary group.
+//
+// addCapabilities must stay within the SCC's allowed set (NET_BIND_SERVICE
+// only) or admission rejects the pod.
+func RestrictiveHostNetworkV2SecurityContext(addCapabilities ...corev1.Capability) *corev1.SecurityContext {
+	caps := &corev1.Capabilities{
+		Drop: []corev1.Capability{"ALL"},
+	}
+	if len(addCapabilities) > 0 {
+		caps.Add = addCapabilities
+	}
+	return &corev1.SecurityContext{
+		RunAsNonRoot:             ptr.To(true),
+		AllowPrivilegeEscalation: ptr.To(false),
+		Capabilities:             caps,
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+		ReadOnlyRootFilesystem: ptr.To(true),
+	}
+}
+
 // RestrictiveSecurityContextWithGID is an alias for RestrictiveSecurityContext.
 // Deprecated: use RestrictiveSecurityContext directly.
 func RestrictiveSecurityContextWithGID(uid, gid int64, addCapabilities ...corev1.Capability) *corev1.SecurityContext {
