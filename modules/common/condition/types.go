@@ -76,6 +76,10 @@ type Condition struct {
 }
 
 // Conditions provide observations of the operational state of a API resource.
+// +patchMergeKey=type
+// +patchStrategy=merge
+// +listType=map
+// +listMapKey=type
 type Conditions []Condition
 
 // conditionGroup defines a group of conditions with the same status and severity,
