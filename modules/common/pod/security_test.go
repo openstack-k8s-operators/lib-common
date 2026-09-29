@@ -50,6 +50,32 @@ func TestRestrictiveSecurityContext(t *testing.T) {
 	}
 }
 
+func TestRestrictiveHostNetworkV2SecurityContext(t *testing.T) {
+	sc := RestrictiveHostNetworkV2SecurityContext("NET_BIND_SERVICE")
+
+	if sc.RunAsUser != nil || sc.RunAsGroup != nil {
+		t.Errorf("expected RunAsUser/RunAsGroup unset, got %v / %v", sc.RunAsUser, sc.RunAsGroup)
+	}
+	if sc.RunAsNonRoot == nil || !*sc.RunAsNonRoot {
+		t.Error("expected RunAsNonRoot true")
+	}
+	if sc.AllowPrivilegeEscalation == nil || *sc.AllowPrivilegeEscalation {
+		t.Error("expected AllowPrivilegeEscalation false")
+	}
+	if sc.Capabilities == nil || len(sc.Capabilities.Drop) != 1 || sc.Capabilities.Drop[0] != "ALL" {
+		t.Errorf("expected Capabilities.Drop [ALL], got %v", sc.Capabilities)
+	}
+	if len(sc.Capabilities.Add) != 1 || sc.Capabilities.Add[0] != "NET_BIND_SERVICE" {
+		t.Errorf("expected Capabilities.Add [NET_BIND_SERVICE], got %v", sc.Capabilities.Add)
+	}
+	if sc.SeccompProfile == nil || sc.SeccompProfile.Type != corev1.SeccompProfileTypeRuntimeDefault {
+		t.Errorf("expected SeccompProfile RuntimeDefault, got %v", sc.SeccompProfile)
+	}
+	if sc.ReadOnlyRootFilesystem == nil || !*sc.ReadOnlyRootFilesystem {
+		t.Errorf("expected ReadOnlyRootFilesystem true, got %v", sc.ReadOnlyRootFilesystem)
+	}
+}
+
 func TestRestrictivePodSecurityContext(t *testing.T) {
 	var uid int64 = 42425
 	var gid int64 = 42426
