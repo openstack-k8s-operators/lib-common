@@ -2,6 +2,9 @@ name: Golang lint, vet and unit test pipeline
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: github (govet, golint and gotest)
