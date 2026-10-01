@@ -19,6 +19,7 @@ limitations under the License.
 package service
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -436,6 +437,109 @@ func TestGetAPIEndpoint(t *testing.T) {
 			url, err := service.GetAPIEndpoint(tt.endpointURL, ptr.To(tt.proto), tt.path)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(url).To(Equal(tt.want))
+		})
+	}
+}
+
+func TestGetVHostServerName(t *testing.T) {
+	tests := []struct {
+		name         string
+		endpointURL  *string
+		defaultName  string
+		extraAliases []string
+		wantServer   string
+		wantAliases  []string
+		wantErr      bool
+		wantIPErr    bool
+	}{
+		{
+			name:        "no endpointURL uses default name, no aliases",
+			endpointURL: nil,
+			defaultName: "placement-public.openstack.svc",
+			wantServer:  "placement-public.openstack.svc",
+			wantAliases: nil,
+		},
+		{
+			name:        "endpointURL host becomes ServerName, default becomes alias",
+			endpointURL: ptr.To("https://placement.foo.bar:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantServer:  "placement.foo.bar",
+			wantAliases: []string{"placement-public.openstack.svc"},
+		},
+		{
+			name:         "extraAliases are appended and deduplicated against ServerName",
+			endpointURL:  ptr.To("https://placement.foo.bar:8778"),
+			defaultName:  "placement-public.openstack.svc",
+			extraAliases: []string{"placement-public.openstack.svc.cluster.local", "placement.foo.bar"},
+			wantServer:   "placement.foo.bar",
+			wantAliases:  []string{"placement-public.openstack.svc", "placement-public.openstack.svc.cluster.local"},
+		},
+		{
+			name:        "endpointURL host same as default name yields no duplicate alias",
+			endpointURL: ptr.To("https://placement-public.openstack.svc:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantServer:  "placement-public.openstack.svc",
+			wantAliases: nil,
+		},
+		{
+			name:        "malformed endpointURL returns error",
+			endpointURL: ptr.To("http://foo bar.com:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+		},
+		{
+			name:        "endpointURL with no host returns error",
+			endpointURL: ptr.To("/just/a/path"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+		},
+		{
+			name:        "IPv4 endpointURL host returns error",
+			endpointURL: ptr.To("https://192.0.2.1:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+			wantIPErr:   true,
+		},
+		{
+			name:        "IPv4 endpointURL host with trailing root dot returns error",
+			endpointURL: ptr.To("https://127.0.0.1.:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+			wantIPErr:   true,
+		},
+		{
+			name:        "IPv6 endpointURL host returns error",
+			endpointURL: ptr.To("https://[2001:db8::1]:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+			wantIPErr:   true,
+		},
+		{
+			name:        "zone-scoped IPv6 endpointURL host returns error",
+			endpointURL: ptr.To("https://[fe80::1%25eth0]:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantErr:     true,
+			wantIPErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			override := RoutedOverrideSpec{EndpointURL: tt.endpointURL}
+			serverName, aliases, err := GetVHostServerName(override, tt.defaultName, tt.extraAliases...)
+
+			if tt.wantErr {
+				g.Expect(err).To(HaveOccurred())
+				if tt.wantIPErr {
+					g.Expect(errors.Is(err, ErrEndpointURLIP)).To(BeTrue())
+				}
+				return
+			}
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(serverName).To(Equal(tt.wantServer))
+			g.Expect(aliases).To(Equal(tt.wantAliases))
 		})
 	}
 }
