@@ -51,6 +51,10 @@ var (
 	// ErrDuplicateServicePort is returned when the merged port list contains a
 	// duplicate (Port, Protocol) pair.
 	ErrDuplicateServicePort = errors.New("duplicate service port after applying ports override")
+	// ErrEndpointPortUnknown is returned when no EndpointURL is given and the
+	// Service's endpoint port is ambiguous (a multi-port Service with no port
+	// named like the Service object).
+	ErrEndpointPortUnknown = errors.New("cannot determine service endpoint port")
 	// ErrEndpointURLNoHost is returned when an EndpointURL has no host component.
 	ErrEndpointURLNoHost = errors.New("endpoint URL has no host")
 	// ErrEndpointURLIP is returned when an EndpointURL host is an IP address.
@@ -217,10 +221,18 @@ func (s *Service) GetServiceHostname() string {
 	return s.serviceHostname
 }
 
-// GetServiceHostnamePort - returns the service hostname with port if service port
-// is not nil, otherwise returns GetServiceHostname()
+// GetServiceHostnamePort - returns the service hostname with port if the
+// Service's endpoint port can be determined, otherwise returns
+// GetServiceHostname(). The endpoint port is the port named like the Service
+// object; failing that, the Service's only port, so a port name that differs
+// from the object name (e.g. an object named "placement-internal" with a port
+// named "internal") still resolves. A multi-port Service with no port named
+// like the object has no unambiguous endpoint port and gets none.
 func (s *Service) GetServiceHostnamePort() (string, string) {
 	servicePort := GetServicesPortDetails(s.service, s.service.Name)
+	if servicePort == nil && len(s.service.Spec.Ports) == 1 {
+		servicePort = &s.service.Spec.Ports[0]
+	}
 	if servicePort != nil {
 		return s.GetServiceHostname(),
 			strconv.FormatInt(int64(servicePort.Port), 10)
@@ -292,18 +304,25 @@ func (s *OverrideSpec) AddLabel(label map[string]string) {
 func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path string) (string, error) {
 	var apiEndpoint *url.URL
 	var err error
-	if endpointURL != nil {
+	if endpointURL != nil && *endpointURL != "" {
 		apiEndpoint, err = url.Parse(*endpointURL)
 		if err != nil {
 			return "", err
 		}
 	} else {
 		hostname, port := s.GetServiceHostnamePort()
+		// A Service without ports (e.g. ExternalName) has no port to
+		// advertise: use the protocol's default port. Only a multi-port
+		// Service with no matching port is ambiguous.
+		if port == "" && len(s.service.Spec.Ports) > 1 {
+			return "", fmt.Errorf("service %q: %w", s.service.Name, ErrEndpointPortUnknown)
+		}
 
 		var endptURL string
-		if protocol != nil &&
-			((*protocol == ProtocolHTTP && port == "80") ||
-				(*protocol == ProtocolHTTPS && port == "443")) {
+		if port == "" ||
+			(protocol != nil &&
+				((*protocol == ProtocolHTTP && port == "80") ||
+					(*protocol == ProtocolHTTPS && port == "443"))) {
 			endptURL = fmt.Sprintf("%s%s", EndptProtocol(protocol), hostname)
 		} else {
 			endptURL = fmt.Sprintf("%s%s:%s", EndptProtocol(protocol), hostname, port)
