@@ -50,8 +50,15 @@ const (
 	AnnotationIngressTargetPortNameKey = "core.openstack.org/ingress_target_port_name"
 	// AnnotationEndpointKey -
 	AnnotationEndpointKey = "endpoint"
-	// AnnotationHostnameKey -
+	// AnnotationHostnameKey - read by infra-operator's Service controller
+	// (internal/controller/network/service_controller.go) to register a
+	// LoadBalancer Service's hostname in DNSData/dnsmasq.
 	AnnotationHostnameKey = "dnsmasq.network.openstack.org/hostname"
+	// AnnotationCNAMEsKey - value is a comma separated list of additional
+	// hostnames to register as DNS aliases (dnsmasq `cname=` records) of
+	// AnnotationHostnameKey's value. Read by the same infra-operator Service
+	// controller as AnnotationHostnameKey.
+	AnnotationCNAMEsKey = "dnsmasq.network.openstack.org/cnames"
 	// ProtocolHTTP -
 	ProtocolHTTP Protocol = "http"
 	// ProtocolHTTPS -
