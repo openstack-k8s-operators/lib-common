@@ -259,7 +259,7 @@ func EnsureCert(
 		Duration: &metav1.Duration{
 			Duration: *request.Duration,
 		},
-		IssuerRef: certmgrmetav1.ObjectReference{
+		IssuerRef: certmgrmetav1.IssuerReference{
 			Name:  issuer.Name,
 			Kind:  issuer.Kind,
 			Group: issuer.GroupVersionKind().Group,
