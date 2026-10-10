@@ -633,3 +633,113 @@ func TestRoutedOverrideSpecAddAnnotation(t *testing.T) {
 		})
 	}
 }
+
+func TestNewServicePortsOverride(t *testing.T) {
+	basePorts := []corev1.ServicePort{
+		{Name: "amqp", Protocol: corev1.ProtocolTCP, Port: 5672, TargetPort: intstr.FromInt(5672)},
+		{Name: "amqps", Protocol: corev1.ProtocolTCP, Port: 5671, TargetPort: intstr.FromInt(5671)},
+	}
+
+	tests := []struct {
+		name     string
+		override *OverrideSpec
+		want     []corev1.ServicePort
+	}{
+		{
+			name:     "no port override keeps base ports",
+			override: &OverrideSpec{Spec: &OverrideServiceSpec{Type: corev1.ServiceTypeLoadBalancer}},
+			want:     basePorts,
+		},
+		{
+			name: "change matching port keeps other fields and other ports",
+			override: &OverrideSpec{Spec: &OverrideServiceSpec{
+				Ports: []OverrideServicePort{{Name: "amqp", Port: 5673}},
+			}},
+			// amqp Port changes to 5673, TargetPort/Protocol are preserved from
+			// base; amqps is untouched.
+			want: []corev1.ServicePort{
+				{Name: "amqp", Protocol: corev1.ProtocolTCP, Port: 5673, TargetPort: intstr.FromInt(5672)},
+				{Name: "amqps", Protocol: corev1.ProtocolTCP, Port: 5671, TargetPort: intstr.FromInt(5671)},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			base := svcClusterIP.DeepCopy()
+			base.Spec.Ports = append([]corev1.ServicePort{}, basePorts...)
+
+			svc, err := NewService(base, timeout, tt.override)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(svc.GetSpec().Ports).To(Equal(tt.want))
+		})
+	}
+}
+
+// TestNewServicePortsOverrideTargetPort verifies that overriding only the Port
+// of a base port that omits TargetPort preserves backend routing: TargetPort is
+// pinned to the original base Port instead of following the new Port via
+// Kubernetes' TargetPort=Port defaulting.
+func TestNewServicePortsOverrideTargetPort(t *testing.T) {
+	g := NewWithT(t)
+
+	base := svcClusterIP.DeepCopy()
+	// single port, no TargetPort set -> would default to Port (80)
+	base.Spec.Ports = []corev1.ServicePort{
+		{Name: "foo", Protocol: corev1.ProtocolTCP, Port: 80},
+	}
+
+	override := &OverrideSpec{Spec: &OverrideServiceSpec{
+		Ports: []OverrideServicePort{{Name: "foo", Port: 8080}},
+	}}
+
+	svc, err := NewService(base, timeout, override)
+	g.Expect(err).ToNot(HaveOccurred())
+	// Port changes to 8080 but backend routing stays at the original 80.
+	g.Expect(svc.GetSpec().Ports).To(Equal([]corev1.ServicePort{
+		{Name: "foo", Protocol: corev1.ProtocolTCP, Port: 8080, TargetPort: intstr.FromInt32(80)},
+	}))
+}
+
+func TestNewServicePortsOverrideInvalid(t *testing.T) {
+	basePorts := []corev1.ServicePort{
+		{Name: "amqp", Protocol: corev1.ProtocolTCP, Port: 5672, TargetPort: intstr.FromInt(5672)},
+		{Name: "amqps", Protocol: corev1.ProtocolTCP, Port: 5671, TargetPort: intstr.FromInt(5671)},
+	}
+
+	tests := []struct {
+		name     string
+		override *OverrideSpec
+		errMatch string
+	}{
+		{
+			name: "changing a port to collide with another is rejected",
+			override: &OverrideSpec{Spec: &OverrideServiceSpec{
+				Ports: []OverrideServicePort{{Name: "amqp", Port: 5671}},
+			}},
+			errMatch: "duplicate service port after applying ports override: 5671/TCP",
+		},
+		{
+			name: "override referencing an unknown port name is rejected",
+			override: &OverrideSpec{Spec: &OverrideServiceSpec{
+				Ports: []OverrideServicePort{{Name: "does-not-exist", Port: 9999}},
+			}},
+			errMatch: `ports override references unknown service port name: "does-not-exist"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			base := svcClusterIP.DeepCopy()
+			base.Spec.Ports = append([]corev1.ServicePort{}, basePorts...)
+
+			_, err := NewService(base, timeout, tt.override)
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(err.Error()).To(ContainSubstring(tt.errMatch))
+		})
+	}
+}

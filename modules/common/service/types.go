@@ -180,10 +180,40 @@ type EmbeddedLabelsAnnotations struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
 }
 
+// OverrideServicePort overrides the Port number of a generated Service port,
+// identified by Name. Only the Port can be changed: TargetPort and every other
+// field are preserved from the matched base port, so overriding the exposed port
+// never changes backend routing. This deliberately exposes a smaller surface
+// than the upstream corev1.ServicePort, which would allow changing TargetPort
+// (and other fields) and silently break the deployment connection.
+type OverrideServicePort struct {
+	// Name of the base Service port to override. It must match the Name of an
+	// existing port on the generated Service.
+	Name string `json:"name"`
+
+	// Port is the new Service port number.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port"`
+}
+
 // OverrideServiceSpec is a subset of the fields included in https://pkg.go.dev/k8s.io/api@v0.26.6/core/v1#ServiceSpec
-// Limited to Type, SessionAffinity, LoadBalancerSourceRanges, ExternalName, ExternalTrafficPolicy, SessionAffinityConfig,
-// IPFamilyPolicy, LoadBalancerClass and InternalTrafficPolicy
+// Limited to Type, Ports, SessionAffinity, LoadBalancerSourceRanges, ExternalName, ExternalTrafficPolicy,
+// SessionAffinityConfig, IPFamilyPolicy, LoadBalancerClass and InternalTrafficPolicy
 type OverrideServiceSpec struct {
+	// Ports overrides the Port number of existing generated Service ports,
+	// matched by Name. Each entry changes only the Port of the base port with the
+	// same Name; TargetPort and every other field are preserved from the base
+	// port, so overriding the exposed port never changes backend routing. An
+	// entry whose Name does not match any base port is rejected.
+	//
+	// The intended use is placing several Services on a single shared
+	// LoadBalancer IP by changing their Port values. To leave a Service's ports
+	// untouched, omit this field entirely.
+	// +optional
+	// +listType=atomic
+	Ports []OverrideServicePort `json:"ports,omitempty"`
+
 	// type determines how the Service is exposed. Defaults to ClusterIP. Valid
 	// options are ExternalName, ClusterIP, NodePort, and LoadBalancer.
 	// "ClusterIP" allocates a cluster-internal IP address for load-balancing
