@@ -86,6 +86,10 @@ services:
     home: /var/lib/glance
     groups:
       - kolla
+  goose:
+    uid: 1000
+    gid: 1000
+    home: /home/goose
   haproxy:
     uid: 42454
     gid: 42454
