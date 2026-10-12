@@ -65,6 +65,8 @@ const (
 	FrrVtyGID          int64 = 42483
 	GlanceUID          int64 = 42415
 	GlanceGID          int64 = 42415
+	GooseUID           int64 = 1000
+	GooseGID           int64 = 1000
 	HaproxyUID         int64 = 42454
 	HaproxyGID         int64 = 42454
 	HeatUID            int64 = 42418
@@ -148,6 +150,7 @@ var Registry = map[string]ServiceUser{
 	"frr":              {UID: FrrUID, GID: FrrGID, Home: "/var/run/frr", Groups: []string{"kolla", "frrvty"}},
 	"frrvty":           {UID: FrrVtyUID, GID: FrrVtyGID},
 	"glance":           {UID: GlanceUID, GID: GlanceGID, Home: "/var/lib/glance", Groups: []string{"kolla"}},
+	"goose":            {UID: GooseUID, GID: GooseGID, Home: "/home/goose"},
 	"haproxy":          {UID: HaproxyUID, GID: HaproxyGID, Home: "/var/lib/haproxy", Groups: []string{"kolla"}},
 	"heat":             {UID: HeatUID, GID: HeatGID, Home: "/var/lib/heat", Groups: []string{"kolla"}},
 	"horizon":          {UID: HorizonUID, GID: HorizonGID, Home: "/var/lib/horizon", Groups: []string{"kolla"}},
