@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/configmap"
 	corev1 "k8s.io/api/core/v1"
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -126,6 +127,38 @@ var _ = Describe("ConfigMap helpers", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(hash2).To(Equal(hash1))
+		})
+	})
+
+	When("DeleteConfigMapWithName is called", func() {
+		It("deletes an existing ConfigMap", func() {
+			cm := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "delete-cm",
+					Namespace: namespace,
+				},
+				Data: map[string]string{"k": "v"},
+			}
+			_, _, err := configmap.CreateOrPatchRawConfigMap(
+				ctx, h, th.CreateNamespace("cm-delete-owner"), cm, false,
+			)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(configmap.DeleteConfigMapWithName(
+				ctx, h, "delete-cm", namespace)).To(Succeed())
+
+			err = cClient.Get(ctx, types.NamespacedName{
+				Name:      "delete-cm",
+				Namespace: namespace,
+			}, &corev1.ConfigMap{})
+			Expect(k8s_errors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("is a no-op when the ConfigMap is not there", func() {
+			// callers withdraw a ConfigMap on every reconcile, so asking for
+			// one that is already gone must not surface as an error
+			Expect(configmap.DeleteConfigMapWithName(
+				ctx, h, "never-created-cm", namespace)).To(Succeed())
 		})
 	})
 })
