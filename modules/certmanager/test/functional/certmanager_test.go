@@ -148,7 +148,7 @@ var _ = Describe("certmanager module", func() {
 						"keystone-public-openstack",
 						"keystone-public-openstack.apps-crc.testing",
 					},
-					IssuerRef: certmgrmetav1.ObjectReference{
+					IssuerRef: certmgrmetav1.IssuerReference{
 						Kind: "Issuer",
 						Name: "issuerName",
 					},
@@ -178,7 +178,7 @@ var _ = Describe("certmanager module", func() {
 						"keystone-public-openstack.apps-crc.testing",
 						"keystone-public-openstack",
 					},
-					IssuerRef: certmgrmetav1.ObjectReference{
+					IssuerRef: certmgrmetav1.IssuerReference{
 						Kind: "Issuer",
 						Name: "issuerName",
 					},
@@ -208,7 +208,7 @@ var _ = Describe("certmanager module", func() {
 						"1.1.1.1",
 						"2.2.2.1",
 					},
-					IssuerRef: certmgrmetav1.ObjectReference{
+					IssuerRef: certmgrmetav1.IssuerReference{
 						Kind: "Issuer",
 						Name: "issuerName",
 					},
@@ -238,7 +238,7 @@ var _ = Describe("certmanager module", func() {
 						"keystone-public-openstack",
 						"keystone-public-openstack.apps-crc.testing",
 					},
-					IssuerRef: certmgrmetav1.ObjectReference{
+					IssuerRef: certmgrmetav1.IssuerReference{
 						Kind: "Issuer",
 						Name: "issuerName",
 					},
