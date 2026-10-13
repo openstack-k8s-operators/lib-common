@@ -34,7 +34,7 @@ func TestRegistryUIDs(t *testing.T) {
 		"frr":              FrrUID,
 		"frrvty":           FrrVtyUID,
 		"glance":           GlanceUID,
-		"goose":            GooseUID,
+		"goose":            OpenStackAssistantUID,
 		"haproxy":          HaproxyUID,
 		"heat":             HeatUID,
 		"horizon":          HorizonUID,
