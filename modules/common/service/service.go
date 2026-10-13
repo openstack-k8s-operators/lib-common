@@ -20,6 +20,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -30,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -37,6 +39,15 @@ import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+var (
+	// ErrUnknownServicePort is returned when a ports override references a Name
+	// that does not match any base Service port.
+	ErrUnknownServicePort = errors.New("ports override references unknown service port name")
+	// ErrDuplicateServicePort is returned when the merged port list contains a
+	// duplicate (Port, Protocol) pair.
+	ErrDuplicateServicePort = errors.New("duplicate service port after applying ports override")
 )
 
 // NewService returns an initialized Service.
@@ -67,7 +78,17 @@ func NewService(
 				return svc, fmt.Errorf("error marshalling Service Spec: %w", err)
 			}
 
-			patch, err := json.Marshal(override.Spec)
+			// Ports are handled separately (merged by name below) instead of via
+			// the strategic merge patch: ServicePort's strategic merge key is
+			// "port", which makes it impossible to change a port's Port value -
+			// the patch would append a new entry rather than update the existing
+			// one. Strip Ports from the patch so the strategic merge only touches
+			// the other fields.
+			specWithoutPorts := *override.Spec
+			overridePorts := specWithoutPorts.Ports
+			specWithoutPorts.Ports = nil
+
+			patch, err := json.Marshal(&specWithoutPorts)
 			if err != nil {
 				return svc, fmt.Errorf("error marshalling Service Spec override: %w", err)
 			}
@@ -82,11 +103,89 @@ func NewService(
 			if err != nil {
 				return svc, fmt.Errorf("error unmarshalling patched Service Spec: %w", err)
 			}
+
+			patchedSpec.Ports, err = mergeServicePortsByName(patchedSpec.Ports, overridePorts)
+			if err != nil {
+				return svc, fmt.Errorf("error applying Service ports override: %w", err)
+			}
 			svc.service.Spec = patchedSpec
 		}
 	}
 
 	return svc, nil
+}
+
+// mergeServicePortsByName applies Port overrides to base ports, matched by Name.
+// Each override changes only the Port of the base port with the same Name; every
+// other field is preserved. An override whose Name does not match any base port
+// is an error. The merged result is validated so that invalid combinations
+// surface here rather than as a hard-to-trace API server rejection at
+// create/update time.
+func mergeServicePortsByName(base []corev1.ServicePort, overrides []OverrideServicePort) ([]corev1.ServicePort, error) {
+	if len(overrides) == 0 {
+		return base, nil
+	}
+
+	merged := make([]corev1.ServicePort, len(base))
+	copy(merged, base)
+
+	for _, ov := range overrides {
+		idx := -1
+		for i := range merged {
+			if merged[i].Name == ov.Name {
+				idx = i
+				break
+			}
+		}
+		if idx < 0 {
+			return nil, fmt.Errorf("%w: %q", ErrUnknownServicePort, ov.Name)
+		}
+		merged[idx] = overrideServicePort(merged[idx], ov)
+	}
+
+	if err := validateServicePorts(merged); err != nil {
+		return nil, err
+	}
+
+	return merged, nil
+}
+
+// validateServicePorts checks that a merged port list is valid for a Service: no
+// two ports may share the same (Port, Protocol) pair, which the API server would
+// otherwise reject at create/update time. An empty Protocol is treated as TCP,
+// matching Kubernetes defaulting.
+func validateServicePorts(ports []corev1.ServicePort) error {
+	type portKey struct {
+		port     int32
+		protocol corev1.Protocol
+	}
+	seen := make(map[portKey]struct{}, len(ports))
+	for _, p := range ports {
+		proto := p.Protocol
+		if proto == "" {
+			proto = corev1.ProtocolTCP
+		}
+		key := portKey{port: p.Port, protocol: proto}
+		if _, ok := seen[key]; ok {
+			return fmt.Errorf("%w: %d/%s", ErrDuplicateServicePort, p.Port, proto)
+		}
+		seen[key] = struct{}{}
+	}
+	return nil
+}
+
+// overrideServicePort returns base with its Port replaced by the override Port.
+// When base relies on Kubernetes defaulting TargetPort to Port (TargetPort
+// unset) and the Port changes, TargetPort is pinned to the original base Port so
+// that changing the exposed port does not silently move backend routing to the
+// new Port.
+func overrideServicePort(base corev1.ServicePort, ov OverrideServicePort) corev1.ServicePort {
+	out := base
+	if ov.Port != out.Port && out.TargetPort == (intstr.IntOrString{}) {
+		out.TargetPort = intstr.FromInt32(out.Port)
+	}
+	out.Port = ov.Port
+	return out
 }
 
 // GetClusterIPs - returns the cluster IPs of the created service
@@ -227,6 +326,11 @@ func (s *Service) ToOverrideServiceSpec() (*OverrideServiceSpec, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshalling service OverrideSpec: %w", err)
 		}
+
+		// Ports are an override-only input (merged by name in NewService) and are
+		// not reflected back when converting a live Service spec, to preserve the
+		// existing behaviour of callers that round-trip through this method.
+		overrideServiceSpec.Ports = nil
 	}
 
 	return overrideServiceSpec, nil
