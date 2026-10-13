@@ -693,6 +693,106 @@ func TestGetVHostServerName(t *testing.T) {
 	}
 }
 
+func TestGetEndpointURLPort(t *testing.T) {
+	tests := []struct {
+		name        string
+		endpointURL *string
+		wantPort    int32
+		wantOK      bool
+		wantErr     bool
+		wantRange   bool
+	}{
+		{
+			name:        "nil endpointURL",
+			endpointURL: nil,
+			wantPort:    0,
+			wantOK:      false,
+		},
+		{
+			name:        "empty endpointURL",
+			endpointURL: ptr.To(""),
+			wantPort:    0,
+			wantOK:      false,
+		},
+		{
+			name:        "endpointURL with explicit port",
+			endpointURL: ptr.To("https://keystone.foo.bar:13000"),
+			wantPort:    13000,
+			wantOK:      true,
+		},
+		{
+			name:        "https endpointURL without a port defaults to 443",
+			endpointURL: ptr.To("https://keystone.foo.bar"),
+			wantPort:    443,
+			wantOK:      true,
+		},
+		{
+			name:        "http endpointURL without a port defaults to 80",
+			endpointURL: ptr.To("http://keystone.foo.bar"),
+			wantPort:    80,
+			wantOK:      true,
+		},
+		{
+			name:        "uppercase scheme still implies the default port",
+			endpointURL: ptr.To("HTTPS://keystone.foo.bar"),
+			wantPort:    443,
+			wantOK:      true,
+		},
+		{
+			name:        "endpointURL with an unrecognized scheme has no implied port",
+			endpointURL: ptr.To("ftp://keystone.foo.bar"),
+			wantPort:    0,
+			wantOK:      false,
+		},
+		{
+			name:        "malformed endpointURL returns error",
+			endpointURL: ptr.To("http://foo bar.com:13000"),
+			wantErr:     true,
+		},
+		{
+			name:        "endpointURL with the highest valid port",
+			endpointURL: ptr.To("https://foo.bar:65535"),
+			wantPort:    65535,
+			wantOK:      true,
+		},
+		{
+			name:        "endpointURL port above 65535 returns error",
+			endpointURL: ptr.To("https://foo.bar:65536"),
+			wantErr:     true,
+			wantRange:   true,
+		},
+		{
+			name:        "oversized endpointURL port returns error",
+			endpointURL: ptr.To("https://foo.bar:999999999999"),
+			wantErr:     true,
+			wantRange:   true,
+		},
+		{
+			name:        "endpointURL port 0 returns error",
+			endpointURL: ptr.To("https://foo.bar:0"),
+			wantErr:     true,
+			wantRange:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := NewWithT(t)
+
+			port, ok, err := GetEndpointURLPort(tt.endpointURL)
+
+			if tt.wantErr {
+				g.Expect(err).To(HaveOccurred())
+				g.Expect(errors.Is(err, ErrEndpointURLPortRange)).To(Equal(tt.wantRange))
+				return
+			}
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(ok).To(Equal(tt.wantOK))
+			g.Expect(port).To(Equal(tt.wantPort))
+		})
+	}
+}
+
 func TestToOverrideServiceSpec(t *testing.T) {
 	tests := []struct {
 		name     string

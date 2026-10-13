@@ -166,7 +166,12 @@ type OverrideSpec struct {
 // to the cluster. Allows for the manifest of the created Service to be overwritten with custom configuration.
 type RoutedOverrideSpec struct {
 	OverrideSpec `json:",inline"`
-	EndpointURL  *string `json:"endpointURL,omitempty"`
+	// EndpointURL overrides the public-facing URL for this endpoint, e.g.
+	// "https://placement.example.com" or "https://placement.example.com:13778".
+	// The host must be a fully qualified domain name (at least two
+	// dot-separated labels, e.g. not a bare "placement") and not an IP
+	// literal.
+	EndpointURL *string `json:"endpointURL,omitempty"`
 }
 
 // EmbeddedLabelsAnnotations is an embedded subset of the fields included in k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta.

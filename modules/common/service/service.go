@@ -55,6 +55,9 @@ var (
 	// Service's endpoint port is ambiguous (a multi-port Service with no port
 	// named like the Service object).
 	ErrEndpointPortUnknown = errors.New("cannot determine service endpoint port")
+	// ErrEndpointURLPortRange is returned when an EndpointURL's explicit port is
+	// outside 1-65535.
+	ErrEndpointURLPortRange = errors.New("endpoint URL port out of range 1-65535")
 	// ErrEndpointURLNoHost is returned when an EndpointURL has no host component.
 	ErrEndpointURLNoHost = errors.New("endpoint URL has no host")
 	// ErrEndpointURLIP is returned when an EndpointURL host is an IP address.
@@ -392,6 +395,46 @@ func GetVHostServerName(
 	}
 
 	return serverName, aliases, nil
+}
+
+// GetEndpointURLPort returns the port implied by endpointURL: its explicit
+// :port if present, else the scheme's standard port (443 for https, 80 for
+// http) - so a bare "https://host" endpointURL is enough on its own, with no
+// separate ports[] override needed. Returns (port, true, nil) when a port
+// could be determined either way; (0, false, nil) when endpointURL is nil,
+// empty, or uses a scheme with no implied port; and (0, false, err) when
+// endpointURL is set but unparseable or its explicit port is outside 1-65535.
+func GetEndpointURLPort(endpointURL *string) (int32, bool, error) {
+	if endpointURL == nil || *endpointURL == "" {
+		return 0, false, nil
+	}
+
+	u, err := url.Parse(*endpointURL)
+	if err != nil {
+		return 0, false, err
+	}
+
+	portStr := u.Port()
+	if portStr == "" {
+		switch Protocol(u.Scheme) {
+		case ProtocolHTTPS:
+			return 443, true, nil
+		case ProtocolHTTP:
+			return 80, true, nil
+		default:
+			return 0, false, nil
+		}
+	}
+
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		return 0, false, fmt.Errorf("%w: %q", ErrEndpointURLPortRange, portStr)
+	}
+	if port == 0 {
+		return 0, false, fmt.Errorf("%w: %q", ErrEndpointURLPortRange, portStr)
+	}
+
+	return int32(port), true, nil
 }
 
 // ToOverrideServiceSpec - convert corev1.ServiceSpec to OverrideServiceSpec
