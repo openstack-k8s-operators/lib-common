@@ -102,12 +102,13 @@ func (p *Protocol) String() string {
 // Service -
 // +kubebuilder:object:generate:=false
 type Service struct {
-	service         *corev1.Service
-	timeout         time.Duration
-	clusterIPs      []string
-	externalIPs     []string
-	ipFamilies      []corev1.IPFamily
-	serviceHostname string
+	service             *corev1.Service
+	timeout             time.Duration
+	clusterIPs          []string
+	externalIPs         []string
+	ipFamilies          []corev1.IPFamily
+	serviceHostname     string
+	annotationsToRemove map[string]struct{}
 }
 
 // GenericServiceDetails -

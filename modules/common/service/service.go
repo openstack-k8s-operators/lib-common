@@ -265,6 +265,18 @@ func (s *Service) GetServiceType() corev1.ServiceType {
 // AddAnnotation - Adds annotation and merges it with the current set
 func (s *Service) AddAnnotation(anno map[string]string) {
 	s.service.Annotations = util.MergeStringMaps(s.service.Annotations, anno)
+	for key := range anno {
+		delete(s.annotationsToRemove, key)
+	}
+}
+
+// RemoveAnnotation removes a managed annotation from the desired and existing Service.
+func (s *Service) RemoveAnnotation(key string) {
+	delete(s.service.Annotations, key)
+	if s.annotationsToRemove == nil {
+		s.annotationsToRemove = make(map[string]struct{})
+	}
+	s.annotationsToRemove[key] = struct{}{}
 }
 
 // AddAnnotation - Adds annotation and merges it with the current set
@@ -497,6 +509,9 @@ func (s *Service) CreateOrPatch(
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), service, func() error {
 		service.Labels = util.MergeStringMaps(s.service.Labels, service.Labels)
 		service.Annotations = util.MergeStringMaps(s.service.Annotations, service.Annotations)
+		for key := range s.annotationsToRemove {
+			delete(service.Annotations, key)
+		}
 		service.Spec = s.service.Spec
 
 		err := controllerutil.SetControllerReference(h.GetBeforeObject(), service, h.GetScheme())
