@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/openstack-k8s-operators/lib-common/modules/common/clusterdns"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -54,6 +55,8 @@ var (
 	ErrEndpointURLNoHost = errors.New("endpoint URL has no host")
 	// ErrEndpointURLIP is returned when an EndpointURL host is an IP address.
 	ErrEndpointURLIP = errors.New("endpoint URL host is an IP address; expected a hostname")
+	// ErrDefaultNameIP is returned when the default virtual-host name is an IP address.
+	ErrDefaultNameIP = errors.New("default name is an IP address; expected a hostname")
 )
 
 // NewService returns an initialized Service.
@@ -318,35 +321,50 @@ func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path s
 }
 
 // GetVHostServerName returns the httpd virtual-host ServerName and any
-// ServerAliases for an endpoint. When the override carries an EndpointURL, its
-// host becomes the ServerName and defaultName (the in-cluster <svc>.<ns>.svc
-// name) is returned as an alias, together with extraAliases, de-duplicated and
-// with any alias equal to the ServerName dropped. When EndpointURL is unset,
-// defaultName is the ServerName and no aliases are returned.
+// ServerAliases for an endpoint. The in-cluster FQDN of defaultName
+// (defaultName + "." + clusterdns.GetDNSClusterDomain()) is always included
+// in the aliases, since it is also always present as a cert SAN and must
+// resolve for SNI/CNAME purposes. When the override carries an EndpointURL,
+// its host becomes the ServerName and defaultName plus the FQDN are returned
+// as aliases, together with extraAliases; when EndpointURL is unset,
+// defaultName is the ServerName and the FQDN plus extraAliases are returned
+// as aliases. In both cases the result is de-duplicated and any alias equal
+// to the ServerName is dropped.
 func GetVHostServerName(
 	override RoutedOverrideSpec,
 	defaultName string,
 	extraAliases ...string,
 ) (string, []string, error) {
-	if override.EndpointURL == nil || *override.EndpointURL == "" {
-		return defaultName, nil, nil
+	if _, err := netip.ParseAddr(strings.TrimSuffix(defaultName, ".")); err == nil {
+		return "", nil, fmt.Errorf("default name %q: %w", defaultName, ErrDefaultNameIP)
 	}
 
-	u, err := url.Parse(*override.EndpointURL)
-	if err != nil {
-		return "", nil, err
+	fqdn := defaultName + "." + clusterdns.GetDNSClusterDomain()
+
+	serverName := defaultName
+	var candidates []string
+	if override.EndpointURL != nil && *override.EndpointURL != "" {
+		u, err := url.Parse(*override.EndpointURL)
+		if err != nil {
+			return "", nil, err
+		}
+		host := u.Hostname()
+		if host == "" {
+			return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLNoHost)
+		}
+		serverName = host
+		if _, err := netip.ParseAddr(strings.TrimSuffix(serverName, ".")); err == nil {
+			return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLIP)
+		}
+		candidates = append(candidates, defaultName, fqdn)
+	} else {
+		candidates = append(candidates, fqdn)
 	}
-	serverName := u.Hostname()
-	if serverName == "" {
-		return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLNoHost)
-	}
-	if _, err := netip.ParseAddr(strings.TrimSuffix(serverName, ".")); err == nil {
-		return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLIP)
-	}
+	candidates = append(candidates, extraAliases...)
 
 	var aliases []string
 	seen := map[string]struct{}{serverName: {}}
-	for _, alias := range append([]string{defaultName}, extraAliases...) {
+	for _, alias := range candidates {
 		if _, ok := seen[alias]; ok {
 			continue
 		}
