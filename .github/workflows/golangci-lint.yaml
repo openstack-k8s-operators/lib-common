@@ -7,7 +7,7 @@ permissions:
 
 jobs:
   test:
-    name: github (govet, golint and gotest)
+    name: github (govet, golint, gotest and govulncheck)
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -22,6 +22,8 @@ jobs:
         run: make golint
       - name: Run gotest.sh
         run: make gotest
+      - name: Check Go modules for vulnerabilities
+        run: make govulncheck
 
   pre-commit:
     runs-on: ubuntu-latest
