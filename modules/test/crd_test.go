@@ -60,7 +60,7 @@ require (
 replace github.com/openstack-k8s-operators/infra-operator/apis => ../../infra-operator/apis
 		`)
 		modPath := filepath.Join(dir, "go.mod")
-		err := os.WriteFile(modPath, mod, 0644)
+		err := os.WriteFile(modPath, mod, 0600)
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
@@ -81,7 +81,7 @@ require (
 replace github.com/openstack-k8s-operators/infra-operator/apis => ../../Infra-Operator/apis
 		`)
 		modPath := filepath.Join(dir, "go.mod")
-		err := os.WriteFile(modPath, mod, 0644)
+		err := os.WriteFile(modPath, mod, 0600)
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
@@ -102,7 +102,7 @@ require (
 replace github.com/openstack-k8s-operators/infra-operator/apis => github.com/MixedUser/infra-operator/apis v0.1.1-0.20231001103054-fffa88ed4971
 		`)
 		modPath := filepath.Join(dir, "go.mod")
-		err := os.WriteFile(modPath, mod, 0644)
+		err := os.WriteFile(modPath, mod, 0600)
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		path, err := GetCRDDirFromModule("github.com/openstack-k8s-operators/infra-operator/apis", modPath, "bases")
@@ -124,7 +124,7 @@ require (
 )
 		`)
 		modPath := filepath.Join(dir, "go.mod")
-		err := os.WriteFile(modPath, mod, 0644)
+		err := os.WriteFile(modPath, mod, 0600)
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		path, err := GetOpenShiftCRDDir("route/v1", modPath)

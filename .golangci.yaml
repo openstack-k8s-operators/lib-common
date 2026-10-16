@@ -19,6 +19,13 @@ linters:
         severity: warning
         disabled: true
 
+  exclusions:
+    rules:
+      - path: modules/common/secret/password_test.go
+        linters:
+          - gosec
+        text: "G101"
+
 formatters:
   enable:
     - gofmt

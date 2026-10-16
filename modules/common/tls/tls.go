@@ -41,7 +41,7 @@ import (
 
 const (
 	// CABundleSecret -
-	CABundleSecret = "combined-ca-bundle"
+	CABundleSecret = "combined-ca-bundle" // #nosec G101 -- this is a Kubernetes Secret resource name, not a credential value
 	// CABundleLabel added to the CA bundle secret for the namespace
 	CABundleLabel = "combined-ca-bundle"
 	// CABundleKey - key in CaBundleSecret holding a full CA bundle
