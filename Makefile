@@ -16,11 +16,13 @@ $(LOCALBIN):
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GINKGO ?= $(LOCALBIN)/ginkgo
+GOVULNCHECK ?= $(LOCALBIN)/govulncheck
 
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION ?= v0.18.0
 GOTOOLCHAIN_VERSION ?= go1.26.0
 GOLANGCI_LINT_VERSION ?= v2.12.2
+GOVULNCHECK_VERSION ?= v1.9.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.33
@@ -141,6 +143,17 @@ golangci: get-ci-tools ## Run golangci-lint test via ci-tools script against cod
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		GOLANGCI_TAG=$(GOLANGCI_LINT_VERSION) GOWORK=off $(CI_TOOLS_REPO_DIR)/test-runner/golangci.sh ./$$mod || exit 1 ; \
 	done
+
+.PHONY: govulncheck
+govulncheck: $(GOVULNCHECK) ## Check all Go modules for known dependency vulnerabilities.
+	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
+		pushd ./$$mod ; \
+		GOWORK=off $(GOVULNCHECK) ./... || exit 1 ; \
+		popd ; \
+	done
+
+$(GOVULNCHECK): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 
 .PHONY: golint
 golint: get-ci-tools ## Run go lint via ci-tools script against code

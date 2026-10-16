@@ -29,7 +29,7 @@ import (
 // specified in the go.mod file. The returned name follows the "replace"
 // directives from go.mod
 func getDependencyVersion(moduleName string, goModPath string) (string, string, error) {
-	content, err := os.ReadFile(goModPath)
+	content, err := os.ReadFile(goModPath) // #nosec G304 -- goModPath is a test-time path provided by the caller, not external input
 	if err != nil {
 		return "", "", err
 	}
@@ -98,7 +98,7 @@ func encodePath(path string) (encoding string, err error) {
 		if 'A' <= r && r <= 'Z' {
 			buf = append(buf, '!', byte(r+'a'-'A'))
 		} else {
-			buf = append(buf, byte(r))
+			buf = append(buf, byte(r)) // #nosec G115 -- r is < utf8.RuneSelf, verified in the loop above
 		}
 	}
 	return string(buf), nil

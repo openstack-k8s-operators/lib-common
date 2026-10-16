@@ -61,14 +61,12 @@ func (f *APIFixture) Endpoint() string {
 // understood but not implemented by the fixture
 func (f *APIFixture) UnexpectedRequest(w http.ResponseWriter, r *http.Request) {
 	f.Log.Info("Unexpected OpenStackAPI request", "method", r.Method, "URI", r.RequestURI)
-	w.WriteHeader(500)
-	_, _ = fmt.Fprintf(w, "Unexpected OpenStackAPI request %s %s", r.Method, r.RequestURI)
+	http.Error(w, fmt.Sprintf("Unexpected OpenStackAPI request %s %s", r.Method, r.RequestURI), http.StatusInternalServerError)
 }
 
 // InternalError sends a HTTP 500 response Use it if there was an unexpected
 // error during the request processing
 func (f *APIFixture) InternalError(err error, msg string, w http.ResponseWriter, r *http.Request) {
 	f.Log.Info("Internal error", "method", r.Method, "URI", r.RequestURI, "error", err, "message", msg)
-	w.WriteHeader(500)
-	_, _ = fmt.Fprintf(w, "Internal error in %s %s: %s: %v", r.Method, r.RequestURI, msg, err)
+	http.Error(w, fmt.Sprintf("Internal error in %s %s: %s: %v", r.Method, r.RequestURI, msg, err), http.StatusInternalServerError)
 }
