@@ -133,7 +133,7 @@ func GetAllTemplates(path string, subdir string, templateType string, version st
 // execute it with the specified data
 func ExecuteTemplate(templateFile string, data interface{}) (string, error) {
 
-	b, err := os.ReadFile(templateFile)
+	b, err := os.ReadFile(templateFile) // #nosec G304 -- templateFile is an operator-controlled template path, not external user input
 	if err != nil {
 
 		return "", err
@@ -247,7 +247,7 @@ func ExecuteTemplateData(templateData string, data interface{}) (string, error) 
 		"removeNewLines":           removeNewLines,
 		"removeNewLinesInSections": removeNewLinesInSections,
 	}
-	tmpl, err = template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData)
+	tmpl, err = template.New("tmp").Option("missingkey=error").Funcs(funcs).Parse(templateData) // #nosec G708 -- funcs exposes no file/exec/network functions, so template injection is limited to data already present in ConfigOptions
 	if err != nil {
 		return "", err
 	}
@@ -276,7 +276,7 @@ func ExecuteTemplateFile(filename string, data interface{}) (string, error) {
 		filepath = path.Join(templates, filename)
 	}
 
-	b, err := os.ReadFile(filepath)
+	b, err := os.ReadFile(filepath) // #nosec G304,G703 -- filepath is built from the operator-controlled OPERATOR_TEMPLATES path and an operator-supplied template filename, not external user input
 	if err != nil {
 		return "", err
 	}

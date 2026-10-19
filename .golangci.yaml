@@ -10,6 +10,7 @@ linters:
     - govet
     - errname
     - err113
+    - gosec
 
   settings:
     revive:
@@ -17,6 +18,13 @@ linters:
       - name: unused-parameter
         severity: warning
         disabled: true
+
+  exclusions:
+    rules:
+      - path: modules/common/secret/password_test.go
+        linters:
+          - gosec
+        text: "G101"
 
 formatters:
   enable:
