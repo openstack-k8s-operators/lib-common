@@ -61,7 +61,6 @@ type AuthOpts struct {
 // TLSConfig - settings
 type TLSConfig struct {
 	CACerts    []string
-	Insecure   bool
 	ClientCert string
 	ClientKey  string
 }
@@ -103,9 +102,6 @@ func GetOpenStackProvider(
 				caCertPool.AppendCertsFromPEM([]byte(caCert))
 			}
 			tlsConfig.RootCAs = caCertPool
-		}
-		if cfg.TLS.Insecure {
-			tlsConfig.InsecureSkipVerify = true
 		}
 
 		if cfg.TLS.ClientCert != "" && cfg.TLS.ClientKey != "" {
