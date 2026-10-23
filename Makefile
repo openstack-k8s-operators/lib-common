@@ -25,7 +25,7 @@ GOLANGCI_LINT_VERSION ?= v2.12.2
 GOVULNCHECK_VERSION ?= v1.9.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.33
+ENVTEST_K8S_VERSION = 1.35
 SETUP_ENVTEST_VERSION ?= release-0.22
 
 # Number of CPUs to be allocacted for testing
