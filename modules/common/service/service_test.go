@@ -443,28 +443,51 @@ func TestGetAPIEndpoint(t *testing.T) {
 
 func TestGetVHostServerName(t *testing.T) {
 	tests := []struct {
-		name         string
-		endpointURL  *string
-		defaultName  string
-		extraAliases []string
-		wantServer   string
-		wantAliases  []string
-		wantErr      bool
-		wantIPErr    bool
+		name                 string
+		endpointURL          *string
+		defaultName          string
+		extraAliases         []string
+		wantServer           string
+		wantAliases          []string
+		wantErr              bool
+		wantIPErr            bool
+		wantDefaultNameIPErr bool
 	}{
 		{
-			name:        "no endpointURL uses default name, no aliases",
+			name:        "no endpointURL uses default name, FQDN alias",
 			endpointURL: nil,
 			defaultName: "placement-public.openstack.svc",
 			wantServer:  "placement-public.openstack.svc",
-			wantAliases: nil,
+			wantAliases: []string{"placement-public.openstack.svc.cluster.local"},
 		},
 		{
-			name:        "endpointURL host becomes ServerName, default becomes alias",
+			name:         "no endpointURL includes FQDN and extraAliases",
+			endpointURL:  nil,
+			defaultName:  "placement-public.openstack.svc",
+			extraAliases: []string{"placement.extra.example"},
+			wantServer:   "placement-public.openstack.svc",
+			wantAliases:  []string{"placement-public.openstack.svc.cluster.local", "placement.extra.example"},
+		},
+		{
+			name:                 "IP default name without endpointURL returns error",
+			endpointURL:          nil,
+			defaultName:          "192.0.2.1",
+			wantErr:              true,
+			wantDefaultNameIPErr: true,
+		},
+		{
+			name:                 "IP default name with DNS endpointURL returns error",
+			endpointURL:          ptr.To("https://placement.foo.bar:8778"),
+			defaultName:          "192.0.2.1",
+			wantErr:              true,
+			wantDefaultNameIPErr: true,
+		},
+		{
+			name:        "endpointURL host becomes ServerName, default and FQDN become aliases",
 			endpointURL: ptr.To("https://placement.foo.bar:8778"),
 			defaultName: "placement-public.openstack.svc",
 			wantServer:  "placement.foo.bar",
-			wantAliases: []string{"placement-public.openstack.svc"},
+			wantAliases: []string{"placement-public.openstack.svc", "placement-public.openstack.svc.cluster.local"},
 		},
 		{
 			name:         "extraAliases are appended and deduplicated against ServerName",
@@ -475,11 +498,18 @@ func TestGetVHostServerName(t *testing.T) {
 			wantAliases:  []string{"placement-public.openstack.svc", "placement-public.openstack.svc.cluster.local"},
 		},
 		{
-			name:        "endpointURL host same as default name yields no duplicate alias",
+			name:        "endpointURL host same as default name yields no duplicate alias, FQDN still present",
 			endpointURL: ptr.To("https://placement-public.openstack.svc:8778"),
 			defaultName: "placement-public.openstack.svc",
 			wantServer:  "placement-public.openstack.svc",
-			wantAliases: nil,
+			wantAliases: []string{"placement-public.openstack.svc.cluster.local"},
+		},
+		{
+			name:        "endpointURL host same as FQDN yields no duplicate alias, short name still present",
+			endpointURL: ptr.To("https://placement-public.openstack.svc.cluster.local:8778"),
+			defaultName: "placement-public.openstack.svc",
+			wantServer:  "placement-public.openstack.svc.cluster.local",
+			wantAliases: []string{"placement-public.openstack.svc"},
 		},
 		{
 			name:        "malformed endpointURL returns error",
@@ -534,6 +564,9 @@ func TestGetVHostServerName(t *testing.T) {
 				g.Expect(err).To(HaveOccurred())
 				if tt.wantIPErr {
 					g.Expect(errors.Is(err, ErrEndpointURLIP)).To(BeTrue())
+				}
+				if tt.wantDefaultNameIPErr {
+					g.Expect(errors.Is(err, ErrDefaultNameIP)).To(BeTrue())
 				}
 				return
 			}
