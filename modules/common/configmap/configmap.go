@@ -19,6 +19,7 @@ package configmap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -35,6 +36,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+// ErrExistingConfigMapNotOwned indicates that a strict-owner template would replace a ConfigMap it does not own.
+var ErrExistingConfigMapNotOwned = errors.New("existing ConfigMap is not controlled by the requested owner")
+
+var errInvalidOwnerTemplate = errors.New("RequireExistingOwner requires an owner-managed ConfigMap template")
 
 // Hash function creates a hash of a ConfigMap's Data and BinaryData fields and
 // returns it as a safe encoded string.
@@ -75,7 +81,6 @@ func createOrPatchConfigMap(
 
 	// create or update the CM
 	op, err := controllerutil.CreateOrPatch(ctx, h.GetClient(), configMap, func() error {
-
 		configMap.Labels = util.MergeStringMaps(configMap.Labels, cm.Labels)
 		// add data from templates
 		renderedTemplateData, err := util.GetTemplateData(cm)
@@ -98,6 +103,9 @@ func createOrPatchConfigMap(
 		}
 
 		if !cm.SkipSetOwner {
+			if cm.RequireExistingOwner && configMap.ResourceVersion != "" && !metav1.IsControlledBy(configMap, obj) {
+				return fmt.Errorf("%w: %s/%s", ErrExistingConfigMapNotOwned, cm.Namespace, cm.Name)
+			}
 			err := controllerutil.SetControllerReference(obj, configMap, h.GetScheme())
 			if err != nil {
 				return err
@@ -174,6 +182,9 @@ func EnsureConfigMaps(
 	var err error
 
 	for _, cm := range cms {
+		if cm.RequireExistingOwner && (cm.SkipSetOwner || cm.Type == util.TemplateTypeCustom) {
+			return errInvalidOwnerTemplate
+		}
 		var hash string
 		var op controllerutil.OperationResult
 
