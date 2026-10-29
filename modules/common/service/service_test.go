@@ -86,6 +86,30 @@ var (
 			NodePort:    0,
 		},
 	}
+	// portNameMismatch has a port Name that does not match the Service
+	// object's Name ("foo") — GetServiceHostnamePort must still find it.
+	portNameMismatch = []corev1.ServicePort{
+		{
+			Name:        "internal",
+			Protocol:    corev1.ProtocolTCP,
+			AppProtocol: nil,
+			Port:        int32(8778),
+			TargetPort:  intstr.FromInt(0),
+			NodePort:    0,
+		},
+	}
+	// multiPortNamed has the endpoint port (named like the Service object,
+	// "foo") second in the list.
+	multiPortNamed = []corev1.ServicePort{
+		{Name: "metrics", Protocol: corev1.ProtocolTCP, Port: int32(9090), TargetPort: intstr.FromInt(0)},
+		{Name: "foo", Protocol: corev1.ProtocolTCP, Port: int32(8080), TargetPort: intstr.FromInt(0)},
+	}
+	// multiPortUnnamed has no port named like the Service object, so the
+	// endpoint port is ambiguous.
+	multiPortUnnamed = []corev1.ServicePort{
+		{Name: "metrics", Protocol: corev1.ProtocolTCP, Port: int32(9090), TargetPort: intstr.FromInt(0)},
+		{Name: "internal", Protocol: corev1.ProtocolTCP, Port: int32(8080), TargetPort: intstr.FromInt(0)},
+	}
 	timeout  = time.Duration(5) * time.Second
 	override = OverrideSpec{
 		Spec: &OverrideServiceSpec{
@@ -304,6 +328,42 @@ func TestNewService(t *testing.T) {
 			wantOverrideServiceSpec: overrideServiceSpecClusterIP,
 		},
 		{
+			name:     "ClusterIP service with port Name different from object Name",
+			service:  getServiceWithPort(svcClusterIP, portNameMismatch),
+			override: OverrideSpec{},
+			want: Service{
+				service:         getServiceWithPort(svcClusterIP, portNameMismatch),
+				timeout:         timeout,
+				serviceHostname: "foo.namespace.svc",
+			},
+			wantPort:                "8778",
+			wantOverrideServiceSpec: overrideServiceSpecClusterIP,
+		},
+		{
+			name:     "ClusterIP multi-port service picks the port named like the object",
+			service:  getServiceWithPort(svcClusterIP, multiPortNamed),
+			override: OverrideSpec{},
+			want: Service{
+				service:         getServiceWithPort(svcClusterIP, multiPortNamed),
+				timeout:         timeout,
+				serviceHostname: "foo.namespace.svc",
+			},
+			wantPort:                "8080",
+			wantOverrideServiceSpec: overrideServiceSpecClusterIP,
+		},
+		{
+			name:     "ClusterIP multi-port service with no port named like the object has no endpoint port",
+			service:  getServiceWithPort(svcClusterIP, multiPortUnnamed),
+			override: OverrideSpec{},
+			want: Service{
+				service:         getServiceWithPort(svcClusterIP, multiPortUnnamed),
+				timeout:         timeout,
+				serviceHostname: "foo.namespace.svc",
+			},
+			wantPort:                "",
+			wantOverrideServiceSpec: overrideServiceSpecClusterIP,
+		},
+		{
 			name:     "HTTP ClusterIP service override service Type to LoadBalancer",
 			service:  getServiceWithPort(svcClusterIP, portHTTP),
 			override: override,
@@ -361,6 +421,7 @@ func TestGetAPIEndpoint(t *testing.T) {
 		port        string
 		path        string
 		want        string
+		wantErr     error
 	}{
 		{
 			name:        "HTTP ClusterIP service default port 80, no override",
@@ -369,6 +430,14 @@ func TestGetAPIEndpoint(t *testing.T) {
 			proto:       ProtocolHTTP,
 			path:        "",
 			want:        "http://foo.namespace.svc",
+		},
+		{
+			name:        "empty endpointURL uses service URL",
+			service:     getServiceWithPort(svcClusterIP, portCustom),
+			endpointURL: ptr.To(""),
+			proto:       ProtocolHTTP,
+			path:        "/path",
+			want:        "http://foo.namespace.svc:8080/path",
 		},
 		{
 			name:        "HTTP ClusterIP service non default 8080 port, no override",
@@ -426,6 +495,49 @@ func TestGetAPIEndpoint(t *testing.T) {
 			path:        "",
 			want:        "http://this.url",
 		},
+		{
+			name:        "Empty EndpointURL falls back to the Service's only port",
+			service:     getServiceWithPort(svcClusterIP, portNameMismatch),
+			endpointURL: ptr.To(""),
+			proto:       ProtocolHTTP,
+			path:        "/path",
+			want:        "http://foo.namespace.svc:8778/path",
+		},
+		{
+			name: "ExternalName service without ports keeps the hostname-only endpoint",
+			service: &corev1.Service{
+				ObjectMeta: svcClusterIP.ObjectMeta,
+				Spec:       corev1.ServiceSpec{Type: corev1.ServiceTypeExternalName, ExternalName: "ext.example.com"},
+			},
+			endpointURL: nil,
+			proto:       ProtocolHTTPS,
+			path:        "/path",
+			want:        "https://foo.namespace.svc/path",
+		},
+		{
+			name:        "Multi-port service with no port named like the object, no override",
+			service:     getServiceWithPort(svcClusterIP, multiPortUnnamed),
+			endpointURL: nil,
+			proto:       ProtocolHTTP,
+			path:        "/path",
+			wantErr:     ErrEndpointPortUnknown,
+		},
+		{
+			name:        "Multi-port service with no port named like the object, empty EndpointURL",
+			service:     getServiceWithPort(svcClusterIP, multiPortUnnamed),
+			endpointURL: ptr.To(""),
+			proto:       ProtocolHTTP,
+			path:        "/path",
+			wantErr:     ErrEndpointPortUnknown,
+		},
+		{
+			name:        "Multi-port service with no port named like the object, EndpointURL set",
+			service:     getServiceWithPort(svcClusterIP, multiPortUnnamed),
+			endpointURL: ptr.To("http://this.url"),
+			proto:       ProtocolHTTP,
+			path:        "/path",
+			want:        "http://this.url/path",
+		},
 	}
 
 	for _, tt := range tests {
@@ -435,6 +547,10 @@ func TestGetAPIEndpoint(t *testing.T) {
 			service, err := NewService(tt.service, timeout, nil)
 			g.Expect(err).ToNot(HaveOccurred())
 			url, err := service.GetAPIEndpoint(tt.endpointURL, ptr.To(tt.proto), tt.path)
+			if tt.wantErr != nil {
+				g.Expect(err).To(MatchError(tt.wantErr))
+				return
+			}
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(url).To(Equal(tt.want))
 		})
