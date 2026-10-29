@@ -351,7 +351,13 @@ func EnsureSecrets(
 	sts []util.Template,
 	envVars *map[string]env.Setter,
 ) error {
-	var err error
+	// Well-known ConfigMaps (e.g. the cluster TLS profile) are merged underneath
+	// every Template's ConfigOptions, so operators pick up cluster-wide
+	// settings without having to ask for them.
+	sts, err := util.ApplyTemplateDefaults(ctx, h, sts, util.DefaultTemplateConfigMaps)
+	if err != nil {
+		return err
+	}
 
 	for _, s := range sts {
 		var hash string
