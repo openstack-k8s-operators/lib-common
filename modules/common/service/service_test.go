@@ -19,6 +19,7 @@ limitations under the License.
 package service
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -26,8 +27,14 @@ import (
 	. "github.com/onsi/gomega" // nolint:revive
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/openstack-k8s-operators/lib-common/modules/common/helper"
 )
 
 var (
@@ -995,4 +1002,58 @@ func TestNewServicePortsOverrideInvalid(t *testing.T) {
 			g.Expect(err.Error()).To(ContainSubstring(tt.errMatch))
 		})
 	}
+}
+
+func TestRemoveServiceAnnotation(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+	owner := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "namespace", UID: "owner-uid"}}
+	current := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo", Namespace: "namespace",
+			Annotations: map[string]string{"managed": "old", "other": "preserved"},
+		},
+		Spec: corev1.ServiceSpec{Type: corev1.ServiceTypeClusterIP},
+	}
+	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(current).Build()
+	h, err := helper.NewHelper(owner, client, nil, scheme.Scheme, ctrl.Log)
+	g.Expect(err).NotTo(HaveOccurred())
+	svc, err := NewService(&corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "namespace"},
+		Spec:       corev1.ServiceSpec{Type: corev1.ServiceTypeClusterIP},
+	}, 0, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	svc.RemoveAnnotation("managed")
+	_, err = svc.CreateOrPatch(ctx, h)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(client.Get(ctx, types.NamespacedName{Name: "foo", Namespace: "namespace"}, current)).To(Succeed())
+	g.Expect(current.Annotations).NotTo(HaveKey("managed"))
+	g.Expect(current.Annotations).To(HaveKeyWithValue("other", "preserved"))
+}
+
+func TestRemoveThenAddServiceAnnotation(t *testing.T) {
+	g := NewWithT(t)
+	ctx := context.Background()
+	owner := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "namespace", UID: "owner-uid"}}
+	current := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo", Namespace: "namespace",
+			Annotations: map[string]string{"managed": "old"},
+		},
+		Spec: corev1.ServiceSpec{Type: corev1.ServiceTypeClusterIP},
+	}
+	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(current).Build()
+	h, err := helper.NewHelper(owner, client, nil, scheme.Scheme, ctrl.Log)
+	g.Expect(err).NotTo(HaveOccurred())
+	svc, err := NewService(&corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "namespace"},
+		Spec:       corev1.ServiceSpec{Type: corev1.ServiceTypeClusterIP},
+	}, 0, nil)
+	g.Expect(err).NotTo(HaveOccurred())
+	svc.RemoveAnnotation("managed")
+	svc.AddAnnotation(map[string]string{"managed": "new"})
+	_, err = svc.CreateOrPatch(ctx, h)
+	g.Expect(err).NotTo(HaveOccurred())
+	g.Expect(client.Get(ctx, types.NamespacedName{Name: "foo", Namespace: "namespace"}, current)).To(Succeed())
+	g.Expect(current.Annotations).To(HaveKeyWithValue("managed", "new"))
 }
