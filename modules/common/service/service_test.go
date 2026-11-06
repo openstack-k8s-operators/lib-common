@@ -572,6 +572,7 @@ func TestGetVHostServerName(t *testing.T) {
 		extraAliases         []string
 		wantServer           string
 		wantAliases          []string
+		route                bool
 		wantErr              bool
 		wantIPErr            bool
 		wantDefaultNameIPErr bool
@@ -611,6 +612,14 @@ func TestGetVHostServerName(t *testing.T) {
 			defaultName: "placement-public.openstack.svc",
 			wantServer:  "placement.foo.bar",
 			wantAliases: []string{"placement-public.openstack.svc", "placement-public.openstack.svc.cluster.local"},
+		},
+		{
+			name:        "endpointURL on a non-LoadBalancer (Route) keeps default ServerName",
+			endpointURL: ptr.To("https://placement.foo.bar:8778"),
+			defaultName: "placement-public.openstack.svc",
+			route:       true,
+			wantServer:  "placement-public.openstack.svc",
+			wantAliases: []string{"placement-public.openstack.svc.cluster.local"},
 		},
 		{
 			name:         "extraAliases are appended and deduplicated against ServerName",
@@ -681,6 +690,9 @@ func TestGetVHostServerName(t *testing.T) {
 			g := NewWithT(t)
 
 			override := RoutedOverrideSpec{EndpointURL: tt.endpointURL}
+			if !tt.route {
+				override.OverrideSpec = OverrideSpec{Spec: &OverrideServiceSpec{Type: corev1.ServiceTypeLoadBalancer}}
+			}
 			serverName, aliases, err := GetVHostServerName(override, tt.defaultName, tt.extraAliases...)
 
 			if tt.wantErr {

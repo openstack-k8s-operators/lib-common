@@ -359,7 +359,7 @@ func (s *Service) GetAPIEndpoint(endpointURL *string, protocol *Protocol, path s
 // (defaultName + "." + clusterdns.GetDNSClusterDomain()) is always included
 // in the aliases, since it is also always present as a cert SAN and must
 // resolve for SNI/CNAME purposes. When the override carries an EndpointURL,
-// its host becomes the ServerName and defaultName plus the FQDN are returned
+// and the Service is of type LoadBalancer, its host becomes the ServerName and defaultName plus the FQDN are returned
 // as aliases, together with extraAliases; when EndpointURL is unset,
 // defaultName is the ServerName and the FQDN plus extraAliases are returned
 // as aliases. In both cases the result is de-duplicated and any alias equal
@@ -386,11 +386,19 @@ func GetVHostServerName(
 		if host == "" {
 			return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLNoHost)
 		}
-		serverName = host
-		if _, err := netip.ParseAddr(strings.TrimSuffix(serverName, ".")); err == nil {
+		if _, err := netip.ParseAddr(strings.TrimSuffix(host, ".")); err == nil {
 			return "", nil, fmt.Errorf("endpointURL %q: %w", *override.EndpointURL, ErrEndpointURLIP)
 		}
-		candidates = append(candidates, defaultName, fqdn)
+		// Only a LoadBalancer is reached directly with the endpointURL host as
+		// SNI. Behind a Route the router sends no SNI, so naming the public
+		// vhost after the route host makes httpd reject requests with 421
+		// (AH02032) instead of serving the default vhost.
+		if override.Spec != nil && override.Spec.Type == corev1.ServiceTypeLoadBalancer {
+			serverName = host
+			candidates = append(candidates, defaultName, fqdn)
+		} else {
+			candidates = append(candidates, fqdn)
+		}
 	} else {
 		candidates = append(candidates, fqdn)
 	}
