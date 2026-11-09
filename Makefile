@@ -23,6 +23,8 @@ CONTROLLER_TOOLS_VERSION ?= v0.18.0
 GOTOOLCHAIN_VERSION ?= go1.26.0
 GOLANGCI_LINT_VERSION ?= v2.12.2
 GOVULNCHECK_VERSION ?= v1.9.0
+# OSV IDs to ignore (one per line, # comments allowed)
+GOVULNCHECK_IGNORE ?= .govulncheck-ignore
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.33
@@ -148,7 +150,9 @@ golangci: get-ci-tools ## Run golangci-lint test via ci-tools script against cod
 govulncheck: $(GOVULNCHECK) ## Check all Go modules for known dependency vulnerabilities.
 	for mod in $(shell find modules/ -maxdepth 1 -mindepth 1 -type d); do \
 		pushd ./$$mod ; \
-		GOWORK=off $(GOVULNCHECK) ./... || exit 1 ; \
+		GOWORK=off $(GOVULNCHECK) -format json ./... > $(LOCALBIN)/govulncheck.json || exit 1 ; \
+		found=$$(jq -rs --arg ignore "$$(sed 's/\#.*//' $(abspath $(GOVULNCHECK_IGNORE)) | tr -s ' \n' ' ')" '[.[] | select(.finding.trace[0].function != null) | .finding.osv | select(. as $$id | ($$ignore | split(" ") | index($$id)) | not)] | unique | .[]' $(LOCALBIN)/govulncheck.json) || exit 1 ; \
+		if [ -n "$$found" ]; then echo "Vulnerabilities found: $$found"; exit 1 ; fi ; \
 		popd ; \
 	done
 

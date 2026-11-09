@@ -1,0 +1,2 @@
+# OSV IDs ignored by `make govulncheck`, one per line. Add a reason and a removal condition.
+GO-2026-6889  # cert-manager controller-side issue, only API types used here. Remove once cert-manager >= 1.19.6
