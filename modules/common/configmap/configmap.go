@@ -179,7 +179,13 @@ func EnsureConfigMaps(
 	cms []util.Template,
 	envVars *map[string]env.Setter,
 ) error {
-	var err error
+	// Well-known ConfigMaps (e.g. the cluster TLS profile) are merged underneath
+	// every Template's ConfigOptions, so operators pick up cluster-wide
+	// settings without having to ask for them.
+	cms, err := util.ApplyTemplateDefaults(ctx, h, cms, util.DefaultTemplateConfigMaps)
+	if err != nil {
+		return err
+	}
 
 	for _, cm := range cms {
 		if cm.RequireExistingOwner && (cm.SkipSetOwner || cm.Type == util.TemplateTypeCustom) {
@@ -325,6 +331,60 @@ func GetConfigMap(
 	}
 
 	return configMap, ctrl.Result{}, nil
+}
+
+// DeleteConfigMapWithName - Delete the named config map in namespace.
+//
+// Deleting a config map that is not there is not an error: the caller asked for
+// it to be gone, and it is. This makes the call safe to repeat on every
+// reconcile.
+func DeleteConfigMapWithName(
+	ctx context.Context,
+	h *helper.Helper,
+	name string,
+	namespace string,
+) error {
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	// Look first: the read is served from the client cache, while a Delete is
+	// an API write even when there is nothing to delete. Callers that withdraw
+	// on every reconcile would otherwise pay for a 404 each time.
+	err := h.GetClient().Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, configMap)
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Failed to get ConfigMap %s", name),
+			configMap,
+			err,
+		)
+	}
+
+	err = h.GetClient().Delete(ctx, configMap, &client.DeleteOptions{})
+	if err != nil {
+		if k8s_errors.IsNotFound(err) {
+			return nil
+		}
+		return util.WrapErrorForObject(
+			fmt.Sprintf("Failed to delete ConfigMap %s", configMap.Name),
+			configMap,
+			err,
+		)
+	}
+
+	util.LogForObject(
+		h,
+		fmt.Sprintf("ConfigMap %s in namespace %s deleted", configMap.Name, configMap.Namespace),
+		configMap,
+	)
+
+	return nil
 }
 
 // VerifyConfigMap - verifies if the ConfigMap object exists and the expected fields
