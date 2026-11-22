@@ -119,6 +119,11 @@ func (v *VolMounts) Propagate(svc []PropagationType) []VolMounts {
 				Volumes: v.Volumes,
 				Mounts:  v.Mounts,
 			})
+			// every matching selector would append an identical copy of
+			// the volumes and mounts: keep only the first copy to prevent
+			// duplicated volume names and mount paths in the resulting
+			// pod spec
+			break
 		}
 	}
 
