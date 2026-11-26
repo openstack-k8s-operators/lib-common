@@ -20,6 +20,7 @@ package labels
 import (
 	"github.com/openstack-k8s-operators/lib-common/modules/common"
 	"github.com/openstack-k8s-operators/lib-common/modules/common/util"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -108,4 +109,11 @@ func GetLabelSelector(
 	return metav1.LabelSelector{
 		MatchLabels: serviceLabels,
 	}
+}
+
+// EqualLabelSelectors - returns true if two labelSelectors matches, false
+// otherwise
+func EqualLabelSelectors(
+	l1, l2 metav1.LabelSelector) bool {
+	return equality.Semantic.DeepEqual(l1, l2)
 }
