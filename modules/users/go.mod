@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/users
 
-go 1.26.3
+go 1.26.10
 
 require gopkg.in/yaml.v3 v3.0.1
 

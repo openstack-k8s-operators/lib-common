@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/edpm
 
-go 1.26.3
+go 1.26.10
 
 require (
 	github.com/openstack-k8s-operators/lib-common/modules/common v0.6.1-0.20260417092244-81c71b39e981

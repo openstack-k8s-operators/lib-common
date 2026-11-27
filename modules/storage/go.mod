@@ -1,6 +1,6 @@
 module github.com/openstack-k8s-operators/lib-common/modules/storage
 
-go 1.26.3
+go 1.26.10
 
 require (
 	github.com/onsi/gomega v1.44.0
