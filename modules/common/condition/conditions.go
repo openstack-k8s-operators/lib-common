@@ -39,6 +39,9 @@ const (
 	// CreateServiceReadyCondition Status=True condition when k8s service for the service created ok
 	CreateServiceReadyCondition Type = "CreateServiceReady"
 
+	// NetworkPolicyReadyCondition Status=True condition when the NetworkPolicy for the service created ok
+	NetworkPolicyReadyCondition Type = "NetworkPolicyReady"
+
 	// ExposeServiceReadyCondition Status=True condition when service/routes to expose the service created ok
 	ExposeServiceReadyCondition Type = "ExposeServiceReady"
 
@@ -214,6 +217,21 @@ const (
 
 	// CreateServiceReadyErrorMessage
 	CreateServiceReadyErrorMessage = "Create service error occurred %s"
+
+	//
+	// NetworkPolicy condition messages
+	//
+	// NetworkPolicyReadyInitMessage
+	NetworkPolicyReadyInitMessage = "Network policy creation not started"
+
+	// NetworkPolicyReadyMessage
+	NetworkPolicyReadyMessage = "Network policy created"
+
+	// NetworkPolicyReadyRunningMessage
+	NetworkPolicyReadyRunningMessage = "Network policy creation in progress"
+
+	// NetworkPolicyReadyErrorMessage
+	NetworkPolicyReadyErrorMessage = "Network policy creation error occurred %s"
 
 	//
 	// ExposeService condition messages
